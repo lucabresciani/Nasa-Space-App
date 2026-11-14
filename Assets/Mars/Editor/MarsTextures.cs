@@ -45,7 +45,7 @@ namespace NasaSpaceApp.MarsGen
                 MakeLayer(folder, "Dust", size, tileMeters: 6f, bumpMeters: 0.02f, (u, v) => Dust(u, v, seed)),
                 MakeLayer(folder, "Gravel", size, tileMeters: 4f, bumpMeters: 0.03f, (u, v) => Gravel(u, v, seed + 100)),
                 MakeLayer(folder, "Bedrock", size, tileMeters: 9f, bumpMeters: 0.09f, (u, v) => MurrayBedrock(u, v, seed + 200)),
-                MakeLayer(folder, "DarkSand", size, tileMeters: 5f, bumpMeters: 0.015f, (u, v) => DarkSand(u, v, seed + 300)),
+                MakeLayer(folder, "DarkSand", size, tileMeters: 5f, bumpMeters: 0.03f, (u, v) => DarkSand(u, v, seed + 300)),
             };
         }
 
@@ -204,8 +204,9 @@ namespace NasaSpaceApp.MarsGen
             float patch = MarsNoise.SmoothStep(-0.1f, 0.4f, MarsNoise.TileFbm(u, v, 2, 3, seed + 9));
 
             float h = 0.45f + 0.15f * broad + 0.3f * ripple + 0.06f * grain;
-            // Basaltic Bagnold sand, dark grey-brown ~#5A4A3F, with dust caught in the ripple troughs.
-            Color c = Color.Lerp(C(0.31f, 0.255f, 0.215f), C(0.40f, 0.325f, 0.27f), 0.5f + 0.5f * broad);
+            // Basaltic Bagnold sand, grey-brown ~#73604D: darker than the dusty plains in Mastcam frames, but not the
+            // near-black it reads as when rendered darker under the orange Mars light.
+            Color c = Color.Lerp(C(0.40f, 0.32f, 0.26f), C(0.50f, 0.40f, 0.32f), 0.5f + 0.5f * broad);
             c = Color.Lerp(c, C(0.55f, 0.40f, 0.29f), MarsNoise.SmoothStep(0.35f, 0.1f, ripple) * 0.45f * patch);
             c *= 0.94f + 0.12f * (0.5f + 0.5f * grain);
             return new Surface { height = Mathf.Clamp01(h), albedo = c, smoothness = 0.18f };

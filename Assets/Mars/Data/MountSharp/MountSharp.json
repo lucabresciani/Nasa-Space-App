@@ -24,7 +24,7 @@
     "minElevation": -4757.136962,
     "maxElevation": 390.892754,
     "splatFile": "backdrop_splat.png",
-    "splatResolution": 512,
+    "splatResolution": 1024,
     "offsetX": -30711.894259,
     "offsetZ": -41504.0,
     "holeX0": 963,
