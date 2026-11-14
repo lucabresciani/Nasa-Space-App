@@ -50,7 +50,9 @@ namespace NasaSpaceApp.MarsGen
             ParticleSystem motes = FindMotes(player);
             if (motes == null)
                 Debug.LogWarning($"[Mars] No '{MotesName}' particle system under the player: the near dust is created, but the existing motes won't follow the wind.");
-            Terrain terrain = environment.GetComponentInChildren<Terrain>(true);
+            // By name: with a distant backdrop terrain in the scene, "any terrain" would be ambiguous.
+            Transform playable = environment.Find("Mars Terrain");
+            Terrain terrain = playable != null ? playable.GetComponent<Terrain>() : null;
             if (terrain == null) terrain = Terrain.activeTerrain;
             MarsWeatherEffectsSetup.CreateNearDust(root, motes, AssetFolder, undo);
             MarsWeatherEffectsSetup.CreateDustDevils(root, terrain, AssetFolder, undo);

@@ -252,9 +252,14 @@ Shader "NasaSpaceApp/Mars Sky"
                     float k = MarsRadiusKm / (MarsRadiusKm + altitude);
                     float dip = sqrt(1.0 - k * k);
                     float lit = smoothstep(-dip, 0.12 - dip, sunHeight);
-                    // Ice scatters forward, so the deck brightens toward the sun. Unlit, it is a faint dark veil.
+                    // Ice scatters forward, so the deck brightens toward the sun.
                     float3 sunlit = Authored(_CloudColor) * lerp(1.0, 0.8, low) * (1.0 + 0.5 * pow(toward, 8.0));
-                    float3 cloudColor = lerp(c * 0.85, sunlit, lit);
+                    // At night the deck catches the scene's night light (opposite the sun, like a full moon) and reads as
+                    // a faint silver-blue veil against the stars instead of vanishing. Artistic: Phobos is far dimmer.
+                    float moonUp = smoothstep(0.05, 0.3, -sunHeight);
+                    float towardMoon = saturate(dot(dir, -toSun));
+                    float3 moonlit = float3(0.14, 0.15, 0.19) * moonUp * (1.0 + 0.6 * pow(towardMoon, 8.0));
+                    float3 cloudColor = lerp(max(c * 0.85, moonlit), sunlit, lit);
 
                     // Thinnest around noon (EMM EXI sees the aphelion clouds' daily minimum near noon; the 0.6 is an
                     // estimate), and seen through the extra dust below the deck: Beer-Lambert over 1/sin(elevation).

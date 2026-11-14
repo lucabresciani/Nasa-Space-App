@@ -109,7 +109,12 @@ namespace NasaSpaceApp.MarsGen
             Transform eye = FindEye(null);
             if (eye != null) Set(so, "follow", eye);
             Set(so, "devilTemplate", template);
-            Terrain ground = terrain != null ? terrain : Terrain.activeTerrain;
+            Terrain ground = terrain;
+            if (ground == null)
+            {
+                GameObject playable = GameObject.Find("Environment/Mars Terrain"); // not the backdrop terrain
+                ground = playable != null ? playable.GetComponent<Terrain>() : Terrain.activeTerrain;
+            }
             if (ground != null) Set(so, "terrain", ground);
             Apply(so, undo); // maxDevils keeps its value (default 4), so a tuned scene stays tuned
             return field;

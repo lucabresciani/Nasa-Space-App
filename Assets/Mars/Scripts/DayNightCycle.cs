@@ -77,8 +77,9 @@ namespace NasaSpaceApp
 
         // Baselines, not live values: weather scales these, and RenderSettings/the light are never read back.
         [Header("Clear-Weather Baseline")]
-        [SerializeField, Min(0f), Tooltip("Exponential-squared fog density in clear weather. 0.0009 gives ~2.2 km visibility (2% contrast at 1.978 / density). Dust multiplies it.")]
-        float fogDensity = 0.0009f;
+        // Clear Martian air sees tens of km: 2.1e-5 (exp²) leaves Mount Sharp's summit, ~48 km away, at ~36% contrast.
+        [SerializeField, Min(0f), Tooltip("Exponential-squared fog density in clear weather. 2.1e-5 keeps ~36% contrast at 48 km (Mount Sharp). Dust raises it (MarsWeather fog floor).")]
+        float fogDensity = 0.000021f;
         [SerializeField, Range(0f, 1f), Tooltip("Sun shadow strength in clear weather. Dust softens the shadows by scaling it.")]
         float shadowStrength = 0.92f;
 
@@ -281,7 +282,7 @@ namespace NasaSpaceApp
             RenderSettings.ambientEquatorColor = look.ambientEquator;
             RenderSettings.ambientGroundColor = look.ambientGround;
             RenderSettings.fogColor = look.horizon;
-            RenderSettings.fogDensity = fogDensity * m.fogScale;
+            RenderSettings.fogDensity = Mathf.Max(fogDensity * m.fogScale, m.fogFloor);
             RenderSettings.reflectionIntensity = look.reflections; // the baked reflection is a daytime sky
 
             // Sky colours go as raw vectors (gamma space): the shader blends them like the old baked sky did.

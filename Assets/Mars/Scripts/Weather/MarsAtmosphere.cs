@@ -17,6 +17,9 @@ namespace NasaSpaceApp
         public float extraDustDepth;
         /// <summary>Multiplies the clear-weather fog density (>= 1, so no state is clearer than today).</summary>
         public float fogScale;
+        /// <summary>Absolute lower bound for the fog density (exp²) from airborne dust; 0 in clear weather.
+        /// Independent of the clear baseline, so a thin long-range baseline still gets thick storms.</summary>
+        public float fogFloor;
         /// <summary>0..1: pulls the zenith colour toward the horizon colour (a flat, uniform dome).</summary>
         public float skyFlatten;
         /// <summary>Multiplies the sky and ambient colours (rgb only; alpha is ignored).</summary>
@@ -37,6 +40,7 @@ namespace NasaSpaceApp
         {
             extraDustDepth = 0f,
             fogScale = 1f,
+            fogFloor = 0f,
             skyFlatten = 0f,
             hazeTint = Color.white,
             ambientScale = 1f,
@@ -213,7 +217,7 @@ namespace NasaSpaceApp
 
         // Exact comparisons on purpose: Color and Vector2 == are approximate and would swallow slow glides.
         static bool Same(in AtmosphereModifiers a, in AtmosphereModifiers b) =>
-            a.extraDustDepth == b.extraDustDepth && a.fogScale == b.fogScale && a.skyFlatten == b.skyFlatten
+            a.extraDustDepth == b.extraDustDepth && a.fogScale == b.fogScale && a.fogFloor == b.fogFloor && a.skyFlatten == b.skyFlatten
             && a.hazeTint.r == b.hazeTint.r && a.hazeTint.g == b.hazeTint.g && a.hazeTint.b == b.hazeTint.b && a.hazeTint.a == b.hazeTint.a
             && a.ambientScale == b.ambientScale && a.ambientFlatten == b.ambientFlatten && a.shadowScale == b.shadowScale
             && a.reflectionScale == b.reflectionScale && a.unlitScale == b.unlitScale;

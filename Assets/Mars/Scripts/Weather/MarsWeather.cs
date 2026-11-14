@@ -277,7 +277,10 @@ namespace NasaSpaceApp
 
             AtmosphereModifiers m = AtmosphereModifiers.Identity;
             m.extraDustDepth = extra;
-            m.fogScale = Mathf.Max(1f, tau / tau0); // never clearer than today: the terrain edge stays hidden
+            m.fogScale = Mathf.Max(1f, tau / tau0); // never clearer than the clear baseline
+            // Dust near the ground sets its own visibility whatever the (long-range) clear baseline is. Art anchor,
+            // exp² density 0.0018 per unit of extra tau: ~1.4 km in Dusty Haze (tau 1.3), ~440 m in Dust Storm (tau 3).
+            m.fogFloor = 0.0018f * extra;
             m.skyFlatten = 0.85f * diffuse;
             m.hazeTint = Color.Lerp(Color.white, new Color(1f, 0.86f, 0.72f), diffuse);
             m.ambientScale = light;
