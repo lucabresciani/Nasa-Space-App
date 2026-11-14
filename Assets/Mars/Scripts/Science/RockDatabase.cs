@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 namespace NasaSpaceApp.Science
@@ -76,17 +77,34 @@ namespace NasaSpaceApp.Science
             }
         }
 
+        /// <summary>
+        /// Parses a mars-rock-db/1 JSON string.
+        /// Malformed JSON (syntax error, truncated file, root not an object) throws, so a broken file fails loudly.
+        /// In well-formed JSON, a value that does not fit its field (null where a number is expected, "n/a" in a
+        /// number, a list where a text is expected...) is skipped with a warning naming its path, so one bad edit
+        /// does not wipe every rock's data.
+        /// </summary>
         public static RockDatabase Parse(string json)
         {
-            var db = JsonConvert.DeserializeObject<RockDatabase>(json) ?? new RockDatabase();
+            // Syntax first: any error raised after this point is a value that does not fit its field.
+            JToken token = JToken.Parse(json);
+            if (token.Type != JTokenType.Object)
+                throw new JsonSerializationException("The rock database must be a JSON object (schema mars-rock-db/1).");
+
+            var settings = new JsonSerializerSettings
+            {
+                Error = (_, args) =>
+                {
+                    Debug.LogWarning($"[RockDatabase] Skipped '{args.ErrorContext.Path}': {args.ErrorContext.Error.Message}");
+                    args.ErrorContext.Handled = true;
+                },
+            };
+            var db = token.ToObject<RockDatabase>(JsonSerializer.Create(settings)) ?? new RockDatabase();
             if (!string.IsNullOrEmpty(db.SchemaId) && db.SchemaId != Schema)
                 Debug.LogWarning($"[RockDatabase] Expected schema '{Schema}', got '{db.SchemaId}'. Loading anyway.");
             if (db.OxideKeys == null || db.OxideKeys.Length == 0) db.OxideKeys = DefaultOxideKeys;
             return db.Indexed();
         }
-
-        public string ToJson() => JsonConvert.SerializeObject(this, Formatting.Indented,
-            new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
         RockDatabase Indexed()
         {
@@ -116,8 +134,18 @@ namespace NasaSpaceApp.Science
 
         static readonly List<RockAnalysis> None = new List<RockAnalysis>();
 
+        /// <summary>Every analysis of a class, including reference-only ones (<see cref="RockAnalysis.UseAsAnalog"/> false).</summary>
         public IReadOnlyList<RockAnalysis> AnalysesOf(string classId) =>
             classId != null && analysesByClass.TryGetValue(classId, out var list) ? list : None;
+
+        /// <summary>Analyses of a class that rocks may take as their analog.</summary>
+        public List<RockAnalysis> AnalogsOf(string classId)
+        {
+            var result = new List<RockAnalysis>();
+            foreach (RockAnalysis a in AnalysesOf(classId))
+                if (a.UseAsAnalog) result.Add(a);
+            return result;
+        }
     }
 
     /// <summary>A kind of rock, with class-level properties (ranges come from terrestrial or meteorite analogs).</summary>
@@ -131,56 +159,138 @@ namespace NasaSpaceApp.Science
         [JsonProperty("group")] public string Group;
         /// <summary>Noachian | Hesperian | Amazonian | unknown</summary>
         [JsonProperty("epoch")] public string Epoch;
-        [JsonProperty("ageGa")] public float[] AgeGa;
+        [JsonProperty("ageGa")] public ValueRange AgeGa;
         [JsonProperty("summary")] public string Summary;
         [JsonProperty("formation")] public string Formation;
         [JsonProperty("whySample")] public string WhySample;
-        [JsonProperty("densityGcm3")] public float[] DensityGcm3;
-        [JsonProperty("porosityPct")] public float[] PorosityPct;
-        [JsonProperty("mohs")] public float[] Mohs;
+        [JsonProperty("densityGcm3")] public ValueRange DensityGcm3;
+        [JsonProperty("porosityPct")] public ValueRange PorosityPct;
+        [JsonProperty("mohs")] public ValueRange Mohs;
         [JsonProperty("vnir")] public VnirSignature Vnir;
         /// <summary>Relative abundance on the generated plain (0-1). 0 keeps the class out of automatic assignment.</summary>
         [JsonProperty("abundance")] public float Abundance = 1f;
         /// <summary>Optional [min,max] rock size in meters this class may be assigned to (e.g. concretions are small).</summary>
-        [JsonProperty("sizeRangeM")] public float[] SizeRangeM;
+        [JsonProperty("sizeRangeM")] public ValueRange SizeRangeM;
         [JsonProperty("references")] public List<Reference> References;
+
+        /// <summary>True when the class has enough VNIR data to model a reflectance curve (an albedo).</summary>
+        public bool HasSpectrum => Vnir?.Albedo != null;
 
         /// <summary>
         /// Model VNIR reflectance (0-1) at <paramref name="micrometers"/>, built from the class's albedo, slope and
         /// Gaussian absorption bands. A schematic signature for display, not a measured spectrum.
+        /// Scaled so that Reflectance(0.75) equals the albedo exactly (the albedo is defined at 0.75 µm).
+        /// NaN when the class has no albedo; bands without a depth or width are listed but not drawn.
         /// </summary>
         public float Reflectance(float micrometers)
         {
-            if (Vnir == null) return 0f;
-            float r = Vnir.Albedo * (1f + Vnir.Slope * (micrometers - 0.75f));
-            if (Vnir.Bands != null)
+            if (!HasSpectrum) return float.NaN;
+            float continuum = Vnir.Albedo.Value * (1f + (Vnir.Slope ?? 0f) * (micrometers - 0.75f));
+            float anchor = BandProduct(0.75f);
+            return Mathf.Clamp01(anchor > 0f ? continuum * BandProduct(micrometers) / anchor : continuum);
+        }
+
+        float BandProduct(float micrometers)
+        {
+            float product = 1f;
+            if (Vnir?.Bands == null) return product;
+            foreach (SpectralBand b in Vnir.Bands)
             {
-                foreach (SpectralBand b in Vnir.Bands)
-                {
-                    float sigma = Mathf.Max(0.005f, b.Width / 2.3548f); // width is FWHM
-                    float x = (micrometers - b.Um) / sigma;
-                    r *= 1f - Mathf.Clamp01(b.Depth) * Mathf.Exp(-0.5f * x * x);
-                }
+                if (b?.Depth == null || b.Width == null) continue;
+                // Width is the continuum (shoulder-to-shoulder) span, so the band fits inside it at about ±3 sigma;
+                // then the dip at the band center matches the stated depth measured against that continuum.
+                float sigma = Mathf.Max(0.005f, b.Width.Value / 6f);
+                float x = (micrometers - b.Um) / sigma;
+                product *= 1f - Mathf.Clamp01(b.Depth.Value) * Mathf.Exp(-0.5f * x * x);
             }
-            return Mathf.Clamp01(r);
+            return product;
+        }
+    }
+
+    /// <summary>
+    /// A [min, max] pair from the JSON. Either bound may be null (unknown), e.g. an age known only as "older than 3.71 Ga".
+    /// </summary>
+    [JsonConverter(typeof(ValueRangeConverter))]
+    public readonly struct ValueRange
+    {
+        public readonly float? Min;
+        public readonly float? Max;
+
+        public ValueRange(float? min, float? max)
+        {
+            Min = min;
+            Max = max;
+        }
+
+        public bool HasValue => Min.HasValue || Max.HasValue;
+
+        /// <summary>Point at <paramref name="t"/> (0-1) inside the range; the known bound if only one is known; NaN if none.</summary>
+        public float Lerp(float t) =>
+            Min.HasValue && Max.HasValue ? Mathf.Lerp(Min.Value, Max.Value, t) : Min ?? Max ?? float.NaN;
+
+        /// <summary>True when <paramref name="value"/> is inside the known bounds (an unknown bound does not limit).</summary>
+        public bool Contains(float value) => (!Min.HasValue || value >= Min.Value) && (!Max.HasValue || value <= Max.Value);
+
+        public override string ToString() =>
+            !HasValue ? "unknown"
+            : Min.HasValue && Max.HasValue
+                ? (Mathf.Approximately(Min.Value, Max.Value) ? $"{Min.Value:0.###}" : $"{Min.Value:0.###}-{Max.Value:0.###}")
+                : Min.HasValue ? $">= {Min.Value:0.###}" : $"<= {Max.Value:0.###}";
+    }
+
+    /// <summary>Reads ranges written as [min, max], [value] or a bare number; null elements are unknown bounds.</summary>
+    sealed class ValueRangeConverter : JsonConverter<ValueRange>
+    {
+        public override ValueRange ReadJson(JsonReader reader, Type objectType, ValueRange existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonToken.Null:
+                    return default;
+                case JsonToken.Integer:
+                case JsonToken.Float:
+                    float v = Convert.ToSingle(reader.Value, System.Globalization.CultureInfo.InvariantCulture);
+                    return new ValueRange(v, v);
+                case JsonToken.StartArray:
+                    var values = serializer.Deserialize<List<float?>>(reader) ?? new List<float?>();
+                    float? min = values.Count > 0 ? values[0] : null;
+                    float? max = values.Count > 1 ? values[1] : min;
+                    return new ValueRange(min, max);
+                default:
+                    throw new JsonSerializationException($"Expected [min, max] or a number for a range, got {reader.TokenType}.");
+            }
+        }
+
+        public override void WriteJson(JsonWriter writer, ValueRange value, JsonSerializer serializer)
+        {
+            if (!value.HasValue)
+            {
+                writer.WriteNull();
+                return;
+            }
+            writer.WriteStartArray();
+            if (value.Min.HasValue) writer.WriteValue(value.Min.Value); else writer.WriteNull();
+            if (value.Max.HasValue) writer.WriteValue(value.Max.Value); else writer.WriteNull();
+            writer.WriteEndArray();
         }
     }
 
     public sealed class VnirSignature
     {
-        /// <summary>Reflectance at 0.75 µm.</summary>
-        [JsonProperty("albedo")] public float Albedo;
-        /// <summary>Relative reflectance change per µm around 0.75 µm (0 = flat).</summary>
-        [JsonProperty("slope")] public float Slope;
+        /// <summary>Reflectance at 0.75 µm; null when unknown.</summary>
+        [JsonProperty("albedo")] public float? Albedo;
+        /// <summary>Relative reflectance change per µm around 0.75 µm (null/0 = flat).</summary>
+        [JsonProperty("slope")] public float? Slope;
         [JsonProperty("bands")] public List<SpectralBand> Bands;
     }
 
     public sealed class SpectralBand
     {
         [JsonProperty("um")] public float Um;
-        [JsonProperty("depth")] public float Depth;
-        /// <summary>Full width at half maximum, µm.</summary>
-        [JsonProperty("width")] public float Width;
+        /// <summary>Fractional band depth 0-1; null when the source gives only the position.</summary>
+        [JsonProperty("depth")] public float? Depth;
+        /// <summary>Continuum span (shoulder-to-shoulder separation) in µm, not FWHM; null when unknown.</summary>
+        [JsonProperty("width")] public float? Width;
         [JsonProperty("label")] public string Label;
     }
 
@@ -201,10 +311,14 @@ namespace NasaSpaceApp.Science
         [JsonProperty("instrument")] public string Instrument;
         [JsonProperty("site")] public string Site;
         [JsonProperty("sol")] public int? Sol;
+        /// <summary>Elevation of the measured target in meters (MOLA datum), when the source gives it.</summary>
+        [JsonProperty("elevationM")] public float? ElevationM;
         /// <summary>Surface preparation: natural, brushed, RAT-abraded, abrasion patch...</summary>
         [JsonProperty("prep")] public string Prep;
         [JsonProperty("oxidesWtPct")] public Dictionary<string, float> OxidesWtPct;
         [JsonProperty("oxideSigmaWtPct")] public Dictionary<string, float> OxideSigmaWtPct;
+        /// <summary>How many sigma the published uncertainties are (APXS tables are usually 2). Divide by it for 1-sigma.</summary>
+        [JsonProperty("sigmaLevel")] public float SigmaLevel = 1f;
         [JsonProperty("tracesPpm")] public Dictionary<string, float> TracesPpm;
         [JsonProperty("metalsWtPct")] public Dictionary<string, float> MetalsWtPct;
         [JsonProperty("mineralsWtPct")] public Dictionary<string, float> MineralsWtPct;
@@ -214,5 +328,33 @@ namespace NasaSpaceApp.Science
         /// <summary>high | medium | low: how directly the values were checked against the source table.</summary>
         [JsonProperty("confidence")] public string Confidence;
         [JsonProperty("notes")] public string Notes;
+        /// <summary>False keeps the analysis as reference only (e.g. a soil): automatic assignment never gives it to a boulder.</summary>
+        [JsonProperty("useAsAnalog")] public bool UseAsAnalog = true;
+        /// <summary>Provenance block; only the parts the game uses are mapped, the rest is ignored.</summary>
+        [JsonProperty("ext")] public AnalysisExt Ext;
+
+        /// <summary>Published uncertainty of a trace element in ppm (at <see cref="SigmaLevel"/>), or null.</summary>
+        public float? TraceSigma(string key) => Ext?.TraceSigmaPpm != null && Ext.TraceSigmaPpm.TryGetValue(key, out float s) ? s : (float?)null;
+
+        /// <summary>Published uncertainty of a metal in wt% (at <see cref="SigmaLevel"/>), or null.</summary>
+        public float? MetalSigma(string key) => Ext?.MetalsSigmaWtPct != null && Ext.MetalsSigmaWtPct.TryGetValue(key, out float s) ? s : (float?)null;
+
+        /// <summary>
+        /// True when this value is an upper limit / non-detection: flagged in ext.detectionFlags, reported as 0, or not
+        /// larger than its own published uncertainty (the same rule the curated flags follow, so imported rows get it too).
+        /// </summary>
+        public bool IsUpperLimit(string key, float value, float? publishedSigma) =>
+            (Ext?.DetectionFlags != null && Ext.DetectionFlags.ContainsKey(key))
+            || value <= 0f
+            || (publishedSigma.HasValue && value <= publishedSigma.Value);
+    }
+
+    /// <summary>The parts of an analysis' "ext" provenance block the game reads.</summary>
+    public sealed class AnalysisExt
+    {
+        [JsonProperty("traceSigmaPpm")] public Dictionary<string, float> TraceSigmaPpm;
+        [JsonProperty("metalsSigmaWtPct")] public Dictionary<string, float> MetalsSigmaWtPct;
+        /// <summary>Element/oxide → note, for values at or below their uncertainty (upper limits, non-detections).</summary>
+        [JsonProperty("detectionFlags")] public Dictionary<string, string> DetectionFlags;
     }
 }

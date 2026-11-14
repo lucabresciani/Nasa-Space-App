@@ -29,7 +29,7 @@ namespace NasaSpaceApp.MarsGen
 
         public struct Result
         {
-            public int rocks, triggerColliders;
+            public int rocks, triggerColliders, locked;
             public Dictionary<string, int> perClass;
         }
 
@@ -70,24 +70,32 @@ namespace NasaSpaceApp.MarsGen
 
             RockDatabase.ReloadDefault();
             RockDatabase db = RockDatabase.Default;
-            List<RockClass> classes = db.Classes.Where(c => c.Abundance > 0f && db.AnalysesOf(c.Id).Count > 0).ToList();
+            List<RockClass> classes = db.Classes.Where(c => c.Abundance > 0f && db.AnalogsOf(c.Id).Count > 0).ToList();
             if (classes.Count == 0)
             {
-                Debug.LogError("[Mars] The rock database has no class with abundance > 0 and at least one analysis; rocks left without data.");
+                Debug.LogError("[Mars] The rock database has no class with abundance > 0 and at least one analog analysis; rocks left without data.");
                 return result;
             }
             List<MarsTerrain.Crater> bigCraters = craters?.Where(c => c.radius >= 15f).ToList() ?? new List<MarsTerrain.Crater>();
 
             var volumes = new Dictionary<Mesh, float>();
             var weights = new float[classes.Count];
-            int index = 0;
+
+            // Field ids are permanent once given: re-running keeps them, new rocks continue the numbering.
+            // A duplicated rock (Ctrl+D copies the id) keeps the id on its first occurrence and the copy gets a new one.
+            int nextFieldNumber = 1;
+            var takenIds = new HashSet<string>();
+            foreach (Transform rock in rocksRoot)
+            {
+                var existing = rock.GetComponent<RockSample>();
+                if (existing != null && TryFieldNumber(existing.FieldId, out int number)) nextFieldNumber = Mathf.Max(nextFieldNumber, number + 1);
+            }
 
             foreach (Transform rock in rocksRoot)
             {
                 var filter = rock.GetComponent<MeshFilter>();
                 Mesh mesh = filter != null ? filter.sharedMesh : null;
                 if (mesh == null) continue;
-                index++;
 
                 Vector3 p = rock.position;
                 Vector3 size = Vector3.Scale(mesh.bounds.size, Abs(rock.lossyScale));
@@ -109,33 +117,70 @@ namespace NasaSpaceApp.MarsGen
                     inCrater = Mathf.Max(inCrater, 1f - d);
                 }
 
-                RockClass chosen = Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, respectSize: true)
-                                   ?? Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, respectSize: false);
-                IReadOnlyList<RockAnalysis> analyses = db.AnalysesOf(chosen.Id);
-                RockAnalysis analysis = analyses[rng.Next(analyses.Count)];
-
                 var sample = rock.GetComponent<RockSample>();
                 if (sample == null) sample = undo ? Undo.AddComponent<RockSample>(rock.gameObject) : rock.gameObject.AddComponent<RockSample>();
                 else if (undo) Undo.RecordObject(sample, "Assign Rock Science Data");
-                sample.Configure($"MR-{index:0000}", chosen.Id, analysis.Id, rockSeed, volume, size);
+                string fieldId = !string.IsNullOrEmpty(sample.FieldId) && takenIds.Add(sample.FieldId)
+                    ? sample.FieldId
+                    : $"MR-{nextFieldNumber++:0000}";
+                takenIds.Add(fieldId);
+
+                string classId;
+                if (sample.Locked)
+                {
+                    // Hand-set science data stays; only geometry-derived facts are refreshed.
+                    sample.SetGeometry(fieldId, volume, size);
+                    classId = sample.ClassId;
+                    result.locked++;
+                }
+                else
+                {
+                    RockClass chosen = Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, respectSize: true)
+                                       ?? Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, respectSize: false);
+                    List<RockAnalysis> analogs = db.AnalogsOf(chosen.Id);
+                    RockAnalysis analysis = analogs[rng.Next(analogs.Count)];
+                    sample.Configure(fieldId, chosen.Id, analysis.Id, rockSeed, volume, size);
+                    classId = chosen.Id;
+                }
                 EditorUtility.SetDirty(sample);
 
-                // The scene builder only gives colliders to rocks you could trip on; the rest get a
-                // trigger so the scanner ray can still hit them while the player walks over them.
-                if (rock.GetComponent<Collider>() == null)
-                {
-                    var collider = undo ? Undo.AddComponent<MeshCollider>(rock.gameObject) : rock.gameObject.AddComponent<MeshCollider>();
-                    collider.sharedMesh = mesh;
-                    collider.convex = true;
-                    collider.isTrigger = true;
-                    result.triggerColliders++;
-                }
-
+                result.triggerColliders += EnsureScanCollider(rock.gameObject, mesh, undo);
                 result.rocks++;
-                result.perClass.TryGetValue(chosen.Id, out int n);
-                result.perClass[chosen.Id] = n + 1;
+                result.perClass.TryGetValue(classId ?? "?", out int n);
+                result.perClass[classId ?? "?"] = n + 1;
             }
             return result;
+        }
+
+        /// <summary>
+        /// The scene builder only gives colliders to rocks you could trip on; the rest get a trigger box
+        /// fitted to the mesh, so the scanner ray can hit them while the player walks over them.
+        /// (A convex MeshCollider would exceed PhysX's 255-polygon hull limit on these meshes and fall
+        /// back to a partial hull.) Earlier trigger MeshColliders from this tool are replaced.
+        /// Returns 1 if a collider was added.
+        /// </summary>
+        static int EnsureScanCollider(GameObject rock, Mesh mesh, bool undo)
+        {
+            Collider existing = rock.GetComponent<Collider>();
+            if (existing is MeshCollider oldTrigger && oldTrigger.isTrigger)
+            {
+                if (undo) Undo.DestroyObjectImmediate(oldTrigger);
+                else Object.DestroyImmediate(oldTrigger);
+                existing = null;
+            }
+            if (existing != null) return 0;
+
+            var box = undo ? Undo.AddComponent<BoxCollider>(rock) : rock.AddComponent<BoxCollider>();
+            box.center = mesh.bounds.center;
+            box.size = mesh.bounds.size;
+            box.isTrigger = true;
+            return 1;
+        }
+
+        static bool TryFieldNumber(string fieldId, out int number)
+        {
+            number = 0;
+            return !string.IsNullOrEmpty(fieldId) && fieldId.StartsWith("MR-") && int.TryParse(fieldId.Substring(3), out number);
         }
 
         static RockClass Pick(List<RockClass> classes, float[] weights, System.Random rng, Vector3 p, float size,
@@ -171,7 +216,7 @@ namespace NasaSpaceApp.MarsGen
         }
 
         static bool FitsSize(RockClass c, float size) =>
-            c.SizeRangeM == null || c.SizeRangeM.Length < 2 || (size >= c.SizeRangeM[0] && size <= c.SizeRangeM[1]);
+            !c.SizeRangeM.HasValue || c.SizeRangeM.Contains(size);
 
         /// <summary>Puts a <see cref="RockScanner"/> (and the temporary debug readout) on the player's camera.</summary>
         public static void SetupScanner(GameObject player, bool undo)
@@ -183,21 +228,22 @@ namespace NasaSpaceApp.MarsGen
                 return;
             }
             GameObject go = cam.gameObject;
-            if (go.GetComponent<RockScanner>() == null)
+            if (go.GetComponent<RockScanner>() != null) return; // already set up: never re-add a removed debug readout
+            if (undo)
             {
-                if (undo) Undo.AddComponent<RockScanner>(go);
-                else go.AddComponent<RockScanner>();
+                Undo.AddComponent<RockScanner>(go);
+                Undo.AddComponent<RockScanDebugOverlay>(go);
             }
-            if (go.GetComponent<RockScanDebugOverlay>() == null)
+            else
             {
-                if (undo) Undo.AddComponent<RockScanDebugOverlay>(go);
-                else go.AddComponent<RockScanDebugOverlay>();
+                go.AddComponent<RockScanner>();
+                go.AddComponent<RockScanDebugOverlay>();
             }
         }
 
         public static string Describe(Result r)
         {
-            var sb = new StringBuilder($"[Mars] Rock science data on {r.rocks} rocks ({r.triggerColliders} new trigger colliders): ");
+            var sb = new StringBuilder($"[Mars] Rock science data on {r.rocks} rocks ({r.locked} locked kept as set, {r.triggerColliders} new trigger colliders): ");
             sb.Append(string.Join(", ", r.perClass.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value}")));
             return sb.ToString();
         }
@@ -221,7 +267,9 @@ namespace NasaSpaceApp.MarsGen
             static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
             {
                 string file = $"/Resources/{RockDatabase.ResourcePath}.json";
-                if (imported.Concat(deleted).Concat(moved).Any(p => p.EndsWith(file))) RockDatabase.ReloadDefault();
+                if (!imported.Concat(deleted).Concat(moved).Any(p => p.EndsWith(file))) return;
+                RockDatabase.ReloadDefault();
+                _ = RockDatabase.Default; // parse now, so a broken edit is reported right after saving the JSON
             }
         }
 

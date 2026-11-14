@@ -28,6 +28,8 @@ namespace NasaSpaceApp.Science
         LayerMask layers = Physics.DefaultRaycastLayers;
         [SerializeField, Tooltip("Input action that triggers a scan of the current target.")]
         string scanActionPath = "Player/Interact";
+        [SerializeField, Tooltip("Colliders under this transform (the player's own body) never block the ray. Defaults to the CharacterController above the camera.")]
+        Transform ignoreUnder;
 
         /// <summary>The rock under the crosshair, or null.</summary>
         public RockSample Target { get; private set; }
@@ -37,9 +39,11 @@ namespace NasaSpaceApp.Science
         public RaycastHit TargetHit { get; private set; }
         public float Range { get => range; set => range = Mathf.Max(0.1f, value); }
 
-        /// <summary>0-1 progress of the scan action's hold interaction on the current target (0 when idle).</summary>
+        /// <summary>0-1 progress of the scan action's hold on the current target (0 when idle or after the scan fired).</summary>
         public float ScanHoldProgress =>
-            Target != null && scanAction != null && scanAction.IsInProgress() ? scanAction.GetTimeoutCompletionPercentage() : 0f;
+            holdTarget != null && holdTarget == Target && scanAction != null && scanAction.phase == InputActionPhase.Started
+                ? scanAction.GetTimeoutCompletionPercentage()
+                : 0f;
 
         /// <summary>Every completed scan, oldest first.</summary>
         public IReadOnlyList<RockScanResult> ScanLog => scanLog;
@@ -55,11 +59,18 @@ namespace NasaSpaceApp.Science
         readonly List<RockScanResult> scanLog = new List<RockScanResult>();
         readonly HashSet<RockSample> scannedRocks = new HashSet<RockSample>();
         InputAction scanAction;
+        RockSample holdTarget; // rock the current press started on; looking away cancels the scan
+        readonly RaycastHit[] hits = new RaycastHit[32];
 
         void Awake()
         {
             if (viewCamera == null) viewCamera = GetComponent<Camera>();
             if (viewCamera == null) viewCamera = Camera.main;
+            if (ignoreUnder == null)
+            {
+                var body = GetComponentInParent<CharacterController>();
+                ignoreUnder = body != null ? body.transform : transform;
+            }
             if (!string.IsNullOrEmpty(scanActionPath)) scanAction = InputSystem.actions?.FindAction(scanActionPath);
             if (scanAction == null && !string.IsNullOrEmpty(scanActionPath))
                 Debug.LogWarning($"[RockScanner] Input action '{scanActionPath}' not found; scanning only via ScanTarget().", this);
@@ -72,7 +83,15 @@ namespace NasaSpaceApp.Science
         void Update()
         {
             UpdateTarget();
-            if (Target != null && scanAction != null && scanAction.WasPerformedThisFrame()) ScanTarget();
+            if (scanAction == null) return;
+            // The scan belongs to the rock the press started on: switching target mid-hold cancels it.
+            if (scanAction.WasPressedThisFrame()) holdTarget = Target;
+            else if (holdTarget != Target) holdTarget = null;
+            if (holdTarget != null && scanAction.WasPerformedThisFrame())
+            {
+                ScanTarget();
+                holdTarget = null; // one scan per press
+            }
         }
 
         void UpdateTarget()
@@ -85,14 +104,17 @@ namespace NasaSpaceApp.Science
             Transform cam = viewCamera.transform;
             var ray = new Ray(cam.position, cam.forward);
             // Small rocks carry trigger colliders (so the player does not trip on pebbles): include triggers.
-            if (Physics.Raycast(ray, out RaycastHit hit, range, layers, QueryTriggerInteraction.Collide))
+            // RaycastNonAlloc + skipping our own colliders: looking down at a pebble by your feet, the ray would
+            // otherwise hit the player's CharacterController first.
+            int count = Physics.RaycastNonAlloc(ray, hits, range, layers, QueryTriggerInteraction.Collide);
+            int nearest = -1;
+            for (int i = 0; i < count; i++)
             {
-                SetTarget(hit.collider.GetComponentInParent<RockSample>(), hit);
+                if (hits[i].collider.transform.IsChildOf(ignoreUnder)) continue;
+                if (nearest < 0 || hits[i].distance < hits[nearest].distance) nearest = i;
             }
-            else
-            {
-                SetTarget(null, default);
-            }
+            if (nearest >= 0) SetTarget(hits[nearest].collider.GetComponentInParent<RockSample>(), hits[nearest]);
+            else SetTarget(null, default);
         }
 
         void SetTarget(RockSample rock, RaycastHit hit)

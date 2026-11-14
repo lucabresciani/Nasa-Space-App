@@ -11,6 +11,7 @@ namespace NasaSpaceApp.Science
     ///
     /// Filled in by Tools > Mars > Science > Assign Rock Data (or the scene builder); every field can
     /// also be edited by hand, e.g. to point a landmark rock at a specific analysis with variation 0.
+    /// Tick <see cref="Locked"/> to keep such edits when the assignment runs again.
     /// </summary>
     [DisallowMultipleComponent]
     public class RockSample : MonoBehaviour
@@ -21,20 +22,24 @@ namespace NasaSpaceApp.Science
         string classId;
         [SerializeField, Tooltip("RockAnalysis id this rock is an analog of. Falls back to the first analysis of the class if missing.")]
         string analysisId;
-        [SerializeField, Range(0f, 3f), Tooltip("Per-rock spread of the oxide values, in units of the analysis' analytical uncertainty. 0 = exact published values.")]
+        [SerializeField, Range(0f, 3f), Tooltip("Per-rock spread of the values, in units of the analysis' published 1-sigma uncertainty. 0 = exact published values. Values without a published uncertainty never vary.")]
         float variation = 1f;
         [SerializeField, Tooltip("Seed for the per-rock variation.")]
         int seed;
         [SerializeField, Min(0f), Tooltip("Whole-rock volume in m³ (including the buried part).")]
         float volumeM3;
-        [SerializeField, Tooltip("World-space bounding size of the rock in meters.")]
+        [SerializeField, Tooltip("Size of the rock along its own axes, in meters.")]
         Vector3 sizeM;
+        [SerializeField, Tooltip("Keep this rock's hand-set class, analysis and variation when Tools > Mars > Science > Assign Rock Data runs again.")]
+        bool locked;
 
         public string FieldId => fieldId;
         public string ClassId => classId;
         public string AnalysisId => analysisId;
+        public float Variation => variation;
         public float VolumeM3 => volumeM3;
         public Vector3 SizeM => sizeM;
+        public bool Locked => locked;
 
         RockReading reading;
         static int readingsVersion;
@@ -53,6 +58,15 @@ namespace NasaSpaceApp.Science
             this.volumeM3 = volumeM3;
             this.sizeM = sizeM;
             this.variation = variation;
+            reading = null;
+        }
+
+        /// <summary>Updates only the geometry-derived facts (used for locked rocks, whose science data is hand-set).</summary>
+        public void SetGeometry(string fieldId, float volumeM3, Vector3 sizeM)
+        {
+            this.fieldId = fieldId;
+            this.volumeM3 = volumeM3;
+            this.sizeM = sizeM;
             reading = null;
         }
 
@@ -76,38 +90,51 @@ namespace NasaSpaceApp.Science
             return result;
         }
 
-        internal float Variation => variation;
         internal int Seed => seed;
 
         void OnValidate() => reading = null;
     }
 
-    /// <summary>A value with its key and 1-sigma uncertainty (0 when unknown).</summary>
+    /// <summary>A value with its key and published 1-sigma uncertainty (0 when the source gives none).</summary>
     public readonly struct Measurement
     {
         public readonly string Key;
         public readonly float Value;
+        /// <summary>Published 1-sigma uncertainty; 0 when the source publishes none.</summary>
         public readonly float Sigma;
+        /// <summary>Upper limit / not detected (value not above its own uncertainty): show <see cref="UpperBound"/> or "n.d.", not a precise number.</summary>
+        public readonly bool IsUpperLimit;
 
-        public Measurement(string key, float value, float sigma = 0f)
+        public Measurement(string key, float value, float sigma = 0f, bool isUpperLimit = false)
         {
             Key = key;
             Value = value;
             Sigma = sigma;
+            IsUpperLimit = isUpperLimit;
         }
 
-        public override string ToString() => Sigma > 0f ? $"{Key} {Value:0.##} ± {Sigma:0.##}" : $"{Key} {Value:0.##}";
+        /// <summary>For an upper limit, the 2-sigma bound the true value lies below (value + 2σ); 0 when nothing is known.</summary>
+        public float UpperBound => Value + 2f * Sigma;
+
+        public override string ToString() =>
+            IsUpperLimit ? (UpperBound > 0f ? $"{Key} < {UpperBound:0.##}" : $"{Key} n.d.")
+            : Sigma > 0f ? $"{Key} {Value:0.##} ± {Sigma:0.##}"
+            : $"{Key} {Value:0.##}";
     }
 
     /// <summary>
     /// The science values of one rock: its class, the real analysis it is an analog of, and the
-    /// rock's own composition (the analog's values with a small seeded spread inside analytical
-    /// uncertainty) plus derived physical properties. Immutable; obtained from <see cref="RockSample.Read()"/>.
+    /// rock's own composition (the analog's values with a small seeded spread inside their published
+    /// analytical uncertainty) plus derived physical properties. Immutable; obtained from <see cref="RockSample.Read()"/>.
+    ///
+    /// Variation rules: a value varies only if the source publishes its uncertainty (converted to 1-sigma
+    /// with <see cref="RockAnalysis.SigmaLevel"/>); upper limits / non-detections never vary; oxides, and metals
+    /// when there are two or more, are then rescaled to the published total so a composition never exceeds it.
     /// </summary>
     public sealed class RockReading
     {
-        /// <summary>Relative 1-sigma used when the source gives no uncertainty for an oxide (typical APXS precision).</summary>
-        public const float DefaultRelativeSigma = 0.03f;
+        /// <summary>A varied value never goes below this fraction of the published one (large-σ values would otherwise hit 0).</summary>
+        const float MinFractionOfPublished = 0.1f;
 
         public string FieldId { get; private set; }
         public RockClass Class { get; private set; }
@@ -116,25 +143,28 @@ namespace NasaSpaceApp.Science
 
         /// <summary>Major-element oxides, wt%, in the database's display order. Only oxides the analog reports.</summary>
         public IReadOnlyList<Measurement> Oxides { get; private set; }
-        /// <summary>Sum of <see cref="Oxides"/>, wt%. Below 100 when volatiles, metals or unreported elements are present.</summary>
+        /// <summary>Sum of <see cref="Oxides"/>, wt% (equals the analog's published total). Below 100 when volatiles, metals or unreported elements are present.</summary>
         public float OxideTotal { get; private set; }
-        /// <summary>Trace elements, ppm (analog values with the same seeded spread).</summary>
+        /// <summary>Trace elements, ppm.</summary>
         public IReadOnlyList<Measurement> Traces { get; private set; }
         /// <summary>Metal abundances, wt% (iron meteorites).</summary>
         public IReadOnlyList<Measurement> Metals { get; private set; }
         /// <summary>Mineral abundances, wt%, exactly as measured on the analog (empty when not measured).</summary>
         public IReadOnlyList<Measurement> Minerals { get; private set; }
 
+        /// <summary>Bulk density in g/cm³ picked inside the class range; NaN when the class has none.</summary>
         public float DensityGcm3 { get; private set; }
         public float VolumeM3 { get; private set; }
+        /// <summary>Estimated whole-rock mass (volume × density); NaN when the density is unknown.</summary>
         public float MassKg { get; private set; }
+        /// <summary>Size of the rock along its own axes, in meters.</summary>
         public Vector3 SizeM { get; private set; }
 
-        /// <summary>True when the oxide values were varied away from the published analysis.</summary>
+        /// <summary>True when at least one value differs from the published analysis.</summary>
         public bool IsVaried { get; private set; }
 
-        /// <summary>Model VNIR reflectance of the rock's class at a wavelength in µm (see <see cref="RockClass.Reflectance"/>).</summary>
-        public float Reflectance(float micrometers) => Class?.Reflectance(micrometers) ?? 0f;
+        /// <summary>Model VNIR reflectance of the rock's class at a wavelength in µm (see <see cref="RockClass.Reflectance"/>); NaN when unknown.</summary>
+        public float Reflectance(float micrometers) => Class?.Reflectance(micrometers) ?? float.NaN;
 
         /// <summary>Value of one oxide in wt%, or NaN if not reported.</summary>
         public float Oxide(string key)
@@ -152,45 +182,41 @@ namespace NasaSpaceApp.Science
             RockClass rockClass = db.GetClass(analog?.ClassId ?? rock.ClassId) ?? db.GetClass(rock.ClassId);
             if (analog == null && rockClass != null)
             {
-                IReadOnlyList<RockAnalysis> ofClass = db.AnalysesOf(rockClass.Id);
-                if (ofClass.Count > 0) analog = ofClass[0];
+                List<RockAnalysis> analogs = db.AnalogsOf(rockClass.Id);
+                IReadOnlyList<RockAnalysis> all = db.AnalysesOf(rockClass.Id);
+                analog = analogs.Count > 0 ? analogs[0] : all.Count > 0 ? all[0] : null;
             }
             if (rockClass == null && analog == null) return null;
 
-            var rng = new System.Random(rock.Seed);
+            // Own stream, decorrelated from the one the assignment tool used to pick class and analysis.
+            var rng = new System.Random(unchecked(rock.Seed * -1640531535 + 2135587861));
             float spread = Mathf.Max(0f, rock.Variation);
 
-            var oxides = new List<Measurement>();
-            float total = 0f, publishedTotal = 0f;
+            var oxideValues = new List<KeyValuePair<string, float>>();
             if (analog?.OxidesWtPct != null)
             {
                 // Display order first, then any extra keys the source reported.
-                var keys = new List<string>(db.OxideKeys);
-                foreach (string key in analog.OxidesWtPct.Keys)
-                    if (!keys.Exists(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase))) keys.Add(key);
-
-                foreach (string key in keys)
-                {
-                    if (!TryGet(analog.OxidesWtPct, key, out float value)) continue;
-                    float sigma = TryGet(analog.OxideSigmaWtPct, key, out float s) ? s : value * DefaultRelativeSigma;
-                    float varied = Mathf.Max(0f, value + Gaussian(rng) * sigma * spread);
-                    oxides.Add(new Measurement(key, varied, sigma));
-                    total += varied;
-                    publishedTotal += value;
-                }
-                // Keep the analytical total of the source: spread redistributes, it does not invent mass.
-                if (total > 0f && publishedTotal > 0f && spread > 0f)
-                {
-                    float k = publishedTotal / total;
-                    for (int i = 0; i < oxides.Count; i++)
-                        oxides[i] = new Measurement(oxides[i].Key, oxides[i].Value * k, oxides[i].Sigma);
-                    total = publishedTotal;
-                }
+                foreach (string key in db.OxideKeys)
+                    if (TryGet(analog.OxidesWtPct, key, out float v)) oxideValues.Add(new KeyValuePair<string, float>(key, v));
+                foreach (KeyValuePair<string, float> kv in analog.OxidesWtPct)
+                    if (!oxideValues.Exists(o => string.Equals(o.Key, kv.Key, StringComparison.OrdinalIgnoreCase))) oxideValues.Add(kv);
             }
 
-            float density = rockClass?.DensityGcm3 is { Length: >= 2 } d
-                ? Mathf.Lerp(d[0], d[1], (float)rng.NextDouble())
-                : rockClass?.DensityGcm3 is { Length: 1 } d1 ? d1[0] : 0f;
+            bool varied = false;
+            List<Measurement> oxides = Vary(oxideValues, k => TryGet(analog?.OxideSigmaWtPct, k, out float s) ? s : (float?)null,
+                                            analog, rng, spread, closeToTotal: true, ref varied);
+            List<Measurement> traces = Vary(analog?.TracesPpm, k => analog.TraceSigma(k), analog, rng, spread, closeToTotal: false, ref varied);
+            List<Measurement> metals = Vary(analog?.MetalsWtPct, k => analog.MetalSigma(k), analog, rng, spread,
+                                            closeToTotal: analog?.MetalsWtPct != null && analog.MetalsWtPct.Count >= 2, ref varied);
+            var minerals = new List<Measurement>();
+            if (analog?.MineralsWtPct != null)
+                foreach (KeyValuePair<string, float> kv in analog.MineralsWtPct) minerals.Add(new Measurement(kv.Key, kv.Value));
+
+            float total = 0f;
+            foreach (Measurement m in oxides) total += m.Value;
+
+            // NaN when the class has no published density: mass stays unknown rather than invented.
+            float density = rockClass != null ? rockClass.DensityGcm3.Lerp((float)rng.NextDouble()) : float.NaN;
 
             return new RockReading
             {
@@ -199,26 +225,54 @@ namespace NasaSpaceApp.Science
                 Analog = analog,
                 Oxides = oxides,
                 OxideTotal = total,
-                Traces = Vary(analog?.TracesPpm, rng, spread),
-                Metals = Vary(analog?.MetalsWtPct, rng, spread),
-                Minerals = Vary(analog?.MineralsWtPct, rng, 0f),
+                Traces = traces,
+                Metals = metals,
+                Minerals = minerals,
                 DensityGcm3 = density,
                 VolumeM3 = rock.VolumeM3,
                 MassKg = rock.VolumeM3 * density * 1000f,
                 SizeM = rock.SizeM,
-                IsVaried = spread > 0f && oxides.Count > 0,
+                IsVaried = varied,
             };
         }
 
-        static List<Measurement> Vary(Dictionary<string, float> source, System.Random rng, float spread)
+        /// <summary>
+        /// Varies each value by its published 1-sigma (× <paramref name="spread"/>). Values with no published
+        /// uncertainty, and upper limits, stay exactly as published. With <paramref name="closeToTotal"/>, the
+        /// varied values are rescaled so the sum equals the published sum.
+        /// </summary>
+        static List<Measurement> Vary(IEnumerable<KeyValuePair<string, float>> source, Func<string, float?> publishedSigma,
+                                      RockAnalysis analog, System.Random rng, float spread, bool closeToTotal, ref bool anyVaried)
         {
             var list = new List<Measurement>();
-            if (source == null) return list;
+            if (source == null || analog == null) return list;
+            float level = analog.SigmaLevel > 0f ? analog.SigmaLevel : 1f;
+
+            float publishedSum = 0f, fixedSum = 0f, variedSum = 0f;
+            var canVary = new List<bool>();
             foreach (KeyValuePair<string, float> kv in source)
             {
-                float sigma = kv.Value * DefaultRelativeSigma;
-                list.Add(new Measurement(kv.Key, Mathf.Max(0f, kv.Value + Gaussian(rng) * sigma * spread), spread > 0f ? sigma : 0f));
+                float? s = publishedSigma(kv.Key);
+                float sigma = s.HasValue && s.Value > 0f ? s.Value / level : 0f;
+                bool upper = analog.IsUpperLimit(kv.Key, kv.Value, s);
+                float g = Gaussian(rng); // always drawn, so editing one flag does not reshuffle every other value
+                bool varies = !upper && sigma > 0f && spread > 0f;
+                // A detected value never drops to (or near) zero, which would read like a non-detection.
+                float value = varies ? Mathf.Max(kv.Value * MinFractionOfPublished, kv.Value + g * sigma * spread) : kv.Value;
+                list.Add(new Measurement(kv.Key, value, sigma, upper));
+                canVary.Add(varies);
+                publishedSum += kv.Value;
+                if (varies) variedSum += value; else fixedSum += kv.Value;
             }
+
+            float target = publishedSum - fixedSum;
+            if (closeToTotal && variedSum > 0f && target > 0f)
+            {
+                float k = target / variedSum;
+                for (int i = 0; i < list.Count; i++)
+                    if (canVary[i]) list[i] = new Measurement(list[i].Key, list[i].Value * k, list[i].Sigma, list[i].IsUpperLimit);
+            }
+            if (canVary.Contains(true)) anyVaried = true;
             return list;
         }
 

@@ -16,7 +16,7 @@ A NASA Space Apps project: a walkable, procedurally generated Mars landscape (2 
 
 ## Positioning
 
-Readings are grounded in real public NASA rover measurements (APXS/PIXL oxide chemistry, CheMin mineralogy, orbital VNIR spectra) instead of invented numbers; each in-game rock is an analog of a real measured Mars target.
+Readings are grounded in real public NASA rover measurements from the Mount Sharp region of Gale crater (Curiosity APXS chemistry of drilled and brushed rock, CheMin mineralogy, ChemCam meteorite data) instead of invented numbers; each in-game rock is an analog of a real measured Mount Sharp target. Sources are listed in DATA_SOURCES.md.
 
 ## Operating Context
 
@@ -32,7 +32,7 @@ Readings are grounded in real public NASA rover measurements (APXS/PIXL oxide ch
 
 ## Evidence on Hand
 
-- No real per-rock dataset yet. Any values shipped now are analog values taken from published rover measurements, cited per sample, and must be labeled as analogs, never as measurements of the in-game rocks.
+- Rock data: Mount Sharp analog database (`Assets/Mars/Resources/MarsRockDatabase.json`, 32 Curiosity analyses from the PDS MSL APXS supplements). Values are analogs of real measured targets, cited per sample, never measurements of the in-game rocks. Class physical/spectral properties are proxies or unknown where not measured on the unit.
 
 ## Product Principles
 

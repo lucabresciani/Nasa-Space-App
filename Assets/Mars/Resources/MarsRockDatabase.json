@@ -1,0 +1,2816 @@
+{
+  "schema": "mars-rock-db/1",
+  "title": "Mount Sharp rock analog database",
+  "notes": "Rock analogs from Curiosity's traverse of Mount Sharp (Aeolis Mons), Gale crater. Every number in 'samples' is a published APXS measurement copied unchanged from the PDS Geosciences Node MSL APXS supplements (drill tailings, drill fines and brushed rock), plus Curiosity CheMin mineralogy for Buckskin and ChemCam nickel for two iron meteorites found on Mount Sharp. Classes follow the Mount Sharp stratigraphy given in those tables. In-game boulders are analogs, not new measurements: each boulder takes one reference sample from its class and adds a small random variation within that sample's published analytical uncertainty (converted to 1-sigma with sigmaLevel, clamped at >= 0; values with no published uncertainty and upper limits are not varied; oxides, and metals when two or more are given, are rescaled to the sample's published total). Class physical/spectral properties marked in ext.proxyFrom come from a similar lithology and are not measured on that unit; null means unknown. FeO is total iron as FeO; oxides are wt%, traces ppm, metals wt%.",
+  "oxideKeys": [
+    "SiO2",
+    "TiO2",
+    "Al2O3",
+    "Cr2O3",
+    "FeO",
+    "MnO",
+    "MgO",
+    "CaO",
+    "Na2O",
+    "K2O",
+    "P2O5",
+    "SO3",
+    "Cl"
+  ],
+  "classes": [
+    {
+      "id": "murray-mudstone",
+      "name": "Murray formation mudstone (lower Mount Sharp)",
+      "unitSymbol": "Mm",
+      "group": "sedimentary",
+      "epoch": "Hesperian",
+      "ageGa": [
+        3.1,
+        3.8
+      ],
+      "summary": "Finely laminated lake mudstone that makes up the lower slopes of Mount Sharp.",
+      "formation": "Mud settled in a long-lived lake in Gale crater; later groundwater added veins and concretions. Mount Sharp group, Murray formation (Pahrump Hills to Blunts Point members).",
+      "whySample": "Records a long-lived, habitable lake; drill targets preserve clay minerals and organic molecules.",
+      "densityGcm3": [
+        1.5,
+        1.86
+      ],
+      "porosityPct": [
+        34,
+        47
+      ],
+      "mohs": [
+        1.0,
+        6.5
+      ],
+      "vnir": {
+        "albedo": 0.228,
+        "slope": null,
+        "bands": [
+          {
+            "um": 0.95,
+            "depth": null,
+            "width": null,
+            "label": "broad Fe2+/Fe3+ band: smectite and/or low-Ca pyroxene"
+          },
+          {
+            "um": 1.415,
+            "depth": 0.013,
+            "width": 0.19,
+            "label": "OH/H2O overtone in Mg-smectite"
+          },
+          {
+            "um": 1.928,
+            "depth": 0.033,
+            "width": 0.32,
+            "label": "H2O combination band"
+          },
+          {
+            "um": 2.311,
+            "depth": 0.014,
+            "width": 0.24,
+            "label": "Mg-OH combination (trioctahedral smectite)"
+          },
+          {
+            "um": 2.391,
+            "depth": 0.003,
+            "width": 0.12,
+            "label": "Mg-OH second combination band"
+          }
+        ]
+      },
+      "abundance": 0.3,
+      "references": [
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv"
+        },
+        {
+          "citation": "Grotzinger, J.P. et al. (2014) A habitable fluvio-lacustrine environment at Yellowknife Bay, Gale crater, Mars. Science 343, 1242777.",
+          "url": "https://doi.org/10.1126/science.1242777"
+        },
+        {
+          "citation": "Grotzinger, J.P. et al. (2015) Deposition, exhumation, and paleoclimate of an ancient lake deposit, Gale crater, Mars. Science 350, aac7575 (Gale formed ~3.8-3.6 Ga; Aeolis Palus sediments deposited before ~3.3-3.1 Ga, crater counts).",
+          "url": "https://doi.org/10.1126/science.aac7575"
+        },
+        {
+          "citation": "Vaniman, D.T. et al. (2014) Mineralogy of a mudstone at Yellowknife Bay, Gale crater, Mars. Science 343, 1243480.",
+          "url": "https://doi.org/10.1126/science.1243480"
+        },
+        {
+          "citation": "McLennan, S.M. et al. (2014) Elemental geochemistry of sedimentary rocks at Yellowknife Bay, Gale crater, Mars. Science 343, 1244734.",
+          "url": "https://doi.org/10.1126/science.1244734"
+        },
+        {
+          "citation": "Farley, K.A. et al. (2014) In situ radiometric and exposure age dating of the martian surface. Science 343, 1247166 (Cumberland K-Ar 4.21 +/- 0.35 Ga, detrital+authigenic mixture; exposure 78 +/- 30 Ma).",
+          "url": "https://doi.org/10.1126/science.1247166"
+        },
+        {
+          "citation": "Lewis, K.W. et al. (2019) A surface gravity traverse on Mars indicates low bedrock density at Gale crater. Science 363, 535-537 (bulk density 1680 +/- 180 kg/m3).",
+          "url": "https://doi.org/10.1126/science.aat0738"
+        },
+        {
+          "citation": "Arizona State University news release via EurekAlert! (31 Jan 2019) 'Mars rover Curiosity makes first gravity-measuring traverse on the Red Planet' (co-author T. Gabriel: CheMin-based grain density estimate 2810 kg/m3).",
+          "url": "https://www.eurekalert.org/news-releases/811713"
+        },
+        {
+          "citation": "Wellington, D.F. et al. (2017) Visible to near-infrared MSL/Mastcam multispectral imaging: Initial results from select high-interest science targets within Gale Crater, Mars. American Mineralogist 102, 1202-1217.",
+          "url": "https://doi.org/10.2138/am-2017-5760CCBY"
+        },
+        {
+          "citation": "Ehlmann, B.L. et al. (2009) Identification of hydrated silicate minerals on Mars using MRO-CRISM: Geologic context near Nili Fossae and implications for aqueous alteration. J. Geophys. Res. Planets 114.",
+          "url": "https://doi.org/10.1029/2009JE003339"
+        },
+        {
+          "citation": "Viviano-Beck, C.E. et al. (2015) MRO CRISM Type Spectra Library (MICA), PDS data set MRO-M-CRISM-4-TYPESPEC-V1.0, volume MROCR_8001; files data/crism_typespec_<name>.tab/.lbl. Band depths, centers and I/F values in this file were computed from these PDS tables by this research step (local linear continuum, ratioed I/F corrected; I/F = 'numerator corrected' column at 0.749 um).",
+          "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/"
+        },
+        {
+          "citation": "Anthony, J.W., Bideaux, R.A., Bladh, K.W. & Nichols, M.C. (eds.) Handbook of Mineralogy, Mineralogical Society of America. Per-mineral data sheets (Hardness, D(meas.)) at handbookofmineralogy.org/pdfs/<mineral>.pdf (forsterite, fayalite, augite, enstatite, pigeonite, albite, anorthite, sanidine, nepheline, diopside, hedenbergite, saponite, montmorillonite, tridymite, cristobalite, quartz, jarosite, kieserite, gypsum, anhydrite, bassanite, hematite, magnesite, siderite, iron, taenite, vivianite, greigite).",
+          "url": "https://www.handbookofmineralogy.org/"
+        },
+        {
+          "citation": "Tanaka, K.L. et al. (2014) Geologic map of Mars. USGS Scientific Investigations Map 3292, pamphlet Table 1: Martian epoch lower-boundary ages from Michael (2013), Hartmann and Neukum systems. Neukum-system starts used here: Late Noachian 3.83, Early Hesperian 3.71, Late Hesperian 3.61, Early Amazonian 3.37 Ga.",
+          "url": "https://pubs.usgs.gov/sim/3292/pdf/sim3292_pamphlet.pdf"
+        }
+      ],
+      "ext": {
+        "proxyFrom": "mudstone-smectite",
+        "proxyFields": [
+          "densityGcm3",
+          "porosityPct",
+          "mohs",
+          "vnir"
+        ],
+        "proxyNote": "densityGcm3, porosityPct, mohs, vnir are taken from the 'mudstone-smectite' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    },
+    {
+      "id": "vera-rubin-ridge",
+      "name": "Vera Rubin ridge (hematite-bearing Murray)",
+      "unitSymbol": "Mvr",
+      "group": "sedimentary",
+      "epoch": "Hesperian",
+      "ageGa": [
+        3.1,
+        3.8
+      ],
+      "summary": "Resistant ridge of Murray mudstone, seen from orbit as rich in hematite.",
+      "formation": "Upper Murray formation (Pettegrove Point and Jura members) hardened and stained by iron oxides from later groundwater.",
+      "whySample": "Shows how groundwater altered the lake beds after deposition; ties orbital hematite maps to rover chemistry.",
+      "densityGcm3": null,
+      "porosityPct": null,
+      "mohs": null,
+      "vnir": {
+        "albedo": 0.181,
+        "slope": null,
+        "bands": [
+          {
+            "um": 0.547,
+            "depth": 0.013,
+            "width": 0.174,
+            "label": "hematite Fe3+ pair transition (0.53 um band)"
+          },
+          {
+            "um": 0.899,
+            "depth": 0.057,
+            "width": 0.245,
+            "label": "hematite Fe3+ crystal-field band (0.86-0.90 um)"
+          }
+        ]
+      },
+      "abundance": 0.12,
+      "references": [
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv"
+        },
+        {
+          "citation": "Klingelhoefer, G. et al. (2004) Jarosite and hematite at Meridiani Planum from Opportunity's Moessbauer spectrometer. Science 306, 1740-1745.",
+          "url": "https://doi.org/10.1126/science.1104653"
+        },
+        {
+          "citation": "Calvin, W.M. et al. (2008) Hematite spherules at Meridiani: Results from MI, Mini-TES, and Pancam. J. Geophys. Res. Planets 113.",
+          "url": "https://doi.org/10.1029/2007JE003048"
+        },
+        {
+          "citation": "Chan, M.A. et al. (2004) A possible terrestrial analogue for haematite concretions on Mars. Nature 429, 731-734.",
+          "url": "https://doi.org/10.1038/nature02600"
+        },
+        {
+          "citation": "Squyres, S.W. et al. (2004) In situ evidence for an ancient aqueous environment at Meridiani Planum, Mars. Science 306, 1709-1714.",
+          "url": "https://doi.org/10.1126/science.1104559"
+        },
+        {
+          "citation": "McLennan, S.M. et al. (2005) Provenance and diagenesis of the evaporite-bearing Burns formation, Meridiani Planum, Mars. Earth Planet. Sci. Lett. 240, 95-121.",
+          "url": "https://doi.org/10.1016/j.epsl.2005.09.041"
+        },
+        {
+          "citation": "Arvidson, R.E. et al. (2006) Nature and origin of the hematite-bearing plains of Terra Meridiani based on analyses of orbital and Mars Exploration rover data sets. J. Geophys. Res. Planets 111.",
+          "url": "https://doi.org/10.1029/2006JE002728"
+        },
+        {
+          "citation": "Bell, J.F. III et al. (2008) Mars Exploration Rover Pancam multispectral imaging of rocks, soils, and dust at Gusev crater and Meridiani Planum. Ch. 13 in The Martian Surface (Cambridge Univ. Press); NTRS 20070017838.",
+          "url": "https://ntrs.nasa.gov/citations/20070017838"
+        },
+        {
+          "citation": "Morris, R.V. et al. (1985) Spectral and other physicochemical properties of submicron powders of hematite, maghemite, magnetite, goethite, and lepidocrocite. J. Geophys. Res. 90, 3126-3144.",
+          "url": "https://doi.org/10.1029/JB090iB04p03126"
+        },
+        {
+          "citation": "Viviano-Beck, C.E. et al. (2015) MRO CRISM Type Spectra Library (MICA), PDS data set MRO-M-CRISM-4-TYPESPEC-V1.0, volume MROCR_8001; files data/crism_typespec_<name>.tab/.lbl. Band depths, centers and I/F values in this file were computed from these PDS tables by this research step (local linear continuum, ratioed I/F corrected; I/F = 'numerator corrected' column at 0.749 um).",
+          "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/"
+        },
+        {
+          "citation": "PDS Geosciences Node (2026 update) CRISM Summary Parameter Calculation Reference (continuum anchors for BD530_2, BD860_2, BD1900_2, BD2290, BD2500_2, etc.).",
+          "url": "https://pds-geosciences.wustl.edu/missions/mro/crism_summary_parameter_reference.pdf"
+        },
+        {
+          "citation": "Anthony, J.W., Bideaux, R.A., Bladh, K.W. & Nichols, M.C. (eds.) Handbook of Mineralogy, Mineralogical Society of America. Per-mineral data sheets (Hardness, D(meas.)) at handbookofmineralogy.org/pdfs/<mineral>.pdf (forsterite, fayalite, augite, enstatite, pigeonite, albite, anorthite, sanidine, nepheline, diopside, hedenbergite, saponite, montmorillonite, tridymite, cristobalite, quartz, jarosite, kieserite, gypsum, anhydrite, bassanite, hematite, magnesite, siderite, iron, taenite, vivianite, greigite).",
+          "url": "https://www.handbookofmineralogy.org/"
+        },
+        {
+          "citation": "Mittlefehldt, D.W. et al. (2021) Geology and geochemistry of Noachian bedrock and alteration events, Meridiani Planum, Mars: MER Opportunity observations. J. Geophys. Res. Planets 126, e2021JE006915 (Sec. 1, 3: Burns formation = uppermost etched-unit section, Late Noachian/Early Hesperian per Hynek & Di Achille 2017; Endeavour formed in Noachian materials; CRISM Fe-Mg smectite in Marathon Valley).",
+          "url": "https://doi.org/10.1029/2021JE006915"
+        },
+        {
+          "citation": "Hynek, B.M. & Di Achille, G. (2017) Geologic map of Meridiani Planum, Mars. USGS Scientific Investigations Map 3356.",
+          "url": "https://doi.org/10.3133/sim3356"
+        },
+        {
+          "citation": "Tanaka, K.L. et al. (2014) Geologic map of Mars. USGS Scientific Investigations Map 3292, pamphlet Table 1: Martian epoch lower-boundary ages from Michael (2013), Hartmann and Neukum systems. Neukum-system starts used here: Late Noachian 3.83, Early Hesperian 3.71, Late Hesperian 3.61, Early Amazonian 3.37 Ga.",
+          "url": "https://pubs.usgs.gov/sim/3292/pdf/sim3292_pamphlet.pdf"
+        }
+      ],
+      "ext": {
+        "proxyFrom": "hematite-concretion",
+        "proxyFields": [
+          "vnir"
+        ],
+        "proxyNote": "vnir are taken from the 'hematite-concretion' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    },
+    {
+      "id": "glen-torridon-clay",
+      "name": "Glen Torridon clay-bearing unit (Carolyn Shoemaker fm.)",
+      "unitSymbol": "Cs",
+      "group": "sedimentary",
+      "epoch": "Hesperian",
+      "ageGa": [
+        3.1,
+        3.8
+      ],
+      "summary": "Clay-rich mudstone and sandstone of the trough south of Vera Rubin ridge.",
+      "formation": "Lake and river sediments of the Carolyn Shoemaker formation (Knockfarril Hill, Glasgow, Mercou, Pontours members), mapped from orbit as the strongest clay signal on Mount Sharp.",
+      "whySample": "Clay minerals form in water and preserve organics: a prime target for habitability studies.",
+      "densityGcm3": [
+        1.5,
+        1.86
+      ],
+      "porosityPct": [
+        34,
+        47
+      ],
+      "mohs": [
+        1.0,
+        6.5
+      ],
+      "vnir": {
+        "albedo": 0.228,
+        "slope": null,
+        "bands": [
+          {
+            "um": 0.95,
+            "depth": null,
+            "width": null,
+            "label": "broad Fe2+/Fe3+ band: smectite and/or low-Ca pyroxene"
+          },
+          {
+            "um": 1.415,
+            "depth": 0.013,
+            "width": 0.19,
+            "label": "OH/H2O overtone in Mg-smectite"
+          },
+          {
+            "um": 1.928,
+            "depth": 0.033,
+            "width": 0.32,
+            "label": "H2O combination band"
+          },
+          {
+            "um": 2.311,
+            "depth": 0.014,
+            "width": 0.24,
+            "label": "Mg-OH combination (trioctahedral smectite)"
+          },
+          {
+            "um": 2.391,
+            "depth": 0.003,
+            "width": 0.12,
+            "label": "Mg-OH second combination band"
+          }
+        ]
+      },
+      "abundance": 0.2,
+      "references": [
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv"
+        },
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv"
+        },
+        {
+          "citation": "Grotzinger, J.P. et al. (2014) A habitable fluvio-lacustrine environment at Yellowknife Bay, Gale crater, Mars. Science 343, 1242777.",
+          "url": "https://doi.org/10.1126/science.1242777"
+        },
+        {
+          "citation": "Grotzinger, J.P. et al. (2015) Deposition, exhumation, and paleoclimate of an ancient lake deposit, Gale crater, Mars. Science 350, aac7575 (Gale formed ~3.8-3.6 Ga; Aeolis Palus sediments deposited before ~3.3-3.1 Ga, crater counts).",
+          "url": "https://doi.org/10.1126/science.aac7575"
+        },
+        {
+          "citation": "Vaniman, D.T. et al. (2014) Mineralogy of a mudstone at Yellowknife Bay, Gale crater, Mars. Science 343, 1243480.",
+          "url": "https://doi.org/10.1126/science.1243480"
+        },
+        {
+          "citation": "McLennan, S.M. et al. (2014) Elemental geochemistry of sedimentary rocks at Yellowknife Bay, Gale crater, Mars. Science 343, 1244734.",
+          "url": "https://doi.org/10.1126/science.1244734"
+        },
+        {
+          "citation": "Farley, K.A. et al. (2014) In situ radiometric and exposure age dating of the martian surface. Science 343, 1247166 (Cumberland K-Ar 4.21 +/- 0.35 Ga, detrital+authigenic mixture; exposure 78 +/- 30 Ma).",
+          "url": "https://doi.org/10.1126/science.1247166"
+        },
+        {
+          "citation": "Lewis, K.W. et al. (2019) A surface gravity traverse on Mars indicates low bedrock density at Gale crater. Science 363, 535-537 (bulk density 1680 +/- 180 kg/m3).",
+          "url": "https://doi.org/10.1126/science.aat0738"
+        },
+        {
+          "citation": "Arizona State University news release via EurekAlert! (31 Jan 2019) 'Mars rover Curiosity makes first gravity-measuring traverse on the Red Planet' (co-author T. Gabriel: CheMin-based grain density estimate 2810 kg/m3).",
+          "url": "https://www.eurekalert.org/news-releases/811713"
+        },
+        {
+          "citation": "Wellington, D.F. et al. (2017) Visible to near-infrared MSL/Mastcam multispectral imaging: Initial results from select high-interest science targets within Gale Crater, Mars. American Mineralogist 102, 1202-1217.",
+          "url": "https://doi.org/10.2138/am-2017-5760CCBY"
+        },
+        {
+          "citation": "Ehlmann, B.L. et al. (2009) Identification of hydrated silicate minerals on Mars using MRO-CRISM: Geologic context near Nili Fossae and implications for aqueous alteration. J. Geophys. Res. Planets 114.",
+          "url": "https://doi.org/10.1029/2009JE003339"
+        },
+        {
+          "citation": "Viviano-Beck, C.E. et al. (2015) MRO CRISM Type Spectra Library (MICA), PDS data set MRO-M-CRISM-4-TYPESPEC-V1.0, volume MROCR_8001; files data/crism_typespec_<name>.tab/.lbl. Band depths, centers and I/F values in this file were computed from these PDS tables by this research step (local linear continuum, ratioed I/F corrected; I/F = 'numerator corrected' column at 0.749 um).",
+          "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/"
+        },
+        {
+          "citation": "Anthony, J.W., Bideaux, R.A., Bladh, K.W. & Nichols, M.C. (eds.) Handbook of Mineralogy, Mineralogical Society of America. Per-mineral data sheets (Hardness, D(meas.)) at handbookofmineralogy.org/pdfs/<mineral>.pdf (forsterite, fayalite, augite, enstatite, pigeonite, albite, anorthite, sanidine, nepheline, diopside, hedenbergite, saponite, montmorillonite, tridymite, cristobalite, quartz, jarosite, kieserite, gypsum, anhydrite, bassanite, hematite, magnesite, siderite, iron, taenite, vivianite, greigite).",
+          "url": "https://www.handbookofmineralogy.org/"
+        },
+        {
+          "citation": "Tanaka, K.L. et al. (2014) Geologic map of Mars. USGS Scientific Investigations Map 3292, pamphlet Table 1: Martian epoch lower-boundary ages from Michael (2013), Hartmann and Neukum systems. Neukum-system starts used here: Late Noachian 3.83, Early Hesperian 3.71, Late Hesperian 3.61, Early Amazonian 3.37 Ga.",
+          "url": "https://pubs.usgs.gov/sim/3292/pdf/sim3292_pamphlet.pdf"
+        }
+      ],
+      "ext": {
+        "proxyFrom": "mudstone-smectite",
+        "proxyFields": [
+          "densityGcm3",
+          "porosityPct",
+          "mohs",
+          "vnir"
+        ],
+        "proxyNote": "densityGcm3, porosityPct, mohs, vnir are taken from the 'mudstone-smectite' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    },
+    {
+      "id": "mirador-sulfate",
+      "name": "Mirador formation sulfate-bearing unit",
+      "unitSymbol": "Msu",
+      "group": "sedimentary",
+      "epoch": "Hesperian",
+      "ageGa": [
+        3.1,
+        3.8
+      ],
+      "summary": "Sulfate-rich layers higher on Mount Sharp, from the drying of Gale's lake.",
+      "formation": "Mirador formation (Dunnideer, Port Logan, Contigo, Catrimani members): sediments laid down as the climate dried, rich in magnesium and calcium sulfates.",
+      "whySample": "Captures the transition from a wet to a drier Mars recorded in Mount Sharp's layers.",
+      "densityGcm3": null,
+      "porosityPct": null,
+      "mohs": [
+        1.5,
+        3.5
+      ],
+      "vnir": {
+        "albedo": 0.2335,
+        "slope": null,
+        "bands": [
+          {
+            "um": 0.9,
+            "depth": null,
+            "width": null,
+            "label": "weak Fe3+ band (hematite/ferrihydrite/schwertmannite-like)"
+          },
+          {
+            "um": 1.434,
+            "depth": 0.008,
+            "width": 0.19,
+            "label": "H2O overtone, polyhydrated sulfate"
+          },
+          {
+            "um": 1.935,
+            "depth": 0.025,
+            "width": 0.32,
+            "label": "H2O combination, polyhydrated sulfate"
+          },
+          {
+            "um": 2.139,
+            "depth": 0.061,
+            "width": 0.23,
+            "label": "monohydrated Mg-sulfate (kieserite-like) band"
+          },
+          {
+            "um": 2.271,
+            "depth": 0.025,
+            "width": 0.13,
+            "label": "jarosite Fe-OH combination"
+          },
+          {
+            "um": 2.4,
+            "depth": 0.027,
+            "width": 0.12,
+            "label": "sulfate S-O / H2O feature near 2.4 um"
+          }
+        ]
+      },
+      "abundance": 0.2,
+      "references": [
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv"
+        },
+        {
+          "citation": "Squyres, S.W. et al. (2004) In situ evidence for an ancient aqueous environment at Meridiani Planum, Mars. Science 306, 1709-1714.",
+          "url": "https://doi.org/10.1126/science.1104559"
+        },
+        {
+          "citation": "McLennan, S.M. et al. (2005) Provenance and diagenesis of the evaporite-bearing Burns formation, Meridiani Planum, Mars. Earth Planet. Sci. Lett. 240, 95-121.",
+          "url": "https://doi.org/10.1016/j.epsl.2005.09.041"
+        },
+        {
+          "citation": "Arvidson, R.E. et al. (2006) Nature and origin of the hematite-bearing plains of Terra Meridiani based on analyses of orbital and Mars Exploration rover data sets. J. Geophys. Res. Planets 111.",
+          "url": "https://doi.org/10.1029/2006JE002728"
+        },
+        {
+          "citation": "Hynek, B.M. & Di Achille, G. (2017) Geologic map of Meridiani Planum, Mars. USGS Scientific Investigations Map 3356.",
+          "url": "https://doi.org/10.3133/sim3356"
+        },
+        {
+          "citation": "Mittlefehldt, D.W. et al. (2021) Geology and geochemistry of Noachian bedrock and alteration events, Meridiani Planum, Mars: MER Opportunity observations. J. Geophys. Res. Planets 126, e2021JE006915 (Sec. 1, 3: Burns formation = uppermost etched-unit section, Late Noachian/Early Hesperian per Hynek & Di Achille 2017; Endeavour formed in Noachian materials; CRISM Fe-Mg smectite in Marathon Valley).",
+          "url": "https://doi.org/10.1029/2021JE006915"
+        },
+        {
+          "citation": "Farrand, W.H. et al. (2007) Visible and near-infrared multispectral analysis of rocks at Meridiani Planum, Mars, by the Mars Exploration Rover Opportunity. J. Geophys. Res. Planets 112.",
+          "url": "https://doi.org/10.1029/2006JE002773"
+        },
+        {
+          "citation": "Bell, J.F. III et al. (2008) Mars Exploration Rover Pancam multispectral imaging of rocks, soils, and dust at Gusev crater and Meridiani Planum. Ch. 13 in The Martian Surface (Cambridge Univ. Press); NTRS 20070017838.",
+          "url": "https://ntrs.nasa.gov/citations/20070017838"
+        },
+        {
+          "citation": "Gendrin, A. et al. (2005) Sulfates in Martian layered terrains: the OMEGA/Mars Express view. Science 307, 1587-1591.",
+          "url": "https://doi.org/10.1126/science.1109087"
+        },
+        {
+          "citation": "Klingelhoefer, G. et al. (2004) Jarosite and hematite at Meridiani Planum from Opportunity's Moessbauer spectrometer. Science 306, 1740-1745.",
+          "url": "https://doi.org/10.1126/science.1104653"
+        },
+        {
+          "citation": "Viviano-Beck, C.E. et al. (2015) MRO CRISM Type Spectra Library (MICA), PDS data set MRO-M-CRISM-4-TYPESPEC-V1.0, volume MROCR_8001; files data/crism_typespec_<name>.tab/.lbl. Band depths, centers and I/F values in this file were computed from these PDS tables by this research step (local linear continuum, ratioed I/F corrected; I/F = 'numerator corrected' column at 0.749 um).",
+          "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/"
+        },
+        {
+          "citation": "Anthony, J.W., Bideaux, R.A., Bladh, K.W. & Nichols, M.C. (eds.) Handbook of Mineralogy, Mineralogical Society of America. Per-mineral data sheets (Hardness, D(meas.)) at handbookofmineralogy.org/pdfs/<mineral>.pdf (forsterite, fayalite, augite, enstatite, pigeonite, albite, anorthite, sanidine, nepheline, diopside, hedenbergite, saponite, montmorillonite, tridymite, cristobalite, quartz, jarosite, kieserite, gypsum, anhydrite, bassanite, hematite, magnesite, siderite, iron, taenite, vivianite, greigite).",
+          "url": "https://www.handbookofmineralogy.org/"
+        },
+        {
+          "citation": "Tanaka, K.L. et al. (2014) Geologic map of Mars. USGS Scientific Investigations Map 3292, pamphlet Table 1: Martian epoch lower-boundary ages from Michael (2013), Hartmann and Neukum systems. Neukum-system starts used here: Late Noachian 3.83, Early Hesperian 3.71, Late Hesperian 3.61, Early Amazonian 3.37 Ga.",
+          "url": "https://pubs.usgs.gov/sim/3292/pdf/sim3292_pamphlet.pdf"
+        }
+      ],
+      "ext": {
+        "proxyFrom": "sulfate-sandstone",
+        "proxyFields": [
+          "densityGcm3",
+          "porosityPct",
+          "mohs",
+          "vnir"
+        ],
+        "proxyNote": "densityGcm3, porosityPct, mohs, vnir are taken from the 'sulfate-sandstone' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    },
+    {
+      "id": "amapari-iron",
+      "name": "Amapari iron-rich bed (Mirador fm.)",
+      "unitSymbol": "Ma",
+      "group": "sedimentary",
+      "epoch": "Hesperian",
+      "ageGa": null,
+      "summary": "Unusually iron-rich layer of the Mirador formation (about 40 wt% FeO by APXS).",
+      "formation": "A bed within the Amapari member of the Mirador formation with very high iron and low silica; its mineral origin is not described in this dataset.",
+      "whySample": "An anomalous composition worth sampling to understand iron enrichment in the sulfate unit.",
+      "densityGcm3": null,
+      "porosityPct": null,
+      "mohs": null,
+      "vnir": {
+        "albedo": null,
+        "slope": null,
+        "bands": []
+      },
+      "abundance": 0.02,
+      "references": [
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv"
+        }
+      ],
+      "ext": {
+        "proxyFrom": null,
+        "proxyFields": [],
+        "proxyNote": "No class-level physical/spectral values: none researched for this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    },
+    {
+      "id": "stimson-sandstone",
+      "name": "Stimson formation sandstone (Siccar Point group)",
+      "unitSymbol": "Ss",
+      "group": "sedimentary",
+      "epoch": "unknown",
+      "ageGa": null,
+      "summary": "Cross-bedded sandstone from ancient dunes, lying on top of the eroded Murray mudstone.",
+      "formation": "Wind-blown basaltic sand that formed dunes after the lake beds were eroded, then hardened into sandstone (Siccar Point group, above an unconformity).",
+      "whySample": "Records a later, drier wind-dominated environment on Mount Sharp.",
+      "densityGcm3": null,
+      "porosityPct": null,
+      "mohs": null,
+      "vnir": {
+        "albedo": null,
+        "slope": null,
+        "bands": []
+      },
+      "abundance": 0.12,
+      "references": [
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv"
+        },
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv"
+        }
+      ],
+      "ext": {
+        "proxyFrom": null,
+        "proxyFields": [],
+        "proxyNote": "No class-level physical/spectral values: none researched for this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    },
+    {
+      "id": "silica-alteration",
+      "name": "Silica-rich alteration (Buckskin, Stimson halos)",
+      "unitSymbol": "Si",
+      "group": "alteration",
+      "epoch": "Hesperian",
+      "ageGa": [
+        3.1,
+        3.8
+      ],
+      "summary": "Pale rock strongly enriched in silica by later fluids.",
+      "formation": "Silica added to (or other elements leached from) Murray mudstone at Marias Pass (Buckskin) and along fracture halos in the Stimson sandstone (Greenhorn, Lubango).",
+      "whySample": "Silica preserves textures and possible biosignatures; tridymite at Buckskin points to unusual volcanic input.",
+      "densityGcm3": [
+        1.5,
+        1.86
+      ],
+      "porosityPct": null,
+      "mohs": [
+        6.0,
+        7.0
+      ],
+      "vnir": {
+        "albedo": 0.213,
+        "slope": null,
+        "bands": [
+          {
+            "um": 1.009,
+            "depth": null,
+            "width": null,
+            "label": "H2O/OH-related downturn at Pancam's longest filter"
+          },
+          {
+            "um": 1.434,
+            "depth": 0.01,
+            "width": 0.19,
+            "label": "Si-OH / H2O overtone (opal)"
+          },
+          {
+            "um": 1.941,
+            "depth": 0.037,
+            "width": 0.32,
+            "label": "H2O combination (opal)"
+          },
+          {
+            "um": 2.219,
+            "depth": 0.026,
+            "width": 0.24,
+            "label": "broad Si-OH combination (opal)"
+          }
+        ]
+      },
+      "abundance": 0.03,
+      "references": [
+        {
+          "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+          "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv"
+        },
+        {
+          "citation": "Morris, R.V. et al. (2016) Silicic volcanism on Mars evidenced by tridymite in high-SiO2 sedimentary rock at Gale crater. PNAS 113, 7071-7076.",
+          "url": "https://doi.org/10.1073/pnas.1607098113"
+        },
+        {
+          "citation": "Squyres, S.W. et al. (2008) Detection of silica-rich deposits on Mars. Science 320, 1063-1067.",
+          "url": "https://doi.org/10.1126/science.1155429"
+        },
+        {
+          "citation": "Rice, M.S. et al. (2010) Silica-rich deposits and hydrated minerals at Gusev Crater, Mars: Vis-NIR spectral characterization and regional mapping. Icarus 205, 375-395.",
+          "url": "https://doi.org/10.1016/j.icarus.2009.03.035"
+        },
+        {
+          "citation": "Milliken, R.E. et al. (2008) Opaline silica in young deposits on Mars. Geology 36, 847-850.",
+          "url": "https://doi.org/10.1130/G24967A.1"
+        },
+        {
+          "citation": "Grotzinger, J.P. et al. (2015) Deposition, exhumation, and paleoclimate of an ancient lake deposit, Gale crater, Mars. Science 350, aac7575 (Gale formed ~3.8-3.6 Ga; Aeolis Palus sediments deposited before ~3.3-3.1 Ga, crater counts).",
+          "url": "https://doi.org/10.1126/science.aac7575"
+        },
+        {
+          "citation": "Lewis, K.W. et al. (2019) A surface gravity traverse on Mars indicates low bedrock density at Gale crater. Science 363, 535-537 (bulk density 1680 +/- 180 kg/m3).",
+          "url": "https://doi.org/10.1126/science.aat0738"
+        },
+        {
+          "citation": "Anthony, J.W., Bideaux, R.A., Bladh, K.W. & Nichols, M.C. (eds.) Handbook of Mineralogy, Mineralogical Society of America. Per-mineral data sheets (Hardness, D(meas.)) at handbookofmineralogy.org/pdfs/<mineral>.pdf (forsterite, fayalite, augite, enstatite, pigeonite, albite, anorthite, sanidine, nepheline, diopside, hedenbergite, saponite, montmorillonite, tridymite, cristobalite, quartz, jarosite, kieserite, gypsum, anhydrite, bassanite, hematite, magnesite, siderite, iron, taenite, vivianite, greigite).",
+          "url": "https://www.handbookofmineralogy.org/"
+        },
+        {
+          "citation": "Viviano-Beck, C.E. et al. (2015) MRO CRISM Type Spectra Library (MICA), PDS data set MRO-M-CRISM-4-TYPESPEC-V1.0, volume MROCR_8001; files data/crism_typespec_<name>.tab/.lbl. Band depths, centers and I/F values in this file were computed from these PDS tables by this research step (local linear continuum, ratioed I/F corrected; I/F = 'numerator corrected' column at 0.749 um).",
+          "url": "https://pds-geosciences.wustl.edu/mro/mro-m-crism-4-typespec-v1/mrocr_8001/data/"
+        }
+      ],
+      "ext": {
+        "proxyFrom": "silica-rich",
+        "proxyFields": [
+          "densityGcm3",
+          "porosityPct",
+          "mohs",
+          "vnir"
+        ],
+        "proxyNote": "densityGcm3, porosityPct, mohs, vnir are taken from the 'silica-rich' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    },
+    {
+      "id": "iron-meteorite",
+      "name": "Iron-nickel meteorite (found on Mount Sharp)",
+      "unitSymbol": "Fe",
+      "group": "meteorite",
+      "epoch": "unknown",
+      "ageGa": null,
+      "summary": "Dense, magnetic iron-nickel meteorite from a metal-rich asteroid, with a pitted, highly specular surface.",
+      "formation": "Metal from the core of a differentiated asteroid that fell onto Mars, where it was mechanically and chemically weathered.",
+      "whySample": "Its weathering on Mars records past water exposure and climate; rare exotic material for comparison.",
+      "densityGcm3": [
+        7.3,
+        8.22
+      ],
+      "porosityPct": null,
+      "mohs": [
+        4.0,
+        5.5
+      ],
+      "vnir": {
+        "albedo": null,
+        "slope": null,
+        "bands": []
+      },
+      "abundance": 0.01,
+      "references": [
+        {
+          "citation": "Schroeder, C. et al. (2008) Meteorites on Mars observed with the Mars Exploration Rovers. J. Geophys. Res. Planets 113 (Heat Shield Rock = IAB iron, officially 'Meridiani Planum').",
+          "url": "https://doi.org/10.1029/2007JE002990"
+        },
+        {
+          "citation": "Ashley, J.W. et al. (2011) Evidence for mechanical and chemical alteration of iron-nickel meteorites on Mars: Process insights for Meridiani Planum. J. Geophys. Res. 116, E00F20.",
+          "url": "https://doi.org/10.1029/2010JE003672"
+        },
+        {
+          "citation": "Hunt, A.C. et al. (2018) Late metal-silicate separation on the IAB parent asteroid: Constraints from combined W and Pt isotopes and thermal modelling. Earth Planet. Sci. Lett. 482, 490-500 (metal-silicate separation 6.0 +/- 0.8 Ma after CAI).",
+          "url": "https://doi.org/10.1016/j.epsl.2017.11.034"
+        },
+        {
+          "citation": "Bell, J.F. III et al. (2008) Mars Exploration Rover Pancam multispectral imaging of rocks, soils, and dust at Gusev crater and Meridiani Planum. Ch. 13 in The Martian Surface (Cambridge Univ. Press); NTRS 20070017838.",
+          "url": "https://ntrs.nasa.gov/citations/20070017838"
+        },
+        {
+          "citation": "Gaffey, M.J. (1976) Spectral reflectance characteristics of the meteorite classes. J. Geophys. Res. 81, 905-920.",
+          "url": "https://doi.org/10.1029/JB081i005p00905"
+        },
+        {
+          "citation": "Anthony, J.W., Bideaux, R.A., Bladh, K.W. & Nichols, M.C. (eds.) Handbook of Mineralogy, Mineralogical Society of America. Per-mineral data sheets (Hardness, D(meas.)) at handbookofmineralogy.org/pdfs/<mineral>.pdf (forsterite, fayalite, augite, enstatite, pigeonite, albite, anorthite, sanidine, nepheline, diopside, hedenbergite, saponite, montmorillonite, tridymite, cristobalite, quartz, jarosite, kieserite, gypsum, anhydrite, bassanite, hematite, magnesite, siderite, iron, taenite, vivianite, greigite).",
+          "url": "https://www.handbookofmineralogy.org/"
+        }
+      ],
+      "ext": {
+        "proxyFrom": "iron-meteorite",
+        "proxyFields": [
+          "densityGcm3",
+          "porosityPct",
+          "mohs",
+          "vnir"
+        ],
+        "proxyNote": "densityGcm3, porosityPct, mohs, vnir are taken from the 'iron-meteorite' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
+        "abundanceNote": "Game placement weight, not a measured areal fraction."
+      }
+    }
+  ],
+  "samples": [
+    {
+      "id": "MSL_Mojave2_sol884",
+      "target": "Mojave2 DTc drilltailings",
+      "classId": "murray-mudstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Pahrump Hills member",
+      "sol": 884,
+      "elevationM": -4459.6,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 51.29,
+        "TiO2": 1.18,
+        "Al2O3": 11.88,
+        "Cr2O3": 0.37,
+        "FeO": 14.59,
+        "MnO": 0.4,
+        "MgO": 4.47,
+        "CaO": 4.52,
+        "Na2O": 2.99,
+        "K2O": 0.63,
+        "P2O5": 1.42,
+        "SO3": 5.32,
+        "Cl": 0.53
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.05,
+        "Al2O3": 0.29,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.02,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.09,
+        "SO3": 0.08,
+        "Cl": 0.01
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 853.0,
+        "Zn": 2198.0,
+        "Br": 50.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Mojave2_DTc_drilltailings' (sol 884, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 45.0,
+          "Zn": 70.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Pahrump Hills"
+        }
+      }
+    },
+    {
+      "id": "MSL_TelegraphPeak_sol922",
+      "target": "Telegraph Peak DT",
+      "classId": "murray-mudstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Pahrump Hills member",
+      "sol": 922,
+      "elevationM": -4453.5,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 51.87,
+        "TiO2": 1.28,
+        "Al2O3": 11.06,
+        "Cr2O3": 0.4,
+        "FeO": 19.85,
+        "MnO": 0.25,
+        "MgO": 3.04,
+        "CaO": 4.03,
+        "Na2O": 3.56,
+        "K2O": 0.97,
+        "P2O5": 1.27,
+        "SO3": 1.85,
+        "Cl": 0.34
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.05,
+        "Al2O3": 0.29,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.02,
+        "MgO": 0.08,
+        "CaO": 0.04,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.05,
+        "Cl": 0.01
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 423.0,
+        "Zn": 1212.0,
+        "Br": 93.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Telegraph_Peak_DT' (sol 922, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 25.0,
+          "Zn": 40.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Pahrump Hills"
+        }
+      }
+    },
+    {
+      "id": "MSL_Oudam_sol1364",
+      "target": "Oudam tailings APXS",
+      "classId": "murray-mudstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Hartmann's Valley member",
+      "sol": 1364,
+      "elevationM": -4435.59,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 52.87,
+        "TiO2": 1.09,
+        "Al2O3": 9.37,
+        "Cr2O3": 0.34,
+        "FeO": 19.17,
+        "MnO": 0.28,
+        "MgO": 4.84,
+        "CaO": 4.03,
+        "Na2O": 2.52,
+        "K2O": 0.85,
+        "P2O5": 0.5,
+        "SO3": 3.54,
+        "Cl": 0.35
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.04,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.05,
+        "SO3": 0.05,
+        "Cl": 0.01
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 726.0,
+        "Zn": 1168.0,
+        "Br": 17.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Oudam_tailings_APXS' (sol 1364, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 40.0,
+          "Zn": 40.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Hartmann's Valley"
+        }
+      }
+    },
+    {
+      "id": "MSL_Marimba2_sol1426",
+      "target": "Marimba2 full drill tailings",
+      "classId": "murray-mudstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Karasburg member",
+      "sol": 1426,
+      "elevationM": -4410.38,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 45.99,
+        "TiO2": 1.07,
+        "Al2O3": 8.49,
+        "Cr2O3": 0.33,
+        "FeO": 22.53,
+        "MnO": 0.09,
+        "MgO": 4.58,
+        "CaO": 5.27,
+        "Na2O": 2.11,
+        "K2O": 0.83,
+        "P2O5": 1.05,
+        "SO3": 6.78,
+        "Cl": 0.48
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.07,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.08,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 1083.0,
+        "Zn": 1084.0,
+        "Br": 259.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Marimba2_full_drill_tailings' (sol 1426, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 55.0,
+          "Zn": 35.0,
+          "Br": 10.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Karasburg"
+        }
+      }
+    },
+    {
+      "id": "MSL_Quela_sol1466",
+      "target": "Quela full drill tailings",
+      "classId": "murray-mudstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Karasburg member",
+      "sol": 1466,
+      "elevationM": -4379.46,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 44.81,
+        "TiO2": 1.05,
+        "Al2O3": 8.48,
+        "Cr2O3": 0.29,
+        "FeO": 18.93,
+        "MnO": 0.22,
+        "MgO": 4.1,
+        "CaO": 7.48,
+        "Na2O": 2.19,
+        "K2O": 0.77,
+        "P2O5": 1.1,
+        "SO3": 9.3,
+        "Cl": 1.01
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.08,
+        "CaO": 0.08,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.07,
+        "SO3": 0.13,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 999.0,
+        "Zn": 826.0,
+        "Br": 42.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Quela_full_drill_tailings' (sol 1466, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 50.0,
+          "Zn": 25.0,
+          "Br": 10.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Karasburg"
+        }
+      }
+    },
+    {
+      "id": "MSL_Sebina_sol1496",
+      "target": "Sebina full drill tailings",
+      "classId": "murray-mudstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Sutton Island member",
+      "sol": 1496,
+      "elevationM": -4360.81,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 46.17,
+        "TiO2": 1.1,
+        "Al2O3": 8.68,
+        "Cr2O3": 0.3,
+        "FeO": 18.3,
+        "MnO": 0.16,
+        "MgO": 4.25,
+        "CaO": 7.13,
+        "Na2O": 2.01,
+        "K2O": 0.83,
+        "P2O5": 0.61,
+        "SO3": 9.13,
+        "Cl": 1.06
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.03,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.08,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.05,
+        "SO3": 0.15,
+        "Cl": 0.03
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 1024.0,
+        "Zn": 814.0,
+        "Br": 104.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Sebina_full_drill_tailings' (sol 1496, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 55.0,
+          "Zn": 25.0,
+          "Br": 10.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Sutton Island"
+        }
+      }
+    },
+    {
+      "id": "MSL_Duluth_sol2080",
+      "target": "Duluth DBA dump center",
+      "classId": "murray-mudstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Blunts Point member",
+      "sol": 2080,
+      "elevationM": -4192.46,
+      "prep": "drill-bit-assembly dump (drill fines)",
+      "oxidesWtPct": {
+        "SiO2": 42.9,
+        "TiO2": 1.05,
+        "Al2O3": 7.81,
+        "Cr2O3": 0.32,
+        "FeO": 22.12,
+        "MnO": 0.21,
+        "MgO": 2.66,
+        "CaO": 7.52,
+        "Na2O": 2.24,
+        "K2O": 0.94,
+        "P2O5": 1.11,
+        "SO3": 9.86,
+        "Cl": 0.89
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.08,
+        "CaO": 0.08,
+        "Na2O": 0.07,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.1,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 924.0,
+        "Zn": 1422.0,
+        "Br": 21.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Duluth_DBA_dump_center' (sol 2080, preparation DBA). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 50.0,
+          "Zn": 45.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Blunts Point"
+        }
+      }
+    },
+    {
+      "id": "MSL_Stoer_sol2155",
+      "target": "Stoer tailings",
+      "classId": "vera-rubin-ridge",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Pettegrove Point member",
+      "sol": 2155,
+      "elevationM": -4169.95,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 45.95,
+        "TiO2": 1.01,
+        "Al2O3": 8.49,
+        "Cr2O3": 0.38,
+        "FeO": 23.15,
+        "MnO": 0.2,
+        "MgO": 4.79,
+        "CaO": 5.36,
+        "Na2O": 2.44,
+        "K2O": 0.87,
+        "P2O5": 0.97,
+        "SO3": 5.49,
+        "Cl": 0.68
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.08,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 835.0,
+        "Zn": 771.0,
+        "Br": 70.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Stoer_tailings' (sol 2155, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 45.0,
+          "Zn": 25.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Pettegrove Point"
+        }
+      }
+    },
+    {
+      "id": "MSL_Highfield_sol2247",
+      "target": "Highfield Drill Tailings",
+      "classId": "vera-rubin-ridge",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Jura member",
+      "sol": 2247,
+      "elevationM": -4146.95,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 52.38,
+        "TiO2": 0.96,
+        "Al2O3": 10.02,
+        "Cr2O3": 0.29,
+        "FeO": 16.97,
+        "MnO": 0.14,
+        "MgO": 4.58,
+        "CaO": 4.19,
+        "Na2O": 2.68,
+        "K2O": 0.92,
+        "P2O5": 0.78,
+        "SO3": 4.86,
+        "Cl": 0.99
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.29,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.04,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.05,
+        "SO3": 0.08,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 963.0,
+        "Zn": 707.0,
+        "Br": 92.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Highfield_Drill_Tailings' (sol 2247, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 50.0,
+          "Zn": 25.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Jura"
+        }
+      }
+    },
+    {
+      "id": "MSL_RockHall_sol2292",
+      "target": "Rock Hall Drill Tailings",
+      "classId": "vera-rubin-ridge",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Murray formation, Jura member",
+      "sol": 2292,
+      "elevationM": -4143.79,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 35.43,
+        "TiO2": 0.94,
+        "Al2O3": 7.21,
+        "Cr2O3": 0.3,
+        "FeO": 19.77,
+        "MnO": 0.1,
+        "MgO": 4.14,
+        "CaO": 9.16,
+        "Na2O": 2.03,
+        "K2O": 0.57,
+        "P2O5": 0.94,
+        "SO3": 16.85,
+        "Cl": 2.28
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.43,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.08,
+        "CaO": 0.1,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.07,
+        "SO3": 0.2,
+        "Cl": 0.04
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 877.0,
+        "Zn": 877.0,
+        "Br": 229.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Rock_Hall_Drill_Tailings' (sol 2292, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 45.0,
+          "Zn": 30.0,
+          "Br": 10.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Murray",
+          "member": "Jura"
+        }
+      }
+    },
+    {
+      "id": "MSL_GlenEtive1_sol2524",
+      "target": "Glen Etive 1 tailings",
+      "classId": "glen-torridon-clay",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Carolyn Shoemaker formation, Knockfarril Hill member",
+      "sol": 2524,
+      "elevationM": -4133.36,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 47.38,
+        "TiO2": 1.3,
+        "Al2O3": 8.59,
+        "Cr2O3": 0.4,
+        "FeO": 23.57,
+        "MnO": 0.22,
+        "MgO": 5.41,
+        "CaO": 3.85,
+        "Na2O": 2.14,
+        "K2O": 1.28,
+        "P2O5": 0.77,
+        "SO3": 4.13,
+        "Cl": 0.49
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.05,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.04,
+        "Na2O": 0.07,
+        "K2O": 0.05,
+        "P2O5": 0.05,
+        "SO3": 0.08,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 1168.0,
+        "Zn": 2327.0,
+        "Br": 153.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Glen_Etive_1_tailings' (sol 2524, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 60.0,
+          "Zn": 70.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Carolyn_Shoemaker",
+          "member": "Knockfarril_Hill"
+        }
+      }
+    },
+    {
+      "id": "MSL_Hutton_sol2686",
+      "target": "Hutton tailings",
+      "classId": "glen-torridon-clay",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Carolyn Shoemaker formation, Glasgow member",
+      "sol": 2686,
+      "elevationM": -4095.37,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 50.55,
+        "TiO2": 1.06,
+        "Al2O3": 9.46,
+        "Cr2O3": 0.31,
+        "FeO": 19.23,
+        "MnO": 0.25,
+        "MgO": 5.58,
+        "CaO": 5.28,
+        "Na2O": 3.68,
+        "K2O": 0.96,
+        "P2O5": 1.12,
+        "SO3": 1.43,
+        "Cl": 0.84
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.29,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.05,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 698.0,
+        "Zn": 988.0,
+        "Br": 21.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Hutton_tailings' (sol 2686, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 35.0,
+          "Zn": 30.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Carolyn_Shoemaker",
+          "member": "Glasgow"
+        }
+      }
+    },
+    {
+      "id": "MSL_Glasgow1_sol2776",
+      "target": "Glasgow1 tailings",
+      "classId": "glen-torridon-clay",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Carolyn Shoemaker formation, Glasgow member",
+      "sol": 2776,
+      "elevationM": -4107.93,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 47.51,
+        "TiO2": 1.1,
+        "Al2O3": 8.69,
+        "Cr2O3": 0.41,
+        "FeO": 19.02,
+        "MnO": 0.22,
+        "MgO": 4.71,
+        "CaO": 6.22,
+        "Na2O": 2.11,
+        "K2O": 0.78,
+        "P2O5": 1.05,
+        "SO3": 6.99,
+        "Cl": 0.91
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.07,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.07,
+        "SO3": 0.1,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 916.0,
+        "Zn": 876.0,
+        "Br": 29.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Glasgow1_tailings' (sol 2776, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 50.0,
+          "Zn": 30.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt. Sharp",
+          "formation": "Carolyn_Shoemaker",
+          "member": "Glasgow"
+        }
+      }
+    },
+    {
+      "id": "MSL_Nontron_sol3072",
+      "target": "Nontron tailings",
+      "classId": "glen-torridon-clay",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Carolyn Shoemaker formation, Mercou member",
+      "sol": 3072,
+      "elevationM": -4072.91,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 49.3,
+        "TiO2": 1.16,
+        "Al2O3": 9.15,
+        "Cr2O3": 0.33,
+        "FeO": 19.82,
+        "MnO": 0.27,
+        "MgO": 4.14,
+        "CaO": 4.52,
+        "Na2O": 2.55,
+        "K2O": 0.86,
+        "P2O5": 0.99,
+        "SO3": 5.58,
+        "Cl": 0.9
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.05,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.08,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.1,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 1205.0,
+        "Zn": 2182.0,
+        "Br": 29.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Nontron_tailings' (sol 3072, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 65.0,
+          "Zn": 70.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Carolyn_Shoemaker",
+          "member": "Mercou"
+        }
+      }
+    },
+    {
+      "id": "MSL_Bardou_sol3108",
+      "target": "Bardou tailings",
+      "classId": "glen-torridon-clay",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Carolyn Shoemaker formation, Mercou member",
+      "sol": 3108,
+      "elevationM": -4066.48,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 48.35,
+        "TiO2": 1.11,
+        "Al2O3": 8.88,
+        "Cr2O3": 0.31,
+        "FeO": 19.06,
+        "MnO": 0.3,
+        "MgO": 4.62,
+        "CaO": 4.7,
+        "Na2O": 2.38,
+        "K2O": 0.83,
+        "P2O5": 0.74,
+        "SO3": 7.5,
+        "Cl": 0.88
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.05,
+        "SO3": 0.1,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 966.0,
+        "Zn": 1545.0,
+        "Br": 39.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Bardou_tailings' (sol 3108, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 50.0,
+          "Zn": 50.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Carolyn_Shoemaker",
+          "member": "Mercou"
+        }
+      }
+    },
+    {
+      "id": "MSL_Pontours_sol3180",
+      "target": "Pontours tailings",
+      "classId": "glen-torridon-clay",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Carolyn Shoemaker formation, Pontours member",
+      "sol": 3180,
+      "elevationM": -4041.25,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 43.56,
+        "TiO2": 1.12,
+        "Al2O3": 7.96,
+        "Cr2O3": 0.33,
+        "FeO": 22.77,
+        "MnO": 0.27,
+        "MgO": 5.14,
+        "CaO": 4.61,
+        "Na2O": 2.22,
+        "K2O": 0.78,
+        "P2O5": 1.14,
+        "SO3": 8.61,
+        "Cl": 1.09
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.05,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.07,
+        "K2O": 0.02,
+        "P2O5": 0.07,
+        "SO3": 0.1,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 1195.0,
+        "Zn": 1763.0,
+        "Br": 30.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Pontours_tailings' (sol 3180, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 60.0,
+          "Zn": 55.0,
+          "Br": 10.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Carolyn_Shoemaker",
+          "member": "Pontours"
+        }
+      }
+    },
+    {
+      "id": "MSL_MariaGordon_sol3246",
+      "target": "Maria Gordon tailings",
+      "classId": "mirador-sulfate",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Mirador formation, Dunnideer member",
+      "sol": 3246,
+      "elevationM": -4015.23,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 45.33,
+        "TiO2": 1.1,
+        "Al2O3": 8.4,
+        "Cr2O3": 0.32,
+        "FeO": 20.1,
+        "MnO": 0.25,
+        "MgO": 4.27,
+        "CaO": 6.01,
+        "Na2O": 2.36,
+        "K2O": 0.87,
+        "P2O5": 1.11,
+        "SO3": 8.51,
+        "Cl": 1.04
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.07,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.13,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 1151.0,
+        "Zn": 1348.0,
+        "Br": 29.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Maria_Gordon_tailings' (sol 3246, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 60.0,
+          "Zn": 45.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Mirador",
+          "member": "Dunnideer"
+        }
+      }
+    },
+    {
+      "id": "MSL_Zechstein_sol3303",
+      "target": "Zechstein tailings",
+      "classId": "mirador-sulfate",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Mirador formation, Port Logan member",
+      "sol": 3303,
+      "elevationM": -3991.11,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 46.42,
+        "TiO2": 1.12,
+        "Al2O3": 8.5,
+        "Cr2O3": 0.33,
+        "FeO": 18.9,
+        "MnO": 0.22,
+        "MgO": 4.34,
+        "CaO": 6.75,
+        "Na2O": 2.31,
+        "K2O": 0.8,
+        "P2O5": 1.05,
+        "SO3": 7.95,
+        "Cl": 1.04
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.05,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.17,
+        "CaO": 0.07,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.07,
+        "SO3": 0.1,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 882.0,
+        "Zn": 1074.0,
+        "Br": 23.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Zechstein_tailings' (sol 3303, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 45.0,
+          "Zn": 35.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Mirador",
+          "member": "Port_Logan"
+        }
+      }
+    },
+    {
+      "id": "MSL_Avanavero_sol3528",
+      "target": "Avanavero tailings",
+      "classId": "mirador-sulfate",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Mirador formation, Contigo member",
+      "sol": 3528,
+      "elevationM": -3909.96,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 47.82,
+        "TiO2": 1.11,
+        "Al2O3": 8.98,
+        "Cr2O3": 0.36,
+        "FeO": 22.03,
+        "MnO": 0.43,
+        "MgO": 4.45,
+        "CaO": 4.63,
+        "Na2O": 2.47,
+        "K2O": 0.8,
+        "P2O5": 1.05,
+        "SO3": 4.77,
+        "Cl": 0.76
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.05,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.03,
+        "FeO": 0.26,
+        "MnO": 0.03,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.1,
+        "Cl": 0.03
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 1023.0,
+        "Zn": 1455.0,
+        "Br": 15.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Avanavero_tailings' (sol 3528, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 55.0,
+          "Zn": 45.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Mirador",
+          "member": "Contigo"
+        }
+      }
+    },
+    {
+      "id": "MSL_Canaima_sol3626",
+      "target": "Canaima tailings",
+      "classId": "mirador-sulfate",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Mirador formation, Contigo member",
+      "sol": 3626,
+      "elevationM": -3879.79,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 34.22,
+        "TiO2": 0.9,
+        "Al2O3": 6.61,
+        "Cr2O3": 0.29,
+        "FeO": 17.66,
+        "MnO": 0.21,
+        "MgO": 10.68,
+        "CaO": 4.95,
+        "Na2O": 2.19,
+        "K2O": 0.68,
+        "P2O5": 0.87,
+        "SO3": 19.21,
+        "Cl": 1.27
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.43,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.01,
+        "MgO": 0.25,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.05,
+        "SO3": 0.22,
+        "Cl": 0.03
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 839.0,
+        "Zn": 1025.0,
+        "Br": 22.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Canaima_tailings' (sol 3626, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 45.0,
+          "Zn": 35.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Mirador",
+          "member": "Contigo"
+        }
+      }
+    },
+    {
+      "id": "MSL_Catrimani_sol3637",
+      "target": "Catrimani DRT",
+      "classId": "mirador-sulfate",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Mirador formation, Catrimani member",
+      "sol": 3637,
+      "elevationM": -3863.05,
+      "prep": "brushed rock (DRT)",
+      "oxidesWtPct": {
+        "SiO2": 45.66,
+        "TiO2": 1.09,
+        "Al2O3": 8.41,
+        "Cr2O3": 0.31,
+        "FeO": 17.9,
+        "MnO": 0.26,
+        "MgO": 4.51,
+        "CaO": 7.0,
+        "Na2O": 2.56,
+        "K2O": 0.76,
+        "P2O5": 0.94,
+        "SO3": 9.48,
+        "Cl": 0.82
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.03,
+        "FeO": 0.2,
+        "MnO": 0.03,
+        "MgO": 0.17,
+        "CaO": 0.08,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.07,
+        "SO3": 0.17,
+        "Cl": 0.03
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 401.0,
+        "Zn": 1249.0,
+        "Br": 530.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Catrimani_DRT' (sol 3637, preparation RB). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 30.0,
+          "Zn": 40.0,
+          "Br": 20.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Mirador",
+          "member": "Catrimani"
+        }
+      }
+    },
+    {
+      "id": "MSL_Amapari1_sol3684",
+      "target": "Amapari1 tailings",
+      "classId": "amapari-iron",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Mirador formation, Amapari member",
+      "sol": 3684,
+      "elevationM": -3859.47,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 26.45,
+        "TiO2": 0.68,
+        "Al2O3": 4.13,
+        "Cr2O3": 0.55,
+        "FeO": 42.62,
+        "MnO": 1.38,
+        "MgO": 4.64,
+        "CaO": 5.37,
+        "Na2O": 2.81,
+        "K2O": 0.29,
+        "P2O5": 0.47,
+        "SO3": 5.42,
+        "Cl": 2.89
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.32,
+        "TiO2": 0.03,
+        "Al2O3": 0.1,
+        "Cr2O3": 0.03,
+        "FeO": 0.46,
+        "MnO": 0.04,
+        "MgO": 0.17,
+        "CaO": 0.06,
+        "Na2O": 0.14,
+        "K2O": 0.01,
+        "P2O5": 0.05,
+        "SO3": 0.1,
+        "Cl": 0.05
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 545.0,
+        "Zn": 16894.0,
+        "Br": 3919.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Amapari1_tailings' (sol 3684, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 40.0,
+          "Zn": 510.0,
+          "Br": 120.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Mirador",
+          "member": "Amapari"
+        }
+      }
+    },
+    {
+      "id": "MSL_Amapari2_sol3682",
+      "target": "Amapari2 tailings",
+      "classId": "amapari-iron",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Mirador formation, Amapari member",
+      "sol": 3682,
+      "elevationM": -3859.47,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 26.8,
+        "TiO2": 0.67,
+        "Al2O3": 3.98,
+        "Cr2O3": 0.6,
+        "FeO": 39.86,
+        "MnO": 1.13,
+        "MgO": 5.15,
+        "CaO": 5.56,
+        "Na2O": 3.32,
+        "K2O": 0.32,
+        "P2O5": 0.46,
+        "SO3": 6.48,
+        "Cl": 3.22
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.32,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.03,
+        "FeO": 0.46,
+        "MnO": 0.04,
+        "MgO": 0.17,
+        "CaO": 0.07,
+        "Na2O": 0.2,
+        "K2O": 0.02,
+        "P2O5": 0.05,
+        "SO3": 0.13,
+        "Cl": 0.06
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 497.0,
+        "Zn": 17511.0,
+        "Br": 4369.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Amapari2_tailings' (sol 3682, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 50.0,
+          "Zn": 530.0,
+          "Br": 135.0
+        },
+        "stratigraphy": {
+          "group": "Mt._Sharp",
+          "formation": "Mirador",
+          "member": "Amapari"
+        }
+      }
+    },
+    {
+      "id": "MSL_BigSky_sol1123",
+      "target": "Big Sky full drill tailings",
+      "classId": "stimson-sandstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Stimson formation",
+      "sol": 1123,
+      "elevationM": -4434.69,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 41.7,
+        "TiO2": 0.9,
+        "Al2O3": 11.3,
+        "Cr2O3": 0.45,
+        "FeO": 19.14,
+        "MnO": 0.39,
+        "MgO": 8.05,
+        "CaO": 7.42,
+        "Na2O": 3.0,
+        "K2O": 0.49,
+        "P2O5": 0.73,
+        "SO3": 5.57,
+        "Cl": 0.79
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.43,
+        "TiO2": 0.03,
+        "Al2O3": 0.29,
+        "Cr2O3": 0.01,
+        "FeO": 0.2,
+        "MnO": 0.02,
+        "MgO": 0.17,
+        "CaO": 0.08,
+        "Na2O": 0.14,
+        "K2O": 0.02,
+        "P2O5": 0.05,
+        "SO3": 0.08,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 466.0,
+        "Zn": 292.0,
+        "Br": 300.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Big_Sky_full_drill_tailings' (sol 1123, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 25.0,
+          "Zn": 10.0,
+          "Br": 10.0
+        },
+        "stratigraphy": {
+          "group": "Siccar Point",
+          "formation": "Stimson",
+          "member": ""
+        }
+      }
+    },
+    {
+      "id": "MSL_Okoruso_sol1337",
+      "target": "Okoruso full drill tailings",
+      "classId": "stimson-sandstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Stimson formation",
+      "sol": 1337,
+      "elevationM": -4429.29,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 44.67,
+        "TiO2": 0.95,
+        "Al2O3": 9.49,
+        "Cr2O3": 0.38,
+        "FeO": 22.13,
+        "MnO": 0.41,
+        "MgO": 9.96,
+        "CaO": 6.54,
+        "Na2O": 2.92,
+        "K2O": 0.33,
+        "P2O5": 0.78,
+        "SO3": 0.65,
+        "Cl": 0.63
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.29,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.01,
+        "MgO": 0.25,
+        "CaO": 0.07,
+        "Na2O": 0.14,
+        "K2O": 0.01,
+        "P2O5": 0.05,
+        "SO3": 0.03,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 461.0,
+        "Zn": 329.0,
+        "Br": 141.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Okoruso_full_drill_tailings' (sol 1337, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 25.0,
+          "Zn": 10.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Siccar Point",
+          "formation": "Stimson",
+          "member": ""
+        }
+      }
+    },
+    {
+      "id": "MSL_Edinburgh_sol2728",
+      "target": "Edinburgh tailings",
+      "classId": "stimson-sandstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons)",
+      "sol": 2728,
+      "elevationM": -4088.69,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 39.54,
+        "TiO2": 0.87,
+        "Al2O3": 8.86,
+        "Cr2O3": 0.42,
+        "FeO": 22.67,
+        "MnO": 0.54,
+        "MgO": 9.36,
+        "CaO": 7.1,
+        "Na2O": 3.45,
+        "K2O": 1.09,
+        "P2O5": 0.59,
+        "SO3": 4.58,
+        "Cl": 0.81
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.43,
+        "TiO2": 0.03,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.26,
+        "MnO": 0.03,
+        "MgO": 0.25,
+        "CaO": 0.08,
+        "Na2O": 0.14,
+        "K2O": 0.04,
+        "P2O5": 0.05,
+        "SO3": 0.08,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 408.0,
+        "Zn": 353.0,
+        "Br": 77.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Edinburgh_tailings' (sol 2728, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 25.0,
+          "Zn": 15.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Siccar Point",
+          "formation": "",
+          "member": ""
+        }
+      }
+    },
+    {
+      "id": "MSL_Venlaw_sol3428",
+      "target": "Venlaw DRT",
+      "classId": "stimson-sandstone",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Stimson formation",
+      "sol": 3428,
+      "elevationM": -3976.18,
+      "prep": "brushed rock (DRT)",
+      "oxidesWtPct": {
+        "SiO2": 45.74,
+        "TiO2": 0.71,
+        "Al2O3": 9.8,
+        "Cr2O3": 0.46,
+        "FeO": 18.62,
+        "MnO": 0.42,
+        "MgO": 8.08,
+        "CaO": 6.63,
+        "Na2O": 3.29,
+        "K2O": 1.49,
+        "P2O5": 0.65,
+        "SO3": 3.26,
+        "Cl": 0.71
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.54,
+        "TiO2": 0.03,
+        "Al2O3": 0.29,
+        "Cr2O3": 0.03,
+        "FeO": 0.2,
+        "MnO": 0.03,
+        "MgO": 0.17,
+        "CaO": 0.07,
+        "Na2O": 0.14,
+        "K2O": 0.05,
+        "P2O5": 0.05,
+        "SO3": 0.08,
+        "Cl": 0.03
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 332.0,
+        "Zn": 421.0,
+        "Br": 48.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Venlaw_DRT' (sol 3428, preparation RB). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 25.0,
+          "Zn": 20.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Siccar_Point",
+          "formation": "Stimson",
+          "member": ""
+        }
+      }
+    },
+    {
+      "id": "MSL_Greenhorn_sol1142",
+      "target": "Greenhorn full drill tailings",
+      "classId": "silica-alteration",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Stimson formation",
+      "sol": 1142,
+      "elevationM": -4434.52,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 59.15,
+        "TiO2": 0.91,
+        "Al2O3": 2.86,
+        "Cr2O3": 0.28,
+        "FeO": 10.39,
+        "MnO": 0.07,
+        "MgO": 1.47,
+        "CaO": 7.1,
+        "Na2O": 2.15,
+        "K2O": 0.29,
+        "P2O5": 1.56,
+        "SO3": 13.07,
+        "Cl": 0.54
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.64,
+        "TiO2": 0.03,
+        "Al2O3": 0.1,
+        "Cr2O3": 0.01,
+        "FeO": 0.13,
+        "MnO": 0.02,
+        "MgO": 0.83,
+        "CaO": 0.08,
+        "Na2O": 0.07,
+        "K2O": 0.01,
+        "P2O5": 0.09,
+        "SO3": 0.15,
+        "Cl": 0.01
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 183.0,
+        "Zn": 93.0,
+        "Br": 441.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Greenhorn_full_drill_tailings' (sol 1142, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 10.0,
+          "Zn": 5.0,
+          "Br": 15.0
+        },
+        "stratigraphy": {
+          "group": "Siccar Point",
+          "formation": "Stimson",
+          "member": ""
+        }
+      }
+    },
+    {
+      "id": "MSL_Lubango_sol1325",
+      "target": "Lubango fulldrill tailings",
+      "classId": "silica-alteration",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS",
+      "site": "Gale crater, Mount Sharp (Aeolis Mons), Stimson formation",
+      "sol": 1325,
+      "elevationM": -4429.0,
+      "prep": "drill tailings",
+      "oxidesWtPct": {
+        "SiO2": 63.58,
+        "TiO2": 1.07,
+        "Al2O3": 2.12,
+        "Cr2O3": 0.34,
+        "FeO": 4.31,
+        "MnO": 0.06,
+        "MgO": 1.06,
+        "CaO": 8.58,
+        "Na2O": 1.59,
+        "K2O": 0.29,
+        "P2O5": 1.49,
+        "SO3": 15.07,
+        "Cl": 0.31
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.64,
+        "TiO2": 0.03,
+        "Al2O3": 0.1,
+        "Cr2O3": 0.01,
+        "FeO": 0.07,
+        "MnO": 0.04,
+        "MgO": 0.83,
+        "CaO": 0.1,
+        "Na2O": 0.14,
+        "K2O": 0.01,
+        "P2O5": 0.09,
+        "SO3": 0.2,
+        "Cl": 0.02
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 43.0,
+        "Zn": 78.0,
+        "Br": 83.0
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
+      "url": "https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "confidence": "high",
+      "notes": "Values copied unchanged from the PDS CSV row Target='Lubango_fulldrill_tailings' (sol 1325, preparation DT). Errors are the published 'statistical fitting error (two sigma)'; FeO is total iron as FeO.",
+      "ext": {
+        "traceSigmaPpm": {
+          "Ni": 25.0,
+          "Zn": 10.0,
+          "Br": 5.0
+        },
+        "stratigraphy": {
+          "group": "Siccar Point",
+          "formation": "Stimson",
+          "member": ""
+        }
+      }
+    },
+    {
+      "id": "MSL_Buckskin_PostsieveDump",
+      "target": "Buckskin drill sample, post-sieve (<150 um) dump pile",
+      "classId": "silica-alteration",
+      "mission": "MSL Curiosity",
+      "instrument": "APXS + CheMin XRD",
+      "site": "Gale crater, Marias Pass, Murray formation (high-SiO2 laminated mudstone)",
+      "sol": 1091,
+      "prep": "drill powder sieved to <150 um and dumped after CheMin delivery (rock interior; the same sieved fraction that CheMin analyzed)",
+      "oxidesWtPct": {
+        "SiO2": 73.65,
+        "TiO2": 1.57,
+        "Al2O3": 5.66,
+        "Cr2O3": 0.1,
+        "FeO": 5.49,
+        "MnO": 0.09,
+        "MgO": 0.82,
+        "CaO": 3.05,
+        "Na2O": 2.08,
+        "K2O": 0.96,
+        "P2O5": 1.25,
+        "SO3": 4.8,
+        "Cl": 0.29
+      },
+      "oxideSigmaWtPct": {
+        "SiO2": 0.75,
+        "TiO2": 0.05,
+        "Al2O3": 0.19,
+        "Cr2O3": 0.01,
+        "FeO": 0.07,
+        "MnO": 0.02,
+        "MgO": 0.83,
+        "CaO": 0.04,
+        "Na2O": 0.07,
+        "K2O": 0.04,
+        "P2O5": 0.07,
+        "SO3": 0.08,
+        "Cl": 0.01
+      },
+      "sigmaLevel": 2,
+      "tracesPpm": {
+        "Ni": 132,
+        "Zn": 326,
+        "Br": 59
+      },
+      "metalsWtPct": {},
+      "mineralsWtPct": {
+        "Plagioclase": 21.4,
+        "Sanidine": 4.2,
+        "Magnetite": 3.5,
+        "Anhydrite": 0.9,
+        "Tridymite": 17.1,
+        "Cristobalite": 3,
+        "Amorphous": 50
+      },
+      "mineralsSource": "CheMin XRD, column 'Bulk sample: XRD' of Morris et al. 2016 Table 2 (wt% of the whole sample, amorphous included)",
+      "citation": "Morris R.V. et al. (2016) PNAS 113(26), 7071-7076, doi:10.1073/pnas.1607098113, Table 1 ('Postsieve' column) and Table 2 ('Bulk sample: XRD' column). Sigmas and traces are from the PDS file msl_apxs_concentrations_mno_recalib.csv, row sol 1091 'Buckskin_post_sieve_dump_twk_corrected'.",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4932983/",
+      "confidence": "high",
+      "notes": "VERIFICATION: I parsed Morris Tables 1 and 2 from the PMC HTML. All 13 oxides match the Postsieve column (Morris total 99.81), and all mineral values match Table 2, Bulk sample XRD (2-sigma: plagioclase 1.5, sanidine 0.9, magnetite 0.4, anhydrite 0.3, tridymite 1.0, cristobalite 0.4, amorphous 15). I downloaded the PDS MnO-recalibrated CSV and compared the row programmatically: every oxide, sigma and trace (Ni 132, Zn 326, Br 59) matches. The Morris text confirms the post-sieve dump on sol 1091 (the PDS start time is 1092M02:31:50, an overnight run). CHANGES: none. The PDS header calls the errors 'precision (repeatability)' and gives no sigma level. The MgO error (0.83) is larger than the MgO value. Trace sigmas: Ni 10, Zn 10, Br 5 ppm. Iron is FeOT in Morris. Do not use the PDS sol 1089 row 'Buckskin_post_sieve_dump_twk' (FeO 9.87, Cr2O3 0.20); Morris used the 'corrected' sol 1091 analysis. The APXS-constrained alternative gives tridymite 13.6 and amorphous 60 (a lower limit). PDS CheMin label cmb_491748904min10620482542ch00111p1 (verified): crystalline-only plagioclase 42.8, tridymite 34.1, sanidine 8.4, magnetite 6.9, cristobalite 6.0, anhydrite 1.8; opaline plus amorphous ~50 +/- 15 wt% of the total sample. Morris Table 1 also gives a calculated amorphous composition with SiO2 77.01.",
+      "ext": {
+        "sigmaLevel": "2-sigma",
+        "sigmaNote": "2-sigma (divide by 2 for 1-sigma). Level assigned at assembly: the mno_recalib header calls these errors 'precision (repeatability)' without a level, but the same row in the PDS4 APXS supplement ds01_3076.csv (urn:nasa:pds:msl_apxs_supplement_sols_0_3076) carries identical oxide errors and Ni/Zn/Br errors, and its supporting information (2021je007171r) defines every *_err as 'Statistical fitting error (two sigma)'. That supplement row lists Ni 133 and Zn 327 ppm (this record keeps the verified 132 and 326).",
+        "traceSigmaPpm": {
+          "Ni": 10,
+          "Zn": 10,
+          "Br": 5
+        },
+        "metalsSigmaWtPct": {},
+        "accuracyTable": "apxsPds",
+        "detectionFlags": {
+          "MgO": "value 0.82 <= stated uncertainty 0.83; treat as upper limit / near detection"
+        }
+      }
+    },
+    {
+      "id": "MSL_EggRock_ChemCam",
+      "target": "Egg Rock (Aeolis Mons 001), iron-nickel meteorite",
+      "classId": "iron-meteorite",
+      "mission": "MSL Curiosity",
+      "instrument": "ChemCam LIBS",
+      "site": "Gale crater, lower Mount Sharp, Murray formation (Sutton Island member)",
+      "sol": 1505,
+      "prep": "natural (thin dust coat; Fe peaks reach steady intensity after ~2 shots; 9-point raster, 30 shots per point)",
+      "oxidesWtPct": {},
+      "oxideSigmaWtPct": {},
+      "sigmaLevel": 2,
+      "tracesPpm": {},
+      "metalsWtPct": {
+        "Ni": 4.8
+      },
+      "mineralsWtPct": {},
+      "mineralsSource": "none (no XRD). The LIBS points are interpreted as kamacite; schreibersite is inferred at point #9 from coupled Ni and P enrichment (Meslin et al. 2017).",
+      "citation": "Meslin P.-Y. et al. (2019) 50th LPSC, abstract #3179, Table 1, row 'Aeolis Mons 001 (Egg Rock)', Ni (wt%) +/- 2-sigma, without point #9.",
+      "url": "https://www.hou.usra.edu/meetings/lpsc2019/pdf/3179.pdf",
+      "confidence": "medium",
+      "notes": "VERIFICATION: I downloaded the abstract and rendered Table 1 as an image. It shows sol 1505, Sutton Island, ~4 cm, 9 points x 30 shots, Ni/Fe peak ratio 0.214 +/- 0.026 and Ni 4.8 +/- 0.7 wt%, both without point #9. The header 'Ni (wt%) +/- 2-sigma' is visible in the image. CHANGES: none. Only Ni is quantified. Fe is not reported and is not computed here. Co (~0.5 wt% in typical irons) was not detected, and Ga, Ge, Ir and Au are below ChemCam detection, so no chemical group can be assigned. Meslin et al. 2017 LPSC #2258 (verified) gave an earlier estimate of ~8 wt% Ni from comparison with lab spectra; the 2019 calibrated value supersedes it. Meslin 2017 also describes the dust layer: residual dust peaks persist through the first 5 shots, and Fe peaks are steady after 2 shots. Wiens et al. 2017 MetSoc #6168 (verified) gives the size as 4 x 5 cm. Confidence is medium because this is a semi-quantitative LIBS value from a conference abstract. No APXS analysis exists.",
+      "ext": {
+        "sigmaLevel": "2-sigma",
+        "sigmaNote": "Stated 2-sigma (statistical/counting precision); divide by 2 for 1-sigma. metalsSigmaWtPct is the 2-sigma Ni uncertainty from Meslin 2019 Table 1.",
+        "traceSigmaPpm": {},
+        "metalsSigmaWtPct": {
+          "Ni": 0.7
+        },
+        "accuracyTable": null,
+        "detectionFlags": {}
+      }
+    },
+    {
+      "id": "MSL_AmesKnob_ChemCam",
+      "target": "Ames Knob (Aeolis Mons 002), iron-nickel meteorite",
+      "classId": "iron-meteorite",
+      "mission": "MSL Curiosity",
+      "instrument": "ChemCam LIBS",
+      "site": "Gale crater, lower Mount Sharp, Murray formation (Sutton Island member)",
+      "sol": 1577,
+      "prep": "natural (dust-covered surface; 3-point raster, 30 shots per point)",
+      "oxidesWtPct": {},
+      "oxideSigmaWtPct": {},
+      "sigmaLevel": 2,
+      "tracesPpm": {},
+      "metalsWtPct": {
+        "Ni": 11.7
+      },
+      "mineralsWtPct": {},
+      "mineralsSource": "none",
+      "citation": "Meslin P.-Y. et al. (2019) 50th LPSC, abstract #3179, Table 1, row 'Aeolis Mons 002 (Ames Knob)'.",
+      "url": "https://www.hou.usra.edu/meetings/lpsc2019/pdf/3179.pdf",
+      "confidence": "medium",
+      "notes": "VERIFICATION: I rendered Table 1 as an image. It shows sol 1577, Sutton Island, ~8 cm, 3 points x 30 shots, Ni/Fe peak ratio 0.384 +/- 0.017 and Ni 11.7 +/- 2.4 wt% (2-sigma). CHANGES: the prep now notes the dust cover, which Wiens 2017 describes ('the meteorite is covered in dust'). Wiens et al. 2017 MetSoc #6168 (verified) gives the size as 7.5 x 8 cm. It reports Ni/Fe peak ratios nearly identical to the ataxite Chinga (16.7 wt% Ni) and suggests a possible ataxite; the 2019 calibrated Ni is lower. Fe, Co and the other elements are not quantified. Confidence is medium because this is semi-quantitative LIBS from a conference abstract.",
+      "ext": {
+        "sigmaLevel": "2-sigma",
+        "sigmaNote": "Stated 2-sigma (statistical/counting precision); divide by 2 for 1-sigma. metalsSigmaWtPct is the 2-sigma Ni uncertainty from Meslin 2019 Table 1.",
+        "traceSigmaPpm": {},
+        "metalsSigmaWtPct": {
+          "Ni": 2.4
+        },
+        "accuracyTable": null,
+        "detectionFlags": {}
+      }
+    }
+  ],
+  "ext": {
+    "region": "Mount Sharp (Aeolis Mons), Gale crater, Mars",
+    "sources": [
+      "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171 https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_0_3076/data/ds01_2021je007171r.csv",
+      "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv) https://pds-geosciences.wustl.edu/msl/urn-nasa-pds-msl_apxs_supplement_sols_3054_3712/data/ds01_2024.csv"
+    ],
+    "sigmaLevelField": "samples[].sigmaLevel states how many sigma oxideSigmaWtPct / ext.traceSigmaPpm are (2 = published 2-sigma).",
+    "previousDatabase": "Earlier curated database with Spirit, Opportunity and Perseverance analogs replaced on 2026-11-14 by Mount Sharp data only."
+  }
+}
