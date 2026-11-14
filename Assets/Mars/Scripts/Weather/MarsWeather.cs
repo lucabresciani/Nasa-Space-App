@@ -67,8 +67,10 @@ namespace NasaSpaceApp
         TextAsset remsData;
         [SerializeField, Tooltip("PDS msl_tau_880.csv: Mastcam solar-imaging optical depth at 880 nm (Lemmon et al., doi:10.17189/fjh0-2978).")]
         TextAsset tauData;
-        [SerializeField, Min(0f), Tooltip("0: the season's median tau. Otherwise a mission sol: the nearest Mastcam measurement inside the REMS season window.")]
+        [SerializeField, Min(0f), Tooltip("0: the season's median tau (REMS window). Otherwise a mission sol: the nearest Mastcam measurement in the whole record (33-3953). Try 2086: the 2018 global dust storm, tau 8.6.")]
         float historicalSol;
+        [SerializeField, Tooltip("Briefly shows the new weather on screen when M or H is pressed.")]
+        bool showChangeLabel = true;
 
         [Header("Presets (Indexed By WeatherKind)")]
         [SerializeField, Tooltip("Clear, IceClouds, DustDevils, DustyHaze, DustStorm. Edits made in play mode glide in.")]
@@ -355,10 +357,15 @@ namespace NasaSpaceApp
         {
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null) return;
-            if (historicalKey != Key.None && keyboard[historicalKey].wasPressedThisFrame) Historical = !historical;
+            if (historicalKey != Key.None && keyboard[historicalKey].wasPressedThisFrame)
+            {
+                Historical = !historical;
+                ShowLabel();
+            }
             if (cycleKey == Key.None || !keyboard[cycleKey].wasPressedThisFrame) return;
             if (keyboard.shiftKey.isPressed) CyclePrevious();
             else CycleNext();
+            ShowLabel();
         }
 
         void Tick(float dt)
@@ -572,9 +579,61 @@ namespace NasaSpaceApp
         // A state's channels as the glide target; in historical mode the dust is the measured tau instead of the preset's.
         void LoadTarget(WeatherKind kind)
         {
-            LoadChannels(Preset(kind), target, 0);
             MarsHistoricalClimate measured = historical ? Climate : null;
-            if (measured != null) target[LnTau] = Mathf.Log(Mathf.Max(measured.TauFor(historicalSol), MinOpticalDepth));
+            if (measured == null)
+            {
+                LoadChannels(Preset(kind), target, 0);
+                return;
+            }
+            // Only tau is measured. Wind, dust sheets and devils (not measured) come from the dust state closest to it,
+            // so a historical storm also looks like one; the selected state is ignored meanwhile.
+            float tau = Mathf.Max(measured.TauFor(historicalSol), MinOpticalDepth);
+            LoadChannels(Preset(ClosestDustState(tau)), target, 0);
+            target[LnTau] = Mathf.Log(tau);
+        }
+
+        WeatherKind ClosestDustState(float tau)
+        {
+            WeatherKind best = WeatherKind.Clear;
+            foreach (WeatherKind k in new[] { WeatherKind.Clear, WeatherKind.DustyHaze, WeatherKind.DustStorm })
+                if (Mathf.Abs(Mathf.Log(tau / Mathf.Max(Preset(k).opticalDepth, MinOpticalDepth)))
+                    < Mathf.Abs(Mathf.Log(tau / Mathf.Max(Preset(best).opticalDepth, MinOpticalDepth))))
+                    best = k;
+            return best;
+        }
+
+        // ------------------------------------------------------------------ on-screen feedback
+
+        string label;
+        float labelUntil;
+        GUIStyle labelStyle;
+
+        void ShowLabel()
+        {
+            if (!showChangeLabel || !Application.isPlaying) return;
+            MarsHistoricalClimate measured = historical ? Climate : null;
+            if (historical && measured == null) label = "Historical weather: data files missing (see Environment/Weather)";
+            else if (historical && historicalSol > 0f)
+            {
+                MarsHistoricalClimate.TauSample s = measured.NearestSample(historicalSol);
+                label = $"Historical weather: Gale, sol {s.sol:0} (Ls {s.ls:0}, MY {s.marsYear}), tau {s.tau:0.00} - Mastcam 880 nm";
+            }
+            else if (historical)
+                label = $"Historical weather: Gale, Ls {measured.LsWindowDeg.x:0}-{measured.LsWindowDeg.y:0}, tau {measured.Tau.median:0.00} (median of {measured.Tau.count}, Mastcam 880 nm)";
+            else label = $"Weather: {targetKind}";
+            labelUntil = Time.unscaledTime + 4f;
+        }
+
+        void OnGUI()
+        {
+            if (label == null || !Application.isPlaying) return;
+            float alpha = Mathf.Clamp01(labelUntil - Time.unscaledTime); // fades out over the last second
+            if (alpha <= 0f) return;
+            labelStyle ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontSize = 18 };
+            Color previous = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, alpha);
+            GUI.Label(new Rect(0f, 24f, Screen.width, 32f), label, labelStyle);
+            GUI.color = previous;
         }
 
         static void LoadChannels(in WeatherPreset p, float[] into, int offset)

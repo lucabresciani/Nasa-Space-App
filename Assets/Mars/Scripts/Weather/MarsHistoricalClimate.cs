@@ -53,15 +53,19 @@ namespace NasaSpaceApp
         public string RemsProvenance { get; private set; }
 
         readonly List<TauSample> tauSamples = new List<TauSample>();
+        readonly List<TauSample> allSamples = new List<TauSample>(); // the whole record (sols 33-3953)
 
-        /// <summary>The tau for historical mode: the season median for sol &lt;= 0, else the measurement nearest that sol.</summary>
-        public float TauFor(float sol)
+        /// <summary>The tau for historical mode: the season median for sol &lt;= 0, else the measurement nearest that sol
+        /// anywhere in the record (e.g. sol 2086: tau 8.6, the 2018 global dust storm at Gale).</summary>
+        public float TauFor(float sol) => sol <= 0f || allSamples.Count == 0 ? Tau.median : NearestSample(sol).tau;
+
+        /// <summary>The measurement closest to a mission sol, from the whole record.</summary>
+        public TauSample NearestSample(float sol)
         {
-            if (sol <= 0f || tauSamples.Count == 0) return Tau.median;
-            TauSample best = tauSamples[0];
-            foreach (TauSample s in tauSamples)
+            TauSample best = allSamples[0];
+            foreach (TauSample s in allSamples)
                 if (Mathf.Abs(s.sol - sol) < Mathf.Abs(best.sol - sol)) best = s;
-            return best.tau;
+            return best;
         }
 
         /// <summary>Parses both files. Throws FormatException with a readable message if one is unusable.</summary>
@@ -138,10 +142,11 @@ namespace NasaSpaceApp
             {
                 if (sample.ls < previousLs - 180f) marsYear++;
                 previousLs = sample.ls;
-                if (sample.ls < LsWindowDeg.x || sample.ls > LsWindowDeg.y) continue;
-                if (MarsYears.Length > 0 && Array.IndexOf(MarsYears, marsYear) < 0) continue;
                 TauSample kept = sample;
                 kept.marsYear = marsYear;
+                allSamples.Add(kept);
+                if (sample.ls < LsWindowDeg.x || sample.ls > LsWindowDeg.y) continue;
+                if (MarsYears.Length > 0 && Array.IndexOf(MarsYears, marsYear) < 0) continue;
                 tauSamples.Add(kept);
                 taus.Add(sample.tau);
                 years.Add(marsYear);
