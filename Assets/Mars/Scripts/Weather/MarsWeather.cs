@@ -58,6 +58,18 @@ namespace NasaSpaceApp
         [SerializeField, Tooltip("Global Volume whose weight follows the storm amount (partial exposure compensation, since URP has no auto-exposure). Only its weight is ever written.")]
         Volume stormVolume;
 
+        [Header("Historical Mode (Measured Gale Data)")]
+        [SerializeField, Tooltip("Dust optical depth from Curiosity's measurements instead of the presets (same season as the REMS statistics). Wind, devils and clouds still follow the selected state: they are not measured.")]
+        bool historical;
+        [SerializeField, Tooltip("Toggles historical mode. None disables the key.")]
+        Key historicalKey = Key.H;
+        [SerializeField, Tooltip("REMS seasonal statistics in HOMELINE's format (conditions/rems.json, contract rems.schema.json).")]
+        TextAsset remsData;
+        [SerializeField, Tooltip("PDS msl_tau_880.csv: Mastcam solar-imaging optical depth at 880 nm (Lemmon et al., doi:10.17189/fjh0-2978).")]
+        TextAsset tauData;
+        [SerializeField, Min(0f), Tooltip("0: the season's median tau. Otherwise a mission sol: the nearest Mastcam measurement inside the REMS season window.")]
+        float historicalSol;
+
         [Header("Presets (Indexed By WeatherKind)")]
         [SerializeField, Tooltip("Clear, IceClouds, DustDevils, DustyHaze, DustStorm. Edits made in play mode glide in.")]
         WeatherPreset[] presets = WeatherPreset.CreateDefaults();
@@ -68,6 +80,40 @@ namespace NasaSpaceApp
 
         /// <summary>The weather being headed for (or already reached).</summary>
         public WeatherKind Target => targetKind;
+
+        /// <summary>Historical mode: the dust (tau) comes from Curiosity's measurements, see <see cref="Climate"/>.
+        /// Turning it on pauses automatic evolution, so the measured sky is not replaced by a random state.</summary>
+        public bool Historical
+        {
+            get => historical;
+            set
+            {
+                if (historical == value) return;
+                historical = value;
+                if (value) autoEvolve = false;
+                activeDuration = transitionDuration; // glide like a key press
+            }
+        }
+
+        /// <summary>Measured season (REMS air temperature and pressure, Mastcam tau), or null without readable data files.
+        /// Each value carries its provenance (<see cref="MarsHistoricalClimate.RemsProvenance"/>, <see cref="MarsHistoricalClimate.TauSource"/>).</summary>
+        public MarsHistoricalClimate Climate
+        {
+            get
+            {
+                if (!climateLoaded)
+                {
+                    climateLoaded = true;
+                    climate = null;
+                    if (remsData != null && tauData != null)
+                    {
+                        try { climate = MarsHistoricalClimate.Load(remsData.text, tauData.text); }
+                        catch (Exception e) { Debug.LogWarning($"[MarsWeather] Historical data unusable: {e.Message}", this); }
+                    }
+                }
+                return climate;
+            }
+        }
 
         /// <summary>The preset closest to what is on screen now, in normalised channel space (for a HUD label mid-blend).</summary>
         public WeatherKind Nearest => FindNearest();
@@ -142,6 +188,8 @@ namespace NasaSpaceApp
         WeatherKind targetKind;
         WeatherKind appliedStartState; // the startState already acted on (play-mode inspector edits)
         float activeDuration = 6f;     // D of the glide in progress: manual or automatic
+        MarsHistoricalClimate climate; // parsed once from remsData + tauData
+        bool climateLoaded;
         double clock;                  // weather seconds, unwrapped; double so noise and clouds stay precise for hours
         double cloudX, cloudZ;         // integrated cloud drift in km, never wrapped
         uint epoch;                    // automatic changes so far: indexes the scheduler's hashes
@@ -174,6 +222,7 @@ namespace NasaSpaceApp
         {
             // Applied from Update: OnValidate also runs during deserialisation, before OnEnable.
             snapPending = true;
+            climateLoaded = false; // the data files may have changed
 #if UNITY_EDITOR
             if (!Application.isPlaying) UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
 #endif
@@ -278,9 +327,10 @@ namespace NasaSpaceApp
             AtmosphereModifiers m = AtmosphereModifiers.Identity;
             m.extraDustDepth = extra;
             m.fogScale = Mathf.Max(1f, tau / tau0); // never clearer than the clear baseline
-            // Dust near the ground sets its own visibility whatever the (long-range) clear baseline is. Art anchor,
-            // exp² density 0.0018 per unit of extra tau: ~1.4 km in Dusty Haze (tau 1.3), ~440 m in Dust Storm (tau 3).
-            m.fogFloor = 0.0018f * extra;
+            // Dust near the ground sets its own visibility whatever the (long-range) clear baseline is. Art anchor, exp²:
+            // nothing up to 0.3 of extra tau (Gale's measured background, tau 0.6-0.8, still shows the crater rim and
+            // Mount Sharp), then ~1.8 km in Dusty Haze (tau 1.3) and ~410 m in Dust Storm (tau 3).
+            m.fogFloor = 0.0022f * Mathf.Max(0f, extra - 0.3f);
             m.skyFlatten = 0.85f * diffuse;
             m.hazeTint = Color.Lerp(Color.white, new Color(1f, 0.86f, 0.72f), diffuse);
             m.ambientScale = light;
@@ -304,7 +354,9 @@ namespace NasaSpaceApp
         void ReadKey()
         {
             Keyboard keyboard = Keyboard.current;
-            if (keyboard == null || cycleKey == Key.None || !keyboard[cycleKey].wasPressedThisFrame) return;
+            if (keyboard == null) return;
+            if (historicalKey != Key.None && keyboard[historicalKey].wasPressedThisFrame) Historical = !historical;
+            if (cycleKey == Key.None || !keyboard[cycleKey].wasPressedThisFrame) return;
             if (keyboard.shiftKey.isPressed) CyclePrevious();
             else CycleNext();
         }
@@ -320,7 +372,7 @@ namespace NasaSpaceApp
             }
 
             // Re-read every frame so preset edits made in the inspector glide in like any other change.
-            LoadChannels(Preset(targetKind), target, 0);
+            LoadTarget(targetKind);
 
             // Two critically damped springs in series (Erlang-4 step response): zero velocity and acceleration at
             // both ends, no overshoot, 50% at 0.37 D and about 99% at D. Retargeting keeps both velocities, so a
@@ -387,14 +439,14 @@ namespace NasaSpaceApp
             activeDuration = Mathf.Max(duration, MinDuration);
             if (kind == targetKind) return;
             targetKind = kind;
-            LoadChannels(Preset(kind), target, 0);
+            LoadTarget(kind);
             NotifyTargetChanged(kind);
         }
 
         void SnapInternal(WeatherKind kind)
         {
             targetKind = kind;
-            LoadChannels(Preset(kind), target, 0);
+            LoadTarget(kind);
             for (int i = 0; i < ChannelCount; i++)
             {
                 follow[i] = current[i] = target[i];
@@ -515,6 +567,14 @@ namespace NasaSpaceApp
         {
             int i = (int)kind;
             return presets != null && i < presets.Length ? presets[i] : FallbackPresets[i];
+        }
+
+        // A state's channels as the glide target; in historical mode the dust is the measured tau instead of the preset's.
+        void LoadTarget(WeatherKind kind)
+        {
+            LoadChannels(Preset(kind), target, 0);
+            MarsHistoricalClimate measured = historical ? Climate : null;
+            if (measured != null) target[LnTau] = Mathf.Log(Mathf.Max(measured.TauFor(historicalSol), MinOpticalDepth));
         }
 
         static void LoadChannels(in WeatherPreset p, float[] into, int offset)

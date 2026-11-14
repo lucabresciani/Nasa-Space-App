@@ -60,6 +60,9 @@ namespace NasaSpaceApp.MarsGen
             // Only references and, when asked, the start state: the presets and timings a user tuned are kept.
             var so = new SerializedObject(weather);
             Property(so, "stormVolume").objectReferenceValue = storm;
+            // Historical mode data (HOMELINE rems.json + PDS Mastcam tau); left unassigned if the files are missing.
+            Property(so, "remsData").objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Mars/WeatherData/rems.json");
+            Property(so, "tauData").objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Mars/WeatherData/msl_tau_880.csv");
             if (forceClear) Property(so, "startState").intValue = (int)WeatherKind.Clear;
             if (undo) so.ApplyModifiedProperties();
             else so.ApplyModifiedPropertiesWithoutUndo();
