@@ -42,8 +42,8 @@ namespace NasaSpaceApp.HUD
         private static readonly int[] SlopeRgb = { 0x6BBF8A, 0xE3D46A, 0xFFB020, 0xE0443A };
         private static readonly float[] SlopeAlpha = { 0.30f, 0.45f, 0.55f, 0.70f };   // perceptual, over the dark map
 
-        /// <summary>Perceptual alpha of a geologic unit at full band weight.</summary>
-        public const float UnitOverlayAlpha = 0.50f;
+        /// <summary>Perceptual alpha of a regional unit: at the weakest dominance share and where one class is alone.</summary>
+        public const float UnitAlphaMin = 0.35f, UnitAlphaMax = 0.60f;
 
         /// <summary>Contour ink of the topology layer (MarsElevationMap contour colour).</summary>
         public static readonly Color ContourColor = new Color(226f / 255f, 214f / 255f, 196f / 255f, 1f);
@@ -73,7 +73,7 @@ namespace NasaSpaceApp.HUD
                 case "amapari-iron": return HudTokens.Hex(0xE07FB8, 1f);       // iron-rich bed, pink
                 case "stimson-sandstone": return HudTokens.Hex(0xD9B77E, 1f);  // sand
                 case "silica-alteration": return HudTokens.Hex(0xA6E0C8, 1f);  // mint
-                case "iron-meteorite": return HudTokens.Hex(0x9DA3AA, 1f);     // steel
+                case "iron-meteorite": return HudTokens.Hex(0xB5D65A, 1f);     // lime: steel grey read as mudstone / unclassified
                 case null: return HudTokens.InkSecondary;
             }
             int h = 0;
@@ -116,15 +116,20 @@ namespace NasaSpaceApp.HUD
     ///
     /// Raster: stacked RawImages over the shared <see cref="MarsElevationMap"/> build (published by the compass dial in
     /// <see cref="HudContext.ElevationMap"/>): grey hillshade base, or the topology map (hypsometric tint + contours, the
-    /// dial's look) when Topology is on; then the Terrain (slope classes) and Mineral (geologic units) overlays. Pan and
-    /// zoom only rewrite the uvRects.
+    /// dial's look) when Topology is on; then the Terrain (slope classes) and Mineral overlays. The Mineral layer is the
+    /// regional unit map MarsElevationMap derives from the field rock distribution, a stand-in for an orbital mineral /
+    /// unit map: it shows regional units, never an individual unscanned rock's data. Pan and zoom only rewrite the uvRects.
+    ///
+    /// Field of view: always inside the high-definition play terrain (<see cref="MarsElevationMap.PlayBounds"/>). Farthest
+    /// zoom = that area covers the box (the limiting axis fits exactly, no margin beyond it); the centre is clamped so the
+    /// visible window stays inside the area at every zoom, after pan, zoom about the cursor and recentre alike.
     ///
     /// Vector (<see cref="HudLineMesh"/>, redrawn only on change): graticule ticks and lat/lon labels on the edges, scale
     /// bar, north arrow (frame); HOME star at the world origin, scanned rocks as class-coloured dots, the player arrow
     /// (marks); wind arrows on a sparse screen grid and active dust devils as rings (weather).
     ///
-    /// Input (only while shown and the cursor is free; pointer over the map): wheel = zoom about the cursor (from the whole
-    /// terrain down to 0.5 m per px), left-drag = pan. Hover readout top-left: lat/lon and MOLA elevation under the cursor.
+    /// Input (only while shown and the cursor is free; pointer over the map): wheel = zoom about the cursor (from the HD
+    /// area filling the box down to 0.5 m per px), left-drag = pan. Hover readout top-left: lat/lon and MOLA elevation under the cursor.
     /// No per-frame allocations; readout strings are rebuilt at most 10 Hz (hover) / 2 Hz (weather) and only on change.
     /// </summary>
     public sealed class MapView
@@ -132,7 +137,6 @@ namespace NasaSpaceApp.HUD
         private const float MinMpu = 0.5f;              // closest zoom: 0.5 m per canvas unit (px at 1080p)
         private const float StartMpu = 2f;              // first view: one map texel per unit, centred on the player
         private const float ZoomStep = 1.25f;
-        private const float FitMargin = 1.02f;          // farthest zoom: whole terrain plus 2 %
         private const float GratMinSpacing = 110f;      // graticule spacing at least this (units)
         private const float TickLen = 8f;
         private const float Edge = 12f;                 // inset of the corner readouts
@@ -151,7 +155,7 @@ namespace NasaSpaceApp.HUD
         private static readonly float[] ScaleSteps = { 1f, 2f, 5f, 10f, 20f, 50f, 100f, 200f, 500f, 1000f, 2000f, 5000f };
         private static readonly string[] DecimalFormats = { "0", "0.0", "0.00", "0.000", "0.0000", "0.00000" };
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-        private static readonly Color DevilColor = HudTokens.Hex(0xE0B88A, 1f);
+        private static readonly Color DevilColor = HudTokens.Hex(0xEDEDED, 1f);   // neutral white: distinct from every class colour
         private static readonly Color WindColor = HudTokens.InkSecondary;
 
         // Player chevron (as on the dial, 1.25x) and 4-point HOME star, local glyph space (y = ahead / north).
@@ -189,7 +193,7 @@ namespace NasaSpaceApp.HUD
         private float nextGeoLookup, nextDevilLookup;
         private bool mapReady, noMap;
         private int progress = -1;
-        private Rect worldBounds, overlayBounds;
+        private Rect worldBounds, overlayBounds, hdBounds;   // texture grids; HD play area (the view limit)
         private string contourLabel;
 
         private bool visible = true, wasShown;
@@ -477,6 +481,11 @@ namespace NasaSpaceApp.HUD
                 unitImage.texture = map.UnitTexture;
                 worldBounds = map.WorldBounds;
                 overlayBounds = map.OverlayWorldBounds;
+                hdBounds = map.PlayBounds;
+                if (!(hdBounds.width > 0f) || !(hdBounds.height > 0f))
+                {
+                    hdBounds = worldBounds;
+                }
                 contourLabel = "Contour " + Mathf.RoundToInt(map.ContourInterval).ToString(Inv) + " m";
                 BuildUnitLegend();
                 status.enabled = false;
@@ -502,6 +511,7 @@ namespace NasaSpaceApp.HUD
             }
         }
 
+        // One swatch per class actually drawn in the unit map (database order), coloured like the scanned-rock dots.
         private void BuildUnitLegend()
         {
             unitLegend.Clear();
@@ -514,7 +524,7 @@ namespace NasaSpaceApp.HUD
                 }
                 string id = map.UnitClassId(u);
                 RockClass cls = db != null ? db.GetClass(id) : null;
-                string label = cls != null ? MapPalette.ClassLabel(cls) : id;
+                string label = cls != null ? MapPalette.ClassLabel(cls) : HudStrings.Truncate(id, 12);
                 unitLegend.Add(new MapLegendEntry(label, MapPalette.ClassColor(id), MapLegendShape.Swatch));
             }
         }
@@ -587,12 +597,16 @@ namespace NasaSpaceApp.HUD
         {
             Vector3 p = PlayerPosition();
             center = new Vector2(p.x, p.z);
-            mpu = Mathf.Clamp(StartMpu, MinMpu, maxMpu);
+            mpu = Mathf.Clamp(StartMpu, ZoomFloor, maxMpu);
             ClampCenter();
             viewInit = true;
             viewDirty = true;
         }
 
+        // Closest zoom; only a box larger than the whole HD area at MinMpu (never in practice) raises it.
+        private float ZoomFloor => Mathf.Min(MinMpu, maxMpu);
+
+        // Farthest zoom: the HD area covers the box, its limiting axis fitting exactly (cover, so never an empty margin).
         private void UpdateZoomLimits()
         {
             if (!mapReady || boxSize.x < 1f || boxSize.y < 1f)
@@ -600,21 +614,26 @@ namespace NasaSpaceApp.HUD
                 maxMpu = 1e4f;
                 return;
             }
-            float fit = Mathf.Max(worldBounds.width / boxSize.x, worldBounds.height / boxSize.y) * FitMargin;
-            maxMpu = Mathf.Max(MinMpu, fit);
-            mpu = Mathf.Clamp(mpu, MinMpu, maxMpu);
+            maxMpu = Mathf.Min(hdBounds.width / boxSize.x, hdBounds.height / boxSize.y);
+            mpu = Mathf.Clamp(mpu, ZoomFloor, maxMpu);
             ClampCenter();
         }
 
-        // The view centre stays over the terrain.
+        // The visible window (box x mpu) stays inside the HD area; an axis it spans exactly stays centred.
         private void ClampCenter()
         {
             if (!mapReady)
             {
                 return;
             }
-            center.x = Mathf.Clamp(center.x, worldBounds.xMin, worldBounds.xMax);
-            center.y = Mathf.Clamp(center.y, worldBounds.yMin, worldBounds.yMax);
+            float hw = 0.5f * boxSize.x * mpu, hh = 0.5f * boxSize.y * mpu;
+            center.x = ClampAxis(center.x, hdBounds.xMin + hw, hdBounds.xMax - hw);
+            center.y = ClampAxis(center.y, hdBounds.yMin + hh, hdBounds.yMax - hh);
+        }
+
+        private static float ClampAxis(float v, float lo, float hi)
+        {
+            return lo <= hi ? Mathf.Clamp(v, lo, hi) : 0.5f * (lo + hi);
         }
 
         private void ApplyUv()
@@ -697,10 +716,10 @@ namespace NasaSpaceApp.HUD
             UpdateHover(inside, local, dt);
         }
 
-        // Zoom keeping the world point under the cursor fixed.
+        // Zoom keeping the world point under the cursor fixed, then the HD-area clamp (wins near the edges).
         private void ZoomAt(Vector2 local, float factor)
         {
-            float next = Mathf.Clamp(mpu * factor, MinMpu, maxMpu);
+            float next = Mathf.Clamp(mpu * factor, ZoomFloor, maxMpu);
             if (next == mpu)
             {
                 return;

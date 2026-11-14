@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using NasaSpaceApp.Science;
 using Unity.Collections;
 using UnityEngine;
@@ -31,11 +30,12 @@ namespace NasaSpaceApp.HUD
     /// <item><see cref="SlopeTexture"/>: traversability, HOMELINE F2/F3 slope classes 0-10 / 10-17 / 17-20 / &gt;20 deg
     /// (no-go), slope from central differences over two texels (about 4 m), the steepest of each 2x2 block. Half
     /// resolution.</item>
-    /// <item><see cref="UnitTexture"/>: geologic units of Mount Sharp's flat-lying stratigraphy, with the same rule the
-    /// editor uses to assign rock classes (MarsRockScience): each layered class (not caprock, abundance &gt; 0) spans the
-    /// MOLA elevations of its analog samples (<see cref="RockDatabase"/>) plus <see cref="BandMarginM"/>, and fades by e every
-    /// <see cref="BandFalloffM"/> m beyond; a texel takes the class of highest abundance x fade. Where every band has faded
-    /// out (elevations no sample constrains) the texel stays clear. Half resolution, only with a geo-reference.</item>
+    /// <item><see cref="UnitTexture"/>: regional geologic units, derived from the field rock population. This stands in for
+    /// an orbital mineral / unit map: every <see cref="RockSample"/> of the scene (class set by MarsRockScience) is splatted
+    /// once into a coarse class-weight grid (<see cref="UnitCellM"/> m cells, Gaussian kernel sigma <see cref="UnitSigmaM"/> m,
+    /// cut at 3 sigma); each texel takes the dominant class of the bilinearly interpolated weights, its alpha grows with the
+    /// dominance share and fades out where no rock is near. It shows regional units only, never the data of an individual
+    /// unscanned rock. Every class in the scene can appear (layered, caprock, meteorite). Half resolution.</item>
     /// </list>
     /// </summary>
     public sealed class MarsElevationMap
@@ -46,11 +46,16 @@ namespace NasaSpaceApp.HUD
         public static readonly float[] SlopeLimitsDeg = { 10f, 17f, 20f };
         public const int SlopeClassCount = 4;
 
-        // Stratigraphic band rule, the values of MarsRockScience (BandMarginM, BandFalloffM).
-        public const float BandMarginM = 15f;
-        public const float BandFalloffM = 20f;
-        private const float MinUnitFade = 0.15f;       // fainter than this: no unit drawn
+        // Regional unit map from the rock population (see the class summary).
+        public const float UnitCellM = 32f;            // class-weight grid cell
+        public const float UnitSigmaM = 70f;           // Gaussian splat kernel
+        private const float UnitCutoffSigmas = 3f;
+        private const float UnitWeightFloor = 0.05f;   // summed kernel weight below this (no rock within ~2.5 sigma): clear
+        private const float UnitShareFloor = 0.3f;     // dominance share at the lowest unit alpha
+        private const int RocksPerTick = 256;          // rocks splatted per Tick, before the rows
         private const int MaxUnits = 16;
+        private const byte NoUnit = 255;
+        private const float PlayInsetTexels = 2f;      // HD bounds inset where the map's transparent edge ring would show
         private const float BaseGrey = 70f;            // sRGB grey of flat ground in the base hillshade
 
         public const int MaxSize = 2048;
@@ -111,27 +116,29 @@ namespace NasaSpaceApp.HUD
         private bool batchOk = true;
 
         // Map-screen layers (see the class summary).
-        private struct Unit
-        {
-            public string ClassId;
-            public float Lo, Hi, Abundance;   // analog sample elevations (MOLA m), class abundance
-            public Color32 Rgb;
-        }
-
         private Texture2D baseTexture, slopeTexture, unitTexture;
         private int ow, oh;                   // overlay size: half resolution, rounded up
+        private Rect playBounds;              // high-definition play tile, inset to fully covered texels
         private Color32[] basePixels;         // grey block, like pixels
         private Color32[] slopePixels, unitPixels;  // overlay block rows
         private byte[] slopeAcc;              // steepest slope class per overlay texel of the block (255 = no data)
-        private float[] elevSum;              // elevation sum per overlay texel of the block
-        private byte[] elevN;                 // contributing texels (0..4)
+        private byte[] elevN;                 // contributing texels with terrain data (0..4)
         private readonly Color32[] slopeTexel = new Color32[SlopeClassCount];
         private readonly int[] slopeTexels = new int[SlopeClassCount];
         private float tan2A, tan2B, tan2C;    // squared tangents of the slope limits
-        private readonly Unit[] units = new Unit[MaxUnits];
+
+        // Unit map: class ids in RockDatabase order (unknown ids after), their colours, the rocks still to splat.
+        private readonly string[] unitIds = new string[MaxUnits];
+        private readonly Color32[] unitRgb = new Color32[MaxUnits];
         private readonly int[] unitTexels = new int[MaxUnits];
         private int unitCount;
-        private float unitAlpha;              // texel alpha of a unit at full weight (0..255)
+        private RockSample[] rocks;           // scene rocks (released once splatted)
+        private byte[] rockUnit;              // unit index per rock (NoUnit = skipped)
+        private int rockNext;
+        private float[] unitGrid;             // summed kernel weight, [unit * gridW * gridH + row * gridW + column]
+        private int gridW, gridH;             // grid nodes at cell centres: x0 + (i + 0.5) * UnitCellM
+        private float[] kernelX;              // per-rock kernel weights along x (reused)
+        private byte[] alphaLut;              // perceptual alpha byte -> stored alpha byte
 
         private readonly Texture2D[] mipJobs = new Texture2D[4];
         private int mipJobCount, mipJob;
@@ -184,19 +191,28 @@ namespace NasaSpaceApp.HUD
         /// <summary>Slope classes 0-10 / 10-17 / 17-20 / &gt;20 deg, half resolution, over <see cref="OverlayWorldBounds"/>.</summary>
         public Texture2D SlopeTexture => slopeTexture;
 
-        /// <summary>Geologic units by stratigraphic band, half resolution; null without units (no geo-reference or data).</summary>
+        /// <summary>
+        /// Regional units derived from the field rock population (stand-in for an orbital unit map), half resolution;
+        /// null when the scene has no classified rocks.
+        /// </summary>
         public Texture2D UnitTexture => unitTexture;
 
         /// <summary>World XZ rectangle of the half-resolution overlays (two map texels per overlay texel, rounded up).</summary>
         public Rect OverlayWorldBounds => new Rect(x0, z0, ow * 2 * mpp, oh * 2 * mpp);
 
-        /// <summary>Units considered by the unit layer (index order = <see cref="UnitClassId"/>).</summary>
+        /// <summary>
+        /// World XZ rectangle of the high-definition play terrain (the primary tile, the one carrying the geo-reference),
+        /// inset where the map's transparent edge ring would show. Inside <see cref="WorldBounds"/>.
+        /// </summary>
+        public Rect PlayBounds => playBounds;
+
+        /// <summary>Rock classes of the unit layer (index order = <see cref="UnitClassId"/>, RockDatabase order).</summary>
         public int UnitCount => unitCount;
 
         /// <summary>Rock class id of unit <paramref name="index"/> (RockDatabase), or null.</summary>
-        public string UnitClassId(int index) => (uint)index < (uint)unitCount ? units[index].ClassId : null;
+        public string UnitClassId(int index) => (uint)index < (uint)unitCount ? unitIds[index] : null;
 
-        /// <summary>Overlay texels drawn in unit <paramref name="index"/> at half weight or more (0 = not on this map).</summary>
+        /// <summary>Overlay texels where unit <paramref name="index"/> dominates and is drawn (0 = not on this map).</summary>
         public int UnitTexels(int index) => (uint)index < (uint)unitCount ? unitTexels[index] : 0;
 
         /// <summary>Overlay texels in slope class <paramref name="k"/> (0..3).</summary>
@@ -380,6 +396,12 @@ namespace NasaSpaceApp.HUD
                 Cover(ref tiles[t]);
             }
 
+            // HD area: the primary tile, inset where the map's transparent edge ring (and its mips) would show through.
+            float inset = PlayInsetTexels * mpp;
+            float pxMin = Mathf.Max(tiles[0].X0, x0 + inset), pxMax = Mathf.Min(tiles[0].X0 + tiles[0].SizeX, x0 + width * mpp - inset);
+            float pzMin = Mathf.Max(tiles[0].Z0, z0 + inset), pzMax = Mathf.Min(tiles[0].Z0 + tiles[0].SizeZ, z0 + height * mpp - inset);
+            playBounds = Rect.MinMaxRect(pxMin, pzMin, Mathf.Max(pxMin, pxMax), Mathf.Max(pzMin, pzMax));
+
             geo = MarsGeoReference.Instance;
             hasGeo = geo != null;   // cached: no Unity null check per sample
             Survey();
@@ -398,7 +420,7 @@ namespace NasaSpaceApp.HUD
             // the HUD that referenced them is gone.
             ow = (width + 1) / 2;
             oh = (height + 1) / 2;
-            BuildUnits();
+            GatherRocks();
             BuildSlopeTable();
             baseTexture = NewLayer("HUD Map Base", width, height);
             slopeTexture = NewLayer("HUD Map Slope", ow, oh);
@@ -419,7 +441,6 @@ namespace NasaSpaceApp.HUD
             slopePixels = new Color32[overlayBlock];
             unitPixels = new Color32[overlayBlock];
             slopeAcc = new byte[overlayBlock];
-            elevSum = new float[overlayBlock];
             elevN = new byte[overlayBlock];
             Array.Clear(slopeTexels, 0, slopeTexels.Length);
             Array.Clear(unitTexels, 0, unitTexels.Length);
@@ -465,7 +486,11 @@ namespace NasaSpaceApp.HUD
                 float a = MapPalette.LinearAlpha(MapPalette.SlopeOverlayAlpha(k));
                 slopeTexel[k] = new Color32(ToByte(c.r * 255f), ToByte(c.g * 255f), ToByte(c.b * 255f), ToByte(a * 255f));
             }
-            unitAlpha = MapPalette.LinearAlpha(MapPalette.UnitOverlayAlpha) * 255f;
+            alphaLut = new byte[256];
+            for (int i = 0; i < 256; i++)
+            {
+                alphaLut[i] = ToByte(MapPalette.LinearAlpha(i / 255f) * 255f);
+            }
         }
 
         private static float Tan2(float deg)
@@ -474,72 +499,193 @@ namespace NasaSpaceApp.HUD
             return t * t;
         }
 
-        // Layered rock classes and the elevation span of their analog samples (MOLA m). Needs real elevations.
-        private void BuildUnits()
+        // Scene rocks and their classes. Unit order: RockDatabase order (stratigraphy, caprock, meteorites), then ids the
+        // database does not know, as met. Positions are read later, a block per Tick, while splatting (SplatRocks).
+        private void GatherRocks()
         {
             unitCount = 0;
-            if (!hasGeo)
+            rocks = UnityEngine.Object.FindObjectsByType<RockSample>(FindObjectsInactive.Exclude);
+            int n = rocks != null ? rocks.Length : 0;
+            rockUnit = new byte[n];
+            for (int r = 0; r < n; r++)
             {
+                string id = rocks[r] != null ? rocks[r].ClassId : null;
+                rockUnit[r] = string.IsNullOrEmpty(id) ? NoUnit : UnitIndex(id);
+            }
+            if (unitCount == 0)
+            {
+                rocks = null;
+                rockUnit = null;
                 return;
             }
+
             RockDatabase db = RockDatabase.Default;
-            if (db == null || db.Classes == null)
+            var key = new int[unitCount];
+            for (int u = 0; u < unitCount; u++)
             {
-                return;
+                key[u] = DatabaseOrder(db, unitIds[u], u);
             }
-            float reach = BandMarginM + BandFalloffM * Mathf.Log(1f / MinUnitFade);
-            for (int c = 0; c < db.Classes.Count && unitCount < MaxUnits; c++)
+            var remap = new byte[unitCount];
+            var sorted = new string[unitCount];
+            for (int u = 0; u < unitCount; u++)
             {
-                RockClass cls = db.Classes[c];
-                // Caprock (unconformable) classes drape any elevation: the band rule does not apply to them.
-                if (cls == null || string.IsNullOrEmpty(cls.Id) || cls.Abundance <= 0f || cls.Setting == "caprock")
+                int rank = 0;
+                for (int v = 0; v < unitCount; v++)
                 {
-                    continue;
-                }
-                float lo = float.MaxValue, hi = float.MinValue;
-                IReadOnlyList<RockAnalysis> list = db.AnalysesOf(cls.Id);
-                for (int i = 0; i < list.Count; i++)
-                {
-                    RockAnalysis a = list[i];
-                    if (a != null && a.UseAsAnalog && a.ElevationM.HasValue)
+                    if (key[v] < key[u])
                     {
-                        lo = Mathf.Min(lo, a.ElevationM.Value);
-                        hi = Mathf.Max(hi, a.ElevationM.Value);
+                        rank++;
                     }
                 }
-                // No elevation data (e.g. meteorites), or a band that cannot reach this terrain.
-                if (lo > hi || hi + reach < minElevation || lo - reach > maxElevation)
+                remap[u] = (byte)rank;
+                sorted[rank] = unitIds[u];
+            }
+            for (int u = 0; u < unitCount; u++)
+            {
+                unitIds[u] = sorted[u];
+                Color col = MapPalette.ClassColor(sorted[u]);
+                unitRgb[u] = new Color32(ToByte(col.r * 255f), ToByte(col.g * 255f), ToByte(col.b * 255f), 255);
+            }
+            for (int r = 0; r < n; r++)
+            {
+                if (rockUnit[r] != NoUnit)
+                {
+                    rockUnit[r] = remap[rockUnit[r]];
+                }
+            }
+
+            gridW = Mathf.Max(1, Mathf.CeilToInt(width * mpp / UnitCellM));
+            gridH = Mathf.Max(1, Mathf.CeilToInt(height * mpp / UnitCellM));
+            unitGrid = new float[unitCount * gridW * gridH];
+            kernelX = new float[2 * Mathf.CeilToInt(UnitCutoffSigmas * UnitSigmaM / UnitCellM) + 2];
+            rockNext = 0;
+        }
+
+        // Unit index of a class id, added when new (NoUnit past MaxUnits).
+        private byte UnitIndex(string id)
+        {
+            for (int u = 0; u < unitCount; u++)
+            {
+                if (string.Equals(unitIds[u], id, StringComparison.Ordinal))
+                {
+                    return (byte)u;
+                }
+            }
+            if (unitCount >= MaxUnits)
+            {
+                return NoUnit;
+            }
+            unitIds[unitCount] = id;
+            return (byte)unitCount++;
+        }
+
+        // Sort key: the class index in the database; ids it does not know go after every database class, in the order met.
+        private static int DatabaseOrder(RockDatabase db, string id, int met)
+        {
+            int count = db != null && db.Classes != null ? db.Classes.Count : 0;
+            for (int c = 0; c < count; c++)
+            {
+                RockClass cls = db.Classes[c];
+                if (cls != null && string.Equals(cls.Id, id, StringComparison.Ordinal))
+                {
+                    return c;
+                }
+            }
+            return count + met;
+        }
+
+        // A block of rocks into the class-weight grid: separable Gaussian (sigma UnitSigmaM), cut at UnitCutoffSigmas per
+        // axis. Each rock adds weight to its own class only, so the grid is the kernel-smoothed local rock count per class.
+        private void SplatRocks()
+        {
+            int end = Mathf.Min(rockNext + RocksPerTick, rocks.Length);
+            float inv2s2 = 1f / (2f * UnitSigmaM * UnitSigmaM);
+            float reach = UnitCutoffSigmas * UnitSigmaM / UnitCellM;   // cells
+            int cells = gridW * gridH;
+            for (; rockNext < end; rockNext++)
+            {
+                byte u = rockUnit[rockNext];
+                RockSample rock = rocks[rockNext];
+                if (u == NoUnit || rock == null)
                 {
                     continue;
                 }
-                Color col = MapPalette.ClassColor(cls.Id);
-                units[unitCount++] = new Unit
+                Vector3 p = rock.transform.position;
+                float fx = (p.x - x0) / UnitCellM - 0.5f, fz = (p.z - z0) / UnitCellM - 0.5f;   // grid-node coordinates
+                int ia = Mathf.Max(0, Mathf.CeilToInt(fx - reach)), ib = Mathf.Min(gridW - 1, Mathf.FloorToInt(fx + reach));
+                int ja = Mathf.Max(0, Mathf.CeilToInt(fz - reach)), jb = Mathf.Min(gridH - 1, Mathf.FloorToInt(fz + reach));
+                if (ia > ib || ja > jb)
                 {
-                    ClassId = cls.Id, Lo = lo, Hi = hi, Abundance = cls.Abundance,
-                    Rgb = new Color32(ToByte(col.r * 255f), ToByte(col.g * 255f), ToByte(col.b * 255f), 255)
-                };
+                    continue;   // off the map
+                }
+                for (int i = ia; i <= ib; i++)
+                {
+                    float dx = (i - fx) * UnitCellM;
+                    kernelX[i - ia] = Mathf.Exp(-dx * dx * inv2s2);
+                }
+                int plane = u * cells;
+                for (int j = ja; j <= jb; j++)
+                {
+                    float dz = (j - fz) * UnitCellM;
+                    float wz = Mathf.Exp(-dz * dz * inv2s2);
+                    int row = plane + j * gridW;
+                    for (int i = ia; i <= ib; i++)
+                    {
+                        unitGrid[row + i] += kernelX[i - ia] * wz;
+                    }
+                }
+            }
+            if (rockNext >= rocks.Length)
+            {
+                rocks = null;
+                rockUnit = null;
             }
         }
 
-        // Unit of highest abundance x band fade at elevation e (-1 without units); fade = that unit's band weight.
-        private int PickUnit(float e, out float fade)
+        // Unit texel at overlay (ox, oy): dominant class of the bilinearly interpolated grid weights; perceptual alpha
+        // UnitAlphaMin..Max with the dominance share, faded out where the summed weight is negligible (no rock near). There
+        // the texel keeps the dominant colour at alpha 0, so bilinear edges do not darken.
+        private Color32 UnitTexel(int ox, int oy)
         {
-            int best = -1;
-            float bestScore = 0f, bestOutside = 0f;
-            for (int u = 0; u < unitCount; u++)
+            float fx = (2 * ox + 1) * mpp / UnitCellM - 0.5f, fz = (2 * oy + 1) * mpp / UnitCellM - 0.5f;
+            int i0 = Mathf.FloorToInt(fx), j0 = Mathf.FloorToInt(fz);
+            float tx = fx - i0, tz = fz - j0;
+            int ia = Mathf.Clamp(i0, 0, gridW - 1), ib = Mathf.Clamp(i0 + 1, 0, gridW - 1);
+            int ja = Mathf.Clamp(j0, 0, gridH - 1) * gridW, jb = Mathf.Clamp(j0 + 1, 0, gridH - 1) * gridW;
+            float w00 = (1f - tx) * (1f - tz), w10 = tx * (1f - tz), w01 = (1f - tx) * tz, w11 = tx * tz;
+            int cells = gridW * gridH;
+            float total = 0f, best = 0f;
+            int bu = -1;
+            for (int u = 0, o = 0; u < unitCount; u++, o += cells)
             {
-                float lo = units[u].Lo - BandMarginM, hi = units[u].Hi + BandMarginM;
-                float outside = e < lo ? lo - e : (e > hi ? e - hi : 0f);
-                float score = outside > 0f ? units[u].Abundance * Mathf.Exp(-outside / BandFalloffM) : units[u].Abundance;
-                if (best < 0 || score > bestScore)
+                float w = unitGrid[o + ja + ia] * w00 + unitGrid[o + ja + ib] * w10 + unitGrid[o + jb + ia] * w01
+                          + unitGrid[o + jb + ib] * w11;
+                total += w;
+                if (w > best)
                 {
-                    best = u;
-                    bestScore = score;
-                    bestOutside = outside;
+                    best = w;
+                    bu = u;
                 }
             }
-            fade = best < 0 ? 0f : (bestOutside > 0f ? Mathf.Exp(-bestOutside / BandFalloffM) : 1f);
-            return best;
+            if (bu < 0)
+            {
+                return new Color32(0, 0, 0, 0);
+            }
+            Color32 c = unitRgb[bu];
+            float presence = (total - UnitWeightFloor) / UnitWeightFloor;
+            if (presence <= 0f)
+            {
+                c.a = 0;
+                return c;
+            }
+            float share = Mathf.Clamp01((best / total - UnitShareFloor) / (1f - UnitShareFloor));
+            float a = Mathf.Lerp(MapPalette.UnitAlphaMin, MapPalette.UnitAlphaMax, share) * (presence < 1f ? presence : 1f);
+            c.a = alphaLut[ToByte(a * 255f)];
+            if (c.a > 0)
+            {
+                unitTexels[bu]++;
+            }
+            return c;
         }
 
         // The batched read must agree with per-sample reads (layout [row, column], world-unit heights); else fall back.
@@ -751,6 +897,13 @@ namespace NasaSpaceApp.HUD
 
         private void BuildRows()
         {
+            // First the rocks of the unit map, a block per Tick: the rows below sample the finished class-weight grid.
+            if (rocks != null)
+            {
+                SplatRocks();
+                return;
+            }
+
             // RowsPerTick is even and blocks start at multiples of it, so each block holds whole overlay rows (2 map rows).
             int j0 = nextRow;
             int j1 = Mathf.Min(j0 + RowsPerTick, height);
@@ -798,13 +951,12 @@ namespace NasaSpaceApp.HUD
             for (int i = 0; i < n; i++)
             {
                 slopeAcc[i] = 255;
-                elevSum[i] = 0f;
                 elevN[i] = 0;
             }
         }
 
-        // Overlay texels of the block: steepest slope class of the 2x2 texels, unit of their mean elevation. The outer ring
-        // stays transparent (clamped lookups outside the terrain read as no data, like the main map).
+        // Overlay texels of the block: steepest slope class of the 2x2 texels, regional unit from the rock grid. The outer
+        // ring stays transparent (clamped lookups outside the terrain read as no data, like the main map).
         private void ResolveOverlayBlock(int o0, int oRows)
         {
             Color32 clear = new Color32(0, 0, 0, 0);
@@ -816,8 +968,7 @@ namespace NasaSpaceApp.HUD
                 for (int ox = 0; ox < ow; ox++)
                 {
                     int i = row + ox;
-                    int n = elevN[i];
-                    if (edgeRow || ox == 0 || ox == ow - 1 || n == 0)
+                    if (edgeRow || ox == 0 || ox == ow - 1 || elevN[i] == 0)
                     {
                         slopePixels[i] = clear;
                         unitPixels[i] = clear;
@@ -829,15 +980,7 @@ namespace NasaSpaceApp.HUD
 
                     if (unitCount > 0)
                     {
-                        int u = PickUnit(elevSum[i] / n, out float fade);
-                        Color32 c = units[u].Rgb;
-                        // Below the fade floor the texel keeps the unit's colour at alpha 0, so bilinear edges do not darken.
-                        c.a = fade >= MinUnitFade ? ToByte(unitAlpha * fade) : (byte)0;
-                        unitPixels[i] = c;
-                        if (fade >= 0.5f)
-                        {
-                            unitTexels[u]++;
-                        }
+                        unitPixels[i] = UnitTexel(ox, oy);
                     }
                 }
             }
@@ -948,7 +1091,7 @@ namespace NasaSpaceApp.HUD
                     byte grey = ToByte(BaseGrey * f);
                     basePixels[outRow + i] = new Color32(grey, grey, grey, 255);
 
-                    // Slope class (steepest of the overlay texel's 2x2) and elevation sum (its unit).
+                    // Slope class (steepest of the overlay texel's 2x2) and the texels with data.
                     float g2 = gx * gx + gz * gz;
                     byte sc = g2 < tan2A ? (byte)0 : (g2 < tan2B ? (byte)1 : (g2 < tan2C ? (byte)2 : (byte)3));
                     int oi = overlayRow + (i >> 1);
@@ -957,7 +1100,6 @@ namespace NasaSpaceApp.HUD
                     {
                         slopeAcc[oi] = sc;
                     }
-                    elevSum[oi] += h;
                     elevN[oi]++;
 
                     int ti = (int)((h - minElevation) * invRange);
@@ -1104,8 +1246,12 @@ namespace NasaSpaceApp.HUD
             slopePixels = null;
             unitPixels = null;
             slopeAcc = null;
-            elevSum = null;
             elevN = null;
+            rocks = null;
+            rockUnit = null;
+            unitGrid = null;
+            kernelX = null;
+            alphaLut = null;
         }
     }
 }
