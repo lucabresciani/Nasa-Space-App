@@ -171,6 +171,8 @@ namespace NasaSpaceApp.Science
         [JsonProperty("abundance")] public float Abundance = 1f;
         /// <summary>Optional [min,max] rock size in meters this class may be assigned to (e.g. concretions are small).</summary>
         [JsonProperty("sizeRangeM")] public ValueRange SizeRangeM;
+        /// <summary>Optional placement rule. "caprock": only on local topographic highs (buttes, pediment edges), e.g. an unconformable cap.</summary>
+        [JsonProperty("setting")] public string Setting;
         [JsonProperty("references")] public List<Reference> References;
 
         /// <summary>True when the class has enough VNIR data to model a reflectance curve (an albedo).</summary>

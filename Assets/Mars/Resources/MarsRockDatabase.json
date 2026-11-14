@@ -563,6 +563,7 @@
         "bands": []
       },
       "abundance": 0.12,
+      "setting": "caprock",
       "references": [
         {
           "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
@@ -577,7 +578,8 @@
         "proxyFrom": null,
         "proxyFields": [],
         "proxyNote": "No class-level physical/spectral values: none researched for this unit.",
-        "abundanceNote": "Game placement weight, not a measured areal fraction."
+        "abundanceNote": "Game placement weight, not a measured areal fraction.",
+        "settingNote": "Stimson is an unconformable aeolian sandstone that caps the Murray Buttes and the Greenheugh pediment, not the lower plain."
       }
     },
     {
@@ -633,6 +635,7 @@
         ]
       },
       "abundance": 0.03,
+      "setting": "caprock",
       "references": [
         {
           "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171",
@@ -680,7 +683,8 @@
           "vnir"
         ],
         "proxyNote": "densityGcm3, porosityPct, mohs, vnir are taken from the 'silica-rich' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
-        "abundanceNote": "Game placement weight, not a measured areal fraction."
+        "abundanceNote": "Game placement weight, not a measured areal fraction.",
+        "settingNote": "Greenhorn and Lubango are silica halos along fractures in the Stimson cap, so they share its setting; Buckskin (Marias Pass) has no elevation in this dataset."
       }
     },
     {
@@ -707,7 +711,7 @@
         "slope": null,
         "bands": []
       },
-      "abundance": 0.01,
+      "abundance": 0.002,
       "references": [
         {
           "citation": "Schroeder, C. et al. (2008) Meteorites on Mars observed with the Mars Exploration Rovers. J. Geophys. Res. Planets 113 (Heat Shield Rock = IAB iron, officially 'Meridiani Planum').",
@@ -743,7 +747,7 @@
           "vnir"
         ],
         "proxyNote": "densityGcm3, porosityPct, mohs, vnir are taken from the 'iron-meteorite' class of the earlier curated database (a similar lithology elsewhere in Gale/Mars), not measured on this unit.",
-        "abundanceNote": "Game placement weight, not a measured areal fraction."
+        "abundanceNote": "Game placement weight, not a measured areal fraction. Kept very low: Curiosity found only a few iron meteorites along its whole traverse."
       }
     }
   ],

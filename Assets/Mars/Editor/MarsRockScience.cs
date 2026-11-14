@@ -81,13 +81,35 @@ namespace NasaSpaceApp.MarsGen
             var volumes = new Dictionary<Mesh, float>();
             var weights = new float[classes.Count];
 
-            // Real terrain (MarsGeoReference): each class keeps to the elevation span of its measured samples.
+            // Real terrain (MarsGeoReference): Mount Sharp's layers are nearly flat, so a rock's MOLA elevation says which
+            // layer it sits in. Each class keeps to the elevation span of its samples measured within this terrain's
+            // elevation range; a class measured only above or below it (e.g. a higher bed) does not occur here.
             NasaSpaceApp.MarsGeoReference geo = NasaSpaceApp.MarsGeoReference.Instance;
+            Terrain terrain = geo != null ? Terrain.activeTerrain : null;
             var bands = new Dictionary<string, Vector2>();
-            foreach (RockClass c in classes)
+            if (geo != null)
             {
-                List<float> elevations = db.AnalogsOf(c.Id).Where(a => a.ElevationM.HasValue).Select(a => a.ElevationM.Value).ToList();
-                if (elevations.Count > 0) bands[c.Id] = new Vector2(elevations.Min(), elevations.Max());
+                float lo = float.MaxValue, hi = float.MinValue;
+                foreach (Transform rock in rocksRoot)
+                {
+                    float e = geo.ElevationMOLA(rock.position);
+                    lo = Mathf.Min(lo, e);
+                    hi = Mathf.Max(hi, e);
+                }
+                foreach (RockClass c in classes.ToList())
+                {
+                    List<float> all = db.AnalogsOf(c.Id).Where(a => a.ElevationM.HasValue).Select(a => a.ElevationM.Value).ToList();
+                    if (all.Count == 0) continue; // no elevation data (e.g. meteorites): anywhere
+                    List<float> here = all.Where(e => e >= lo - AreaMarginM && e <= hi + AreaMarginM).ToList();
+                    if (here.Count == 0) classes.Remove(c); // measured only outside this terrain's layers
+                    else bands[c.Id] = new Vector2(here.Min(), here.Max());
+                }
+                weights = new float[classes.Count];
+                if (classes.Count == 0)
+                {
+                    Debug.LogError("[Mars] No rock class has samples within this terrain's elevation range; rocks left as they were.");
+                    return result;
+                }
             }
 
             // Field ids are permanent once given: re-running keeps them, new rocks continue the numbering.
@@ -145,9 +167,14 @@ namespace NasaSpaceApp.MarsGen
                 else
                 {
                     float? elevation = geo != null ? geo.ElevationMOLA(p) : (float?)null;
-                    RockClass chosen = Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, elevation, bands, respectSize: true)
-                                       ?? Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, elevation, bands, respectSize: false);
+                    float? relief = terrain != null ? LocalRelief(terrain, p) : (float?)null;
+                    RockClass chosen = Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, elevation, relief, bands, respectSize: true)
+                                       ?? Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, elevation, relief, bands, respectSize: false);
                     List<RockAnalysis> analogs = db.AnalogsOf(chosen.Id);
+                    List<RockAnalysis> analogsHere = bands.TryGetValue(chosen.Id, out Vector2 chosenBand)
+                        ? analogs.Where(a => a.ElevationM.HasValue && a.ElevationM.Value >= chosenBand.x && a.ElevationM.Value <= chosenBand.y).ToList()
+                        : analogs;
+                    if (analogsHere.Count > 0) analogs = analogsHere;
                     RockAnalysis analysis = analogs[rng.Next(analogs.Count)];
                     // On a geo-referenced terrain the rock is an analog of the class sample measured closest in elevation,
                     // i.e. closest in Mount Sharp's flat-lying stratigraphy.
@@ -197,12 +224,33 @@ namespace NasaSpaceApp.MarsGen
             return !string.IsNullOrEmpty(fieldId) && fieldId.StartsWith("MR-") && int.TryParse(fieldId.Substring(3), out number);
         }
 
-        const float BandMarginM = 15f;  // a class is at full weight within its sampled elevation span ± this
-        const float BandFalloffM = 20f; // then fades by e every this many meters further away
+        const float BandMarginM = 15f;   // a class is at full weight within its sampled elevation span ± this
+        const float BandFalloffM = 20f;  // then fades by e every this many meters further away
+        const float AreaMarginM = 30f;   // samples this far outside the terrain's elevation range still count as "here"
+        const float CaprockReliefM = 8f; // "caprock" classes need the rock to stand this much above the surroundings
+
+        /// <summary>How far the ground at <paramref name="p"/> stands above the mean ground on rings of 100 m and 250 m (largest).</summary>
+        static float LocalRelief(Terrain terrain, Vector3 p)
+        {
+            float origin = terrain.transform.position.y;
+            float here = terrain.SampleHeight(p) + origin;
+            float best = float.MinValue;
+            foreach (float radius in new[] { 100f, 250f })
+            {
+                float sum = 0f;
+                for (int i = 0; i < 8; i++)
+                {
+                    float a = i * Mathf.PI / 4f;
+                    sum += terrain.SampleHeight(p + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * radius) + origin;
+                }
+                best = Mathf.Max(best, here - sum / 8f);
+            }
+            return best;
+        }
 
         static RockClass Pick(List<RockClass> classes, float[] weights, System.Random rng, Vector3 p, float size,
-                              float nearCrater, float inCrater, int seed, float? elevation, Dictionary<string, Vector2> bands,
-                              bool respectSize)
+                              float nearCrater, float inCrater, int seed, float? elevation, float? relief,
+                              Dictionary<string, Vector2> bands, bool respectSize)
         {
             float total = 0f;
             for (int i = 0; i < classes.Count; i++)
@@ -216,8 +264,10 @@ namespace NasaSpaceApp.MarsGen
                     w = c.Abundance * Mathf.Exp(OutcropContrast * outcrop);
                     if (c.Group == "impact") w *= 1f + 8f * nearCrater;
                     else if (c.Group == "meteorite") w *= 1f + 6f * inCrater;
-                    if (elevation.HasValue && bands.TryGetValue(c.Id, out Vector2 band))
+                    if (c.Setting == "caprock" && relief.HasValue && relief.Value < CaprockReliefM) w = 0f;
+                    else if (elevation.HasValue && bands.TryGetValue(c.Id, out Vector2 band) && c.Setting != "caprock")
                     {
+                        // Caprock (unconformable) units drape any elevation, so the band applies only to layered classes.
                         float outside = Mathf.Max(0f, band.x - BandMarginM - elevation.Value, elevation.Value - band.y - BandMarginM);
                         w *= Mathf.Exp(-outside / BandFalloffM);
                     }
