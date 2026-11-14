@@ -110,6 +110,7 @@ namespace NasaSpaceApp.Menu
             AddAction(science, actions, "Player/Interact", "SCAN ROCK (HOLD)", new[] { "E" }, "Y");
             science.Rows.Add(new Binding { Action = "CLOSE ROCK CARD", Keys = new[] { "X" }, Gamepad = "B" });
             science.Rows.Add(new Binding { Action = "FREE CURSOR (HOLD)", Keys = new[] { "TAB" } });
+            science.Rows.Add(new Binding { Action = "EVA MAP", Keys = new[] { "G" }, Gamepad = "SELECT" });
             Add(groups, science);
 
             Group environment = new Group { Title = "ENVIRONMENT" };
