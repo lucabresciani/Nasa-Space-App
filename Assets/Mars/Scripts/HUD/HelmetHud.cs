@@ -11,7 +11,9 @@ namespace NasaSpaceApp.HUD
     /// <summary>
     /// Root of the helmet HUD: owns the overlay canvas, the widgets and the one deterministic update order (input in
     /// Update, everything else in LateUpdate). Built at runtime by <see cref="HudBootstrap"/> through <see cref="Create"/>.
-    /// Owns cursor state (hold Tab), the debug overlay swap (F3) and the card close key (X / gamepad East).
+    /// Owns cursor state (hold Tab), the debug overlay swap (F3), the card close key (X / gamepad East) and the map
+    /// screen (G / gamepad Select toggles; X / gamepad East / its × button close it): while the map is open the cursor is
+    /// free, player input is off and the other HUD layers fade out.
     /// </summary>
     [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
@@ -42,9 +44,16 @@ namespace NasaSpaceApp.HUD
         private RockCardSystem cards;
         private AlertBanner alerts;
         private HudInput input;
+        private MapScreen mapScreen;
 
         private RockScanDebugOverlay overlay;
         private CanvasGroup rootGroup;
+        private CanvasGroup staticGroup;
+        private CanvasGroup dynamicGroup;
+        private float layersAlpha = 1f;
+        private bool mapOpen;
+        private bool mapSavedLocked;      // cursor lock state to restore when the map closes
+        private bool mapSavedInput = true; // FirstPersonController.InputEnabled to restore
         private float airMinC = FallbackAirMinC;
         private float airMaxC = FallbackAirMaxC;
         private float darkness;
@@ -165,10 +174,12 @@ namespace NasaSpaceApp.HUD
             Transform root = transform;
             RectTransform staticLayer = HudFactory.CreateStretch("Static", root);
             HudFactory.AddNestedCanvas(staticLayer.gameObject, true);
+            staticGroup = HudFactory.AddGroup(staticLayer.gameObject, 1f, true);   // faded out under the map screen
             ctx.StaticLayer = staticLayer;
 
             RectTransform dynamicLayer = HudFactory.CreateStretch("Dynamic", root);
             HudFactory.AddNestedCanvas(dynamicLayer.gameObject, true);
+            dynamicGroup = HudFactory.AddGroup(dynamicLayer.gameObject, 1f, true);
             ctx.DialLayer = HudFactory.CreateStretch("Dial", dynamicLayer);
             ctx.ReticleLayer = HudFactory.CreateStretch("Reticle", dynamicLayer);
             ctx.LeaderLayer = HudFactory.CreateStretch("Leaders", dynamicLayer);
@@ -204,6 +215,18 @@ namespace NasaSpaceApp.HUD
             ctx.Cards = cards;
             alerts = new AlertBanner(ctx);
             input = new HudInput();
+
+            // 8. Map screen: its own nested canvas, last sibling (drawn above everything). Optional: a failure here
+            //    leaves the rest of the HUD running.
+            try
+            {
+                mapScreen = new MapScreen(ctx, root, CloseMap);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                mapScreen = null;
+            }
         }
 
         // Input only. Runs after FirstPersonController and the debug overlay (execution order 100).
@@ -222,6 +245,34 @@ namespace NasaSpaceApp.HUD
                 return;
             }
 
+            // Map screen: G / Select toggles; X / East close it (and are then consumed: no rock card closes with it).
+            bool closeConsumed = false;
+            if (input.MapTogglePressed)
+            {
+                if (mapOpen)
+                {
+                    CloseMap();
+                }
+                else
+                {
+                    OpenMap();
+                }
+            }
+            else if (mapOpen && input.CloseCardPressed)
+            {
+                CloseMap();
+                closeConsumed = true;
+            }
+            if (mapOpen)
+            {
+                HoldMapInput();
+                if (input.DebugTogglePressed)
+                {
+                    pendingDebugToggle = true;
+                }
+                return;
+            }
+
             // Hold Tab = cursor free; releasing relocks only what Tab unlocked (Esc unlocks permanently via FPC).
             if (input.FreeCursorPressed && Cursor.lockState == CursorLockMode.Locked)
             {
@@ -237,7 +288,7 @@ namespace NasaSpaceApp.HUD
                 heldUnlock = false;
             }
 
-            if (input.CloseCardPressed && cards != null)
+            if (input.CloseCardPressed && !closeConsumed && cards != null)
             {
                 cards.CloseFocused(CloseReason.Key);
             }
@@ -367,10 +418,21 @@ namespace NasaSpaceApp.HUD
             caption.Tick(dt);
             alerts.Tick(dt);
             tooltip.Tick(dt);
+
+            // 5. Map screen last; the other layers fade by its eased visibility.
+            if (mapScreen != null)
+            {
+                mapScreen.Tick(dt);
+                ApplyLayersAlpha(1f - mapScreen.Visibility);
+            }
         }
 
         private void OnDestroy()
         {
+            if (mapOpen)
+            {
+                RestoreAfterMap();
+            }
             input?.Dispose();
             reticle?.Dispose();
             cards?.Dispose();
@@ -409,6 +471,101 @@ namespace NasaSpaceApp.HUD
                     }
                     return isOpen != null && isOpen();
                 }
+            }
+        }
+
+        private void OpenMap()
+        {
+            HudContext ctx = Context;
+            if (mapScreen == null || ctx == null || mapOpen)
+            {
+                return;
+            }
+            mapOpen = true;
+            ctx.MapScreenOpen = true;
+            // A Tab hold in progress counts as locked: closing the map returns to the locked game view.
+            mapSavedLocked = Cursor.lockState == CursorLockMode.Locked || heldUnlock;
+            heldUnlock = false;
+            FirstPersonController player = ctx.Player;
+            mapSavedInput = player == null || player.InputEnabled;
+            HoldMapInput();
+            SetLayersInteractive(false);
+            mapScreen.SetOpen(true);
+        }
+
+        private void CloseMap()
+        {
+            if (!mapOpen)
+            {
+                return;
+            }
+            mapOpen = false;
+            if (Context != null)
+            {
+                Context.MapScreenOpen = false;
+            }
+            RestoreAfterMap();
+            SetLayersInteractive(true);
+            mapScreen?.SetOpen(false);
+        }
+
+        // While the map is open (and the menu is closed): cursor free, player frozen. Re-asserted every frame because
+        // the pause menu restores both when it closes over an open map.
+        private void HoldMapInput()
+        {
+            FirstPersonController player = Context != null ? Context.Player : null;
+            if (player != null && player.InputEnabled)
+            {
+                player.InputEnabled = false;
+            }
+            if (Cursor.lockState != CursorLockMode.None || !Cursor.visible)
+            {
+                SetCursorLocked(false);
+            }
+        }
+
+        private void RestoreAfterMap()
+        {
+            FirstPersonController player = Context != null ? Context.Player : null;
+            if (player != null)
+            {
+                player.InputEnabled = mapSavedInput;
+            }
+            bool locked = Cursor.lockState == CursorLockMode.Locked;
+            if (locked != mapSavedLocked)
+            {
+                SetCursorLocked(mapSavedLocked);
+            }
+        }
+
+        private void SetLayersInteractive(bool on)
+        {
+            if (staticGroup != null)
+            {
+                staticGroup.blocksRaycasts = on;
+                staticGroup.interactable = on;
+            }
+            if (dynamicGroup != null)
+            {
+                dynamicGroup.blocksRaycasts = on;
+                dynamicGroup.interactable = on;
+            }
+        }
+
+        private void ApplyLayersAlpha(float a)
+        {
+            if (a == layersAlpha)
+            {
+                return;
+            }
+            layersAlpha = a;
+            if (staticGroup != null)
+            {
+                staticGroup.alpha = a;
+            }
+            if (dynamicGroup != null)
+            {
+                dynamicGroup.alpha = a;
             }
         }
 

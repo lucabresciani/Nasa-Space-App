@@ -76,6 +76,7 @@ namespace NasaSpaceApp.HUD
         public CompassDial(HudContext ctx)
         {
             this.ctx = ctx;
+            ctx.ElevationMap = map;   // the map screen reads the same build (base, overlays, elevations)
             HudSkin skin = ctx.Skin;
             Font regular = skin != null ? skin.Regular : null;
             Font medium = skin != null ? skin.Medium : null;

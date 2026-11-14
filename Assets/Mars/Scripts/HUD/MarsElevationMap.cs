@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using NasaSpaceApp.Science;
 using Unity.Collections;
 using UnityEngine;
 
@@ -22,10 +24,34 @@ namespace NasaSpaceApp.HUD
     /// Several terrain tiles of one grid are merged (tiles that touch the primary tile and share its height-post spacing);
     /// a much coarser terrain such as the 32 m Gale backdrop is left out. With no terrain the map retries a few times and
     /// then reports <see cref="MapState.NoTerrain"/>.
+    ///
+    /// The same pass also builds the layers of the full map screen (<see cref="MapView"/>), from the same height blocks:
+    /// <list type="bullet">
+    /// <item><see cref="BaseTexture"/>: neutral grey hillshade, full resolution (the base under the overlays).</item>
+    /// <item><see cref="SlopeTexture"/>: traversability, HOMELINE F2/F3 slope classes 0-10 / 10-17 / 17-20 / &gt;20 deg
+    /// (no-go), slope from central differences over two texels (about 4 m), the steepest of each 2x2 block. Half
+    /// resolution.</item>
+    /// <item><see cref="UnitTexture"/>: geologic units of Mount Sharp's flat-lying stratigraphy, with the same rule the
+    /// editor uses to assign rock classes (MarsRockScience): each layered class (not caprock, abundance &gt; 0) spans the
+    /// MOLA elevations of its analog samples (<see cref="RockDatabase"/>) plus <see cref="BandMarginM"/>, and fades by e every
+    /// <see cref="BandFalloffM"/> m beyond; a texel takes the class of highest abundance x fade. Where every band has faded
+    /// out (elevations no sample constrains) the texel stays clear. Half resolution, only with a geo-reference.</item>
+    /// </list>
     /// </summary>
     public sealed class MarsElevationMap
     {
         public enum MapState { Searching, NoTerrain, Building, Mipmaps, Ready }
+
+        /// <summary>Slope class limits in degrees (HOMELINE F2/F3): 0-10, 10-17, 17-20, above 20 = no-go.</summary>
+        public static readonly float[] SlopeLimitsDeg = { 10f, 17f, 20f };
+        public const int SlopeClassCount = 4;
+
+        // Stratigraphic band rule, the values of MarsRockScience (BandMarginM, BandFalloffM).
+        public const float BandMarginM = 15f;
+        public const float BandFalloffM = 20f;
+        private const float MinUnitFade = 0.15f;       // fainter than this: no unit drawn
+        private const int MaxUnits = 16;
+        private const float BaseGrey = 70f;            // sRGB grey of flat ground in the base hillshade
 
         public const int MaxSize = 2048;
         public const float TargetMetersPerPixel = 2f;
@@ -70,7 +96,7 @@ namespace NasaSpaceApp.HUD
         private bool hasGeo;
 
         private Texture2D texture;
-        private int width, height, mipCount;
+        private int width, height;
         private float x0, z0, mpp, invWm, invHm;
         private float minElevation, maxElevation;
         private float contourInterval = Intervals[0];
@@ -83,6 +109,32 @@ namespace NasaSpaceApp.HUD
         private float[] lightX, lightY;
         private float lightZ;
         private bool batchOk = true;
+
+        // Map-screen layers (see the class summary).
+        private struct Unit
+        {
+            public string ClassId;
+            public float Lo, Hi, Abundance;   // analog sample elevations (MOLA m), class abundance
+            public Color32 Rgb;
+        }
+
+        private Texture2D baseTexture, slopeTexture, unitTexture;
+        private int ow, oh;                   // overlay size: half resolution, rounded up
+        private Color32[] basePixels;         // grey block, like pixels
+        private Color32[] slopePixels, unitPixels;  // overlay block rows
+        private byte[] slopeAcc;              // steepest slope class per overlay texel of the block (255 = no data)
+        private float[] elevSum;              // elevation sum per overlay texel of the block
+        private byte[] elevN;                 // contributing texels (0..4)
+        private readonly Color32[] slopeTexel = new Color32[SlopeClassCount];
+        private readonly int[] slopeTexels = new int[SlopeClassCount];
+        private float tan2A, tan2B, tan2C;    // squared tangents of the slope limits
+        private readonly Unit[] units = new Unit[MaxUnits];
+        private readonly int[] unitTexels = new int[MaxUnits];
+        private int unitCount;
+        private float unitAlpha;              // texel alpha of a unit at full weight (0..255)
+
+        private readonly Texture2D[] mipJobs = new Texture2D[4];
+        private int mipJobCount, mipJob;
 
         private int nextRow;
         private int mipLevel, mipRow;
@@ -126,6 +178,51 @@ namespace NasaSpaceApp.HUD
         /// <summary>True when elevations (and contour levels) are MOLA-areoid metres, false for plain world y.</summary>
         public bool UsesMolaElevation => hasGeo;
 
+        /// <summary>Neutral grey hillshade, same grid as <see cref="Texture"/> (complete only when <see cref="IsReady"/>).</summary>
+        public Texture2D BaseTexture => baseTexture;
+
+        /// <summary>Slope classes 0-10 / 10-17 / 17-20 / &gt;20 deg, half resolution, over <see cref="OverlayWorldBounds"/>.</summary>
+        public Texture2D SlopeTexture => slopeTexture;
+
+        /// <summary>Geologic units by stratigraphic band, half resolution; null without units (no geo-reference or data).</summary>
+        public Texture2D UnitTexture => unitTexture;
+
+        /// <summary>World XZ rectangle of the half-resolution overlays (two map texels per overlay texel, rounded up).</summary>
+        public Rect OverlayWorldBounds => new Rect(x0, z0, ow * 2 * mpp, oh * 2 * mpp);
+
+        /// <summary>Units considered by the unit layer (index order = <see cref="UnitClassId"/>).</summary>
+        public int UnitCount => unitCount;
+
+        /// <summary>Rock class id of unit <paramref name="index"/> (RockDatabase), or null.</summary>
+        public string UnitClassId(int index) => (uint)index < (uint)unitCount ? units[index].ClassId : null;
+
+        /// <summary>Overlay texels drawn in unit <paramref name="index"/> at half weight or more (0 = not on this map).</summary>
+        public int UnitTexels(int index) => (uint)index < (uint)unitCount ? unitTexels[index] : 0;
+
+        /// <summary>Overlay texels in slope class <paramref name="k"/> (0..3).</summary>
+        public int SlopeTexels(int k) => (uint)k < SlopeClassCount ? slopeTexels[k] : 0;
+
+        /// <summary>
+        /// Elevation at world (<paramref name="x"/>, <paramref name="z"/>) read from the merged terrain tiles: MOLA metres
+        /// with a geo-reference, else world y. False off the map's tiles (or before the build started).
+        /// </summary>
+        public bool TryGetElevation(float x, float z, out float elevation)
+        {
+            for (int t = 0; t < tileCount; t++)
+            {
+                Tile tile = tiles[t];
+                if (x < tile.X0 || x > tile.X0 + tile.SizeX || z < tile.Z0 || z > tile.Z0 + tile.SizeZ || tile.Data == null)
+                {
+                    continue;
+                }
+                float local = tile.Data.GetInterpolatedHeight((x - tile.X0) / tile.SizeX, (z - tile.Z0) / tile.SizeZ);
+                elevation = Elevation(local, tile.Y, x, z);
+                return true;
+            }
+            elevation = 0f;
+            return false;
+        }
+
         /// <summary>Texture UV of a world position (+X east = u, +Z north = v). Outside the terrain the UV leaves 0..1.</summary>
         public Vector2 WorldToUV(Vector3 world)
         {
@@ -157,7 +254,7 @@ namespace NasaSpaceApp.HUD
                     }
                     return;
                 case MapState.Building:
-                    if (texture == null)
+                    if (TexturesLost())
                     {
                         Abort();
                         return;
@@ -165,7 +262,7 @@ namespace NasaSpaceApp.HUD
                     BuildRows();
                     return;
                 case MapState.Mipmaps:
-                    if (texture == null)
+                    if (TexturesLost())
                     {
                         Abort();
                         return;
@@ -175,15 +272,29 @@ namespace NasaSpaceApp.HUD
             }
         }
 
-        /// <summary>Destroys the texture (only needed when nobody else took ownership of it).</summary>
+        /// <summary>Destroys the textures (the main one only matters when nobody else took ownership of it).</summary>
         public void Dispose()
         {
-            if (texture != null)
-            {
-                UnityEngine.Object.Destroy(texture);
-            }
-            texture = null;
+            DestroyTexture(ref texture);
+            DestroyTexture(ref baseTexture);
+            DestroyTexture(ref slopeTexture);
+            DestroyTexture(ref unitTexture);
             ReleaseBuffers();
+        }
+
+        private static void DestroyTexture(ref Texture2D t)
+        {
+            if (t != null)
+            {
+                UnityEngine.Object.Destroy(t);
+            }
+            t = null;
+        }
+
+        // Unity null checks: a texture destroyed under the build (scene teardown) ends it.
+        private bool TexturesLost()
+        {
+            return texture == null || baseTexture == null || slopeTexture == null || (unitCount > 0 && unitTexture == null);
         }
 
         // ---- setup
@@ -282,19 +393,153 @@ namespace NasaSpaceApp.HUD
                 anisoLevel = 1,
                 hideFlags = HideFlags.DontSave
             };
-            mipCount = texture.mipmapCount;
+
+            // Map-screen layers. Not DontSave: nothing destroys them explicitly, so a scene change may unload them once
+            // the HUD that referenced them is gone.
+            ow = (width + 1) / 2;
+            oh = (height + 1) / 2;
+            BuildUnits();
+            BuildSlopeTable();
+            baseTexture = NewLayer("HUD Map Base", width, height);
+            slopeTexture = NewLayer("HUD Map Slope", ow, oh);
+            unitTexture = unitCount > 0 ? NewLayer("HUD Map Units", ow, oh) : null;
+
+            mipJobCount = 0;
             mipTotal = 0;
-            for (int k = 1; k < mipCount; k++)
-            {
-                mipTotal += (long)Mathf.Max(1, width >> k) * Mathf.Max(1, height >> k);
-            }
+            AddMipJob(texture);
+            AddMipJob(baseTexture);
+            AddMipJob(slopeTexture);
+            AddMipJob(unitTexture);
 
             batch = new float[RowsPerTick + 2, width];
             heights = new float[(RowsPerTick + 2) * width];
             pixels = new Color32[Mathf.Max(RowsPerTick * width, MipPixelsPerTick)];
+            basePixels = new Color32[RowsPerTick * width];
+            int overlayBlock = (RowsPerTick / 2) * ow;
+            slopePixels = new Color32[overlayBlock];
+            unitPixels = new Color32[overlayBlock];
+            slopeAcc = new byte[overlayBlock];
+            elevSum = new float[overlayBlock];
+            elevN = new byte[overlayBlock];
+            Array.Clear(slopeTexels, 0, slopeTexels.Length);
+            Array.Clear(unitTexels, 0, unitTexels.Length);
             nextRow = 0;
             batchOk = CheckBatch(tiles[0]);
             return true;
+        }
+
+        private static Texture2D NewLayer(string name, int w, int h)
+        {
+            return new Texture2D(w, h, TextureFormat.RGBA32, true, false)
+            {
+                name = name,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                anisoLevel = 1,
+                hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
+            };
+        }
+
+        private void AddMipJob(Texture2D t)
+        {
+            if (t == null || t.mipmapCount <= 1)
+            {
+                return;
+            }
+            mipJobs[mipJobCount++] = t;
+            for (int k = 1; k < t.mipmapCount; k++)
+            {
+                mipTotal += (long)Mathf.Max(1, t.width >> k) * Mathf.Max(1, t.height >> k);
+            }
+        }
+
+        // Slope class texels: tint per class, alpha from a perceptual alpha like HudTokens.Light (linear: p^2.2).
+        private void BuildSlopeTable()
+        {
+            tan2A = Tan2(SlopeLimitsDeg[0]);
+            tan2B = Tan2(SlopeLimitsDeg[1]);
+            tan2C = Tan2(SlopeLimitsDeg[2]);
+            for (int k = 0; k < SlopeClassCount; k++)
+            {
+                Color c = MapPalette.SlopeColor(k);
+                float a = MapPalette.LinearAlpha(MapPalette.SlopeOverlayAlpha(k));
+                slopeTexel[k] = new Color32(ToByte(c.r * 255f), ToByte(c.g * 255f), ToByte(c.b * 255f), ToByte(a * 255f));
+            }
+            unitAlpha = MapPalette.LinearAlpha(MapPalette.UnitOverlayAlpha) * 255f;
+        }
+
+        private static float Tan2(float deg)
+        {
+            float t = Mathf.Tan(deg * Mathf.Deg2Rad);
+            return t * t;
+        }
+
+        // Layered rock classes and the elevation span of their analog samples (MOLA m). Needs real elevations.
+        private void BuildUnits()
+        {
+            unitCount = 0;
+            if (!hasGeo)
+            {
+                return;
+            }
+            RockDatabase db = RockDatabase.Default;
+            if (db == null || db.Classes == null)
+            {
+                return;
+            }
+            float reach = BandMarginM + BandFalloffM * Mathf.Log(1f / MinUnitFade);
+            for (int c = 0; c < db.Classes.Count && unitCount < MaxUnits; c++)
+            {
+                RockClass cls = db.Classes[c];
+                // Caprock (unconformable) classes drape any elevation: the band rule does not apply to them.
+                if (cls == null || string.IsNullOrEmpty(cls.Id) || cls.Abundance <= 0f || cls.Setting == "caprock")
+                {
+                    continue;
+                }
+                float lo = float.MaxValue, hi = float.MinValue;
+                IReadOnlyList<RockAnalysis> list = db.AnalysesOf(cls.Id);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    RockAnalysis a = list[i];
+                    if (a != null && a.UseAsAnalog && a.ElevationM.HasValue)
+                    {
+                        lo = Mathf.Min(lo, a.ElevationM.Value);
+                        hi = Mathf.Max(hi, a.ElevationM.Value);
+                    }
+                }
+                // No elevation data (e.g. meteorites), or a band that cannot reach this terrain.
+                if (lo > hi || hi + reach < minElevation || lo - reach > maxElevation)
+                {
+                    continue;
+                }
+                Color col = MapPalette.ClassColor(cls.Id);
+                units[unitCount++] = new Unit
+                {
+                    ClassId = cls.Id, Lo = lo, Hi = hi, Abundance = cls.Abundance,
+                    Rgb = new Color32(ToByte(col.r * 255f), ToByte(col.g * 255f), ToByte(col.b * 255f), 255)
+                };
+            }
+        }
+
+        // Unit of highest abundance x band fade at elevation e (-1 without units); fade = that unit's band weight.
+        private int PickUnit(float e, out float fade)
+        {
+            int best = -1;
+            float bestScore = 0f, bestOutside = 0f;
+            for (int u = 0; u < unitCount; u++)
+            {
+                float lo = units[u].Lo - BandMarginM, hi = units[u].Hi + BandMarginM;
+                float outside = e < lo ? lo - e : (e > hi ? e - hi : 0f);
+                float score = outside > 0f ? units[u].Abundance * Mathf.Exp(-outside / BandFalloffM) : units[u].Abundance;
+                if (best < 0 || score > bestScore)
+                {
+                    best = u;
+                    bestScore = score;
+                    bestOutside = outside;
+                }
+            }
+            fade = best < 0 ? 0f : (bestOutside > 0f ? Mathf.Exp(-bestOutside / BandFalloffM) : 1f);
+            return best;
         }
 
         // The batched read must agree with per-sample reads (layout [row, column], world-unit heights); else fall back.
@@ -506,17 +751,34 @@ namespace NasaSpaceApp.HUD
 
         private void BuildRows()
         {
+            // RowsPerTick is even and blocks start at multiples of it, so each block holds whole overlay rows (2 map rows).
             int j0 = nextRow;
             int j1 = Mathf.Min(j0 + RowsPerTick, height);
+            int o0 = j0 >> 1, oRows = ((j1 - 1) >> 1) - o0 + 1;
             ReadHeights(j0, j1);
+            ClearOverlayBlock(oRows);
             Shade(j0, j1);
+            ResolveOverlayBlock(o0, oRows);
+
+            int count = (j1 - j0) * width;
             NativeArray<Color32> dst = texture.GetPixelData<Color32>(0);
-            NativeArray<Color32>.Copy(pixels, 0, dst, j0 * width, (j1 - j0) * width);
+            NativeArray<Color32>.Copy(pixels, 0, dst, j0 * width, count);
+            NativeArray<Color32> dstBase = baseTexture.GetPixelData<Color32>(0);
+            NativeArray<Color32>.Copy(basePixels, 0, dstBase, j0 * width, count);
+            NativeArray<Color32> dstSlope = slopeTexture.GetPixelData<Color32>(0);
+            NativeArray<Color32>.Copy(slopePixels, 0, dstSlope, o0 * ow, oRows * ow);
+            if (unitTexture != null)
+            {
+                NativeArray<Color32> dstUnit = unitTexture.GetPixelData<Color32>(0);
+                NativeArray<Color32>.Copy(unitPixels, 0, dstUnit, o0 * ow, oRows * ow);
+            }
+
             nextRow = j1;
             if (nextRow >= height)
             {
-                if (mipCount > 1)
+                if (mipJobCount > 0)
                 {
+                    mipJob = 0;
                     mipLevel = 1;
                     mipRow = 0;
                     mipDone = 0;
@@ -526,6 +788,57 @@ namespace NasaSpaceApp.HUD
                 else
                 {
                     Finish();
+                }
+            }
+        }
+
+        private void ClearOverlayBlock(int oRows)
+        {
+            int n = oRows * ow;
+            for (int i = 0; i < n; i++)
+            {
+                slopeAcc[i] = 255;
+                elevSum[i] = 0f;
+                elevN[i] = 0;
+            }
+        }
+
+        // Overlay texels of the block: steepest slope class of the 2x2 texels, unit of their mean elevation. The outer ring
+        // stays transparent (clamped lookups outside the terrain read as no data, like the main map).
+        private void ResolveOverlayBlock(int o0, int oRows)
+        {
+            Color32 clear = new Color32(0, 0, 0, 0);
+            for (int ob = 0; ob < oRows; ob++)
+            {
+                int oy = o0 + ob;
+                bool edgeRow = oy == 0 || oy == oh - 1;
+                int row = ob * ow;
+                for (int ox = 0; ox < ow; ox++)
+                {
+                    int i = row + ox;
+                    int n = elevN[i];
+                    if (edgeRow || ox == 0 || ox == ow - 1 || n == 0)
+                    {
+                        slopePixels[i] = clear;
+                        unitPixels[i] = clear;
+                        continue;
+                    }
+                    int k = slopeAcc[i];
+                    slopePixels[i] = slopeTexel[k];
+                    slopeTexels[k]++;
+
+                    if (unitCount > 0)
+                    {
+                        int u = PickUnit(elevSum[i] / n, out float fade);
+                        Color32 c = units[u].Rgb;
+                        // Below the fade floor the texel keeps the unit's colour at alpha 0, so bilinear edges do not darken.
+                        c.a = fade >= MinUnitFade ? ToByte(unitAlpha * fade) : (byte)0;
+                        unitPixels[i] = c;
+                        if (fade >= 0.5f)
+                        {
+                            unitTexels[u]++;
+                        }
+                    }
                 }
             }
         }
@@ -590,12 +903,16 @@ namespace NasaSpaceApp.HUD
             int nl = lightX.Length;
             float flat = lightZ;   // weights sum to 1: a flat texel receives sin(altitude)
             Color32 none = new Color32((byte)(lutR[0] * 0.5f), (byte)(lutG[0] * 0.5f), (byte)(lutB[0] * 0.5f), 0);
+            byte greyNone = ToByte(BaseGrey * 0.5f);
+            Color32 baseNone = new Color32(greyNone, greyNone, greyNone, 0);
+            int o0 = j0 >> 1;
 
             for (int r = j0; r < j1; r++)
             {
                 int k = r - (j0 - 1);
                 int row = k * width;
                 int outRow = (r - j0) * width;
+                int overlayRow = ((r >> 1) - o0) * ow;
                 bool edgeRow = r == 0 || r == height - 1;
                 for (int i = 0; i < width; i++)
                 {
@@ -603,6 +920,7 @@ namespace NasaSpaceApp.HUD
                     if (edgeRow || i == 0 || i == width - 1 || float.IsNaN(h))
                     {
                         pixels[outRow + i] = none;
+                        basePixels[outRow + i] = baseNone;
                         continue;
                     }
                     float hl = heights[row + i - 1], hr = heights[row + i + 1];
@@ -625,6 +943,22 @@ namespace NasaSpaceApp.HUD
                     }
                     float f = 1f + ShadeStrength * (shade / flat - 1f);
                     f = f < 0.3f ? 0.3f : (f > 1.45f ? 1.45f : f);
+
+                    // Map-screen base: the same hillshade on neutral grey.
+                    byte grey = ToByte(BaseGrey * f);
+                    basePixels[outRow + i] = new Color32(grey, grey, grey, 255);
+
+                    // Slope class (steepest of the overlay texel's 2x2) and elevation sum (its unit).
+                    float g2 = gx * gx + gz * gz;
+                    byte sc = g2 < tan2A ? (byte)0 : (g2 < tan2B ? (byte)1 : (g2 < tan2C ? (byte)2 : (byte)3));
+                    int oi = overlayRow + (i >> 1);
+                    byte prev = slopeAcc[oi];
+                    if (prev == 255 || sc > prev)
+                    {
+                        slopeAcc[oi] = sc;
+                    }
+                    elevSum[oi] += h;
+                    elevN[oi]++;
 
                     int ti = (int)((h - minElevation) * invRange);
                     ti = ti < 0 ? 0 : (ti > 255 ? 255 : ti);
@@ -678,18 +1012,21 @@ namespace NasaSpaceApp.HUD
             return v <= 0f ? (byte)0 : (v >= 255f ? (byte)255 : (byte)(v + 0.5f));
         }
 
-        // ---- mip chain (2x2 box filter, a block of rows per Tick, read back from the previous level's pixel data)
+        // ---- mip chains (2x2 box filter, a block of rows per Tick, read back from the previous level's pixel data), one
+        // texture after the other: main map, grey base, slope, units.
 
         private void BuildMips()
         {
-            int wk = Mathf.Max(1, width >> mipLevel), hk = Mathf.Max(1, height >> mipLevel);
-            int wp = Mathf.Max(1, width >> (mipLevel - 1)), hp = Mathf.Max(1, height >> (mipLevel - 1));
+            Texture2D tex = mipJobs[mipJob];
+            int tw = tex.width, th = tex.height;
+            int wk = Mathf.Max(1, tw >> mipLevel), hk = Mathf.Max(1, th >> mipLevel);
+            int wp = Mathf.Max(1, tw >> (mipLevel - 1)), hp = Mathf.Max(1, th >> (mipLevel - 1));
             int rows = Mathf.Min(hk - mipRow, Mathf.Max(1, MipPixelsPerTick / wk));
             rows = Mathf.Min(rows, Mathf.Max(1, mipSource.Length / (2 * wp)));
             int srcRow0 = Mathf.Min(2 * mipRow, hp - 1);
             int srcRows = Mathf.Min(2 * rows, hp - srcRow0);
 
-            NativeArray<Color32> src = texture.GetPixelData<Color32>(mipLevel - 1);
+            NativeArray<Color32> src = tex.GetPixelData<Color32>(mipLevel - 1);
             NativeArray<Color32>.Copy(src, srcRow0 * wp, mipSource, 0, srcRows * wp);
             for (int y = 0; y < rows; y++)
             {
@@ -704,7 +1041,7 @@ namespace NasaSpaceApp.HUD
                                                 (byte)((a.b + b.b + c.b + d.b + 2) >> 2), (byte)((a.a + b.a + c.a + d.a + 2) >> 2));
                 }
             }
-            NativeArray<Color32> dst = texture.GetPixelData<Color32>(mipLevel);
+            NativeArray<Color32> dst = tex.GetPixelData<Color32>(mipLevel);
             NativeArray<Color32>.Copy(pixels, 0, dst, mipRow * wk, rows * wk);
             mipDone += (long)rows * wk;
 
@@ -713,23 +1050,47 @@ namespace NasaSpaceApp.HUD
             {
                 mipLevel++;
                 mipRow = 0;
-                if (mipLevel >= mipCount)
+                if (mipLevel >= tex.mipmapCount)
                 {
-                    Finish();
+                    mipLevel = 1;
+                    if (++mipJob >= mipJobCount)
+                    {
+                        Finish();
+                    }
                 }
             }
         }
 
         private void Finish()
         {
-            texture.Apply(false, true);   // upload as built (mips included); drop the CPU copy
+            // Upload as built (mips included); drop the CPU copies.
+            texture.Apply(false, true);
+            baseTexture.Apply(false, true);
+            slopeTexture.Apply(false, true);
+            if (unitTexture != null)
+            {
+                unitTexture.Apply(false, true);
+            }
             ReleaseBuffers();
+            for (int i = 0; i < mipJobs.Length; i++)
+            {
+                mipJobs[i] = null;
+            }
             State = MapState.Ready;
         }
 
         private void Abort()
         {
             ReleaseBuffers();
+            // The main texture belongs to whoever took it (the dial's disc); the map-screen layers are ours.
+            DestroyTexture(ref baseTexture);
+            DestroyTexture(ref slopeTexture);
+            DestroyTexture(ref unitTexture);
+            unitCount = 0;
+            for (int i = 0; i < mipJobs.Length; i++)
+            {
+                mipJobs[i] = null;
+            }
             State = MapState.NoTerrain;
         }
 
@@ -739,6 +1100,12 @@ namespace NasaSpaceApp.HUD
             heights = null;
             pixels = null;
             mipSource = null;
+            basePixels = null;
+            slopePixels = null;
+            unitPixels = null;
+            slopeAcc = null;
+            elevSum = null;
+            elevN = null;
         }
     }
 }

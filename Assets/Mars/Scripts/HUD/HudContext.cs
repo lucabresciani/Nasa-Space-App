@@ -30,6 +30,8 @@ namespace NasaSpaceApp.HUD
         public SuitTelemetry Telemetry;            // WP3
         public HudTooltip Tooltip;                 // WP3
         public RockCardSystem Cards;               // WP4 (null-safe consumers)
+        public MarsElevationMap ElevationMap;      // published by CompassDial (one build, shared with the map screen); may be null
+        public bool MapScreenOpen;                 // true while the full map screen is open (set by the map screen)
 
         public float HeadingDeg;                   // set each frame by HelmetHud: Repeat(atan2(fwd.x, fwd.z), 360), fwd = camera forward on XZ
         public Vector3 CameraPosition;             // set each frame
