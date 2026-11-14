@@ -1,4 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -6,280 +10,330 @@ using UnityEngine;
 namespace NasaSpaceApp.MarsGen
 {
     /// <summary>
-    /// Generates the Mars heightmap and splatmap.
-    /// World layout (origin = spawn, +Z = initial view direction): a cratered plain inside a wide basin,
-    /// with terraced buttes, dark dune fields and ridged rim mountains toward the edges.
+    /// Loads the real Mount Sharp (Gale crater) terrain prepared from NASA/USGS data in Assets/Mars/Data/MountSharp:
+    /// a 4 km play area at 1 m (Murray Buttes, Vera Rubin Ridge, Glen Torridon) and a 65 km backdrop at 32 m that
+    /// reaches the real summit of Mount Sharp, with a hole where the play area sits.
+    ///
+    /// World frame: origin = spawn, +X = east, +Z = north, y = 0 at the spawn ground. Heights are stored with the
+    /// planet's curvature drop already subtracted (see MountSharp.json / MarsGeoReference).
     /// </summary>
     static class MarsTerrain
     {
-        public const float Size = 2048f;   // meters, square
-        public const int HeightRes = 2049; // 1 m between height samples
-        public const int SplatRes = 1024;  // 2 m per splat texel
+        public const string DataFolder = "Assets/Mars/Data/MountSharp";
+        public const string JsonPath = DataFolder + "/MountSharp.json";
+        public const string PlayAssetName = "MarsTerrainData.asset";
+        public const string BackdropAssetName = "MarsBackdropData.asset";
 
         // Splat layer order (must match MarsTextures.CreateTerrainLayers).
-        const int Dust = 0, Gravel = 1, Rock = 2, DarkSand = 3;
+        public const int Dust = 0, Gravel = 1, Rock = 2, DarkSand = 3;
 
         public struct Crater
         {
-            public Vector2 center;
+            public Vector2 center; // world XZ, metres
             public float radius, floor, depth;
         }
 
-        struct Mesa
+        /// <summary>A real boulder mapped on HiRISE, world XZ.</summary>
+        public struct RealRock
         {
-            public Vector2 center;
-            public float radius, height;
-            public int seed;
+            public Vector2 position;
+            public float diameter, height;
         }
+
+        // ------------------------------------------------------------------ MountSharp.json
+#pragma warning disable 0649 // filled by JsonUtility
+
+        [Serializable]
+        public class GridInfo
+        {
+            public string heightFile;
+            public int resolution;
+            public float sizeX, sizeZ, minElevation, maxElevation;
+            public string splatFile;
+            public int splatResolution;
+        }
+
+        [Serializable]
+        public class PlayInfo : GridInfo
+        {
+            public double swLat, swLon;
+        }
+
+        [Serializable]
+        public class BackdropInfo : GridInfo
+        {
+            public float offsetX, offsetZ;
+            public int holeX0, holeZ0, holeX1, holeZ1;
+        }
+
+        [Serializable]
+        public class SpawnInfo
+        {
+            public float x, z, elevation, yawDeg;
+            public int sol;
+            public string label;
+        }
+
+        [Serializable]
+        public class SummitInfo
+        {
+            public float x, z, elevation;
+            public double lat, lon;
+        }
+
+        [Serializable]
+        public class Info
+        {
+            public string name, credit;
+            public float eastScale;
+            public float planetRadius;
+            public double metersPerDegree;
+            public PlayInfo play;
+            public BackdropInfo backdrop;
+            public SpawnInfo spawn;
+            public SummitInfo summit;
+            public string rocksFile, cratersFile;
+        }
+
+#pragma warning restore 0649
+
+        // ------------------------------------------------------------------ result
 
         public class Result
         {
-            public TerrainData data;
-            public float minHeight; // world Y of a normalized height of 0 → place the Terrain at this Y
-            public List<Crater> craters;
+            public Info info;
+            public TerrainData play, backdrop;
+            public Vector3 playPosition, backdropPosition; // world position of each Terrain (SW corner, y of height 0)
+            public float spawnYaw;                          // degrees clockwise from +Z (north), toward the summit
+            public Vector2 playSwWorld;                     // world XZ of the play SW post
+            public List<Crater> craters;                    // world XZ
+            public List<RealRock> rocks;                    // world XZ
+            public Color32[] playSplat;                     // row 0 = south
+            public int playSplatRes;
+
+            public Rect PlayRectWorld => new Rect(playSwWorld.x, playSwWorld.y, info.play.sizeX, info.play.sizeZ);
+
+            /// <summary>DarkSand splat weight (0..1) at a world XZ; 0 outside the play area.</summary>
+            public float DarkSandWeight(Vector2 world)
+            {
+                if (playSplat == null) return 0f;
+                float u = (world.x - playSwWorld.x) / info.play.sizeX, v = (world.y - playSwWorld.y) / info.play.sizeZ;
+                if (u < 0f || v < 0f || u > 1f || v > 1f) return 0f;
+                int n = playSplatRes;
+                Color32 c = playSplat[Mathf.Min(n - 1, (int)(v * n)) * n + Mathf.Min(n - 1, (int)(u * n))];
+                int sum = c.r + c.g + c.b + c.a;
+                return sum > 0 ? c.a / (float)sum : 0f;
+            }
+
+            public string Describe() =>
+                $"{info.name}: play {info.play.sizeX / 1000f:0.0}×{info.play.sizeZ / 1000f:0.0} km ({info.play.minElevation:0}..{info.play.maxElevation:0} m), " +
+                $"backdrop {info.backdrop.sizeX / 1000f:0}×{info.backdrop.sizeZ / 1000f:0} km, spawn '{info.spawn.label}' (sol {info.spawn.sol}, " +
+                $"{info.spawn.elevation:0} m), summit {info.summit.elevation:0} m at {Mathf.Sqrt(Sq(info.summit.x - info.spawn.x) + Sq(info.summit.z - info.spawn.z)) / 1000f:0.0} km, " +
+                $"{rocks.Count} mapped boulders, {craters.Count} craters";
         }
 
-        public static Result Generate(string assetPath, TerrainLayer[] layers, int seed)
+        static float Sq(float v) => v * v;
+
+        // ------------------------------------------------------------------ loading
+
+        public static Info LoadInfo()
         {
-            var rng = new System.Random(seed);
-            List<Crater> craters = MakeCraters(rng);
-            List<Mesa> mesas = MakeMesas(rng, seed);
+            string full = Path.GetFullPath(JsonPath);
+            if (!File.Exists(full))
+                throw new FileNotFoundException($"[Mars] Mount Sharp terrain data not found: {JsonPath}. Copy the MountSharp data folder into the project first.", full);
+            Info info = JsonUtility.FromJson<Info>(File.ReadAllText(full));
+            if (info == null || info.play == null || info.backdrop == null || info.spawn == null || info.summit == null)
+                throw new InvalidDataException($"[Mars] {JsonPath} is missing play/backdrop/spawn/summit.");
+            if (info.planetRadius <= 0f) info.planetRadius = 3396190f;
+            if (info.metersPerDegree <= 0.0) info.metersPerDegree = 59274.6975;
+            return info;
+        }
 
-            int res = HeightRes;
-            float step = Size / (res - 1);
-            float half = Size * 0.5f;
-            var h = new float[res * res];
-            var dune = new float[res * res];
-            var ejecta = new float[res * res];
+        /// <summary>Builds or updates the play and backdrop TerrainData assets in <paramref name="folder"/>.</summary>
+        public static Result Generate(string folder, TerrainLayer[] layers)
+        {
+            Info info = LoadInfo();
+            var spawn = new Vector2(info.spawn.x, info.spawn.z);
 
-            EditorUtility.DisplayProgressBar("Mars", "Sculpting plains, buttes and dunes…", 0.3f);
-            Parallel.For(0, res, z =>
+            EditorUtility.DisplayProgressBar("Mars", "Loading Mount Sharp heights…", 0.3f);
+            TerrainData play = BuildData($"{folder}/{PlayAssetName}", info.play, layers, null, out Color32[] playSplat);
+
+            EditorUtility.DisplayProgressBar("Mars", "Loading the Gale crater backdrop…", 0.5f);
+            bool[,] solid = new bool[info.backdrop.resolution - 1, info.backdrop.resolution - 1];
+            for (int z = 0; z < solid.GetLength(0); z++)
+            for (int x = 0; x < solid.GetLength(1); x++)
+                solid[z, x] = x < info.backdrop.holeX0 || x >= info.backdrop.holeX1 || z < info.backdrop.holeZ0 || z >= info.backdrop.holeZ1;
+            TerrainData backdrop = BuildData($"{folder}/{BackdropAssetName}", info.backdrop, layers, solid, out _);
+
+            return new Result
             {
-                float wz = z * step - half;
-                for (int x = 0; x < res; x++)
-                {
-                    float wx = x * step - half;
-                    h[z * res + x] = BaseHeight(wx, wz, seed, mesas, out dune[z * res + x]);
-                }
-            });
+                info = info,
+                play = play,
+                backdrop = backdrop,
+                playPosition = new Vector3(-spawn.x, info.play.minElevation - info.spawn.elevation, -spawn.y),
+                backdropPosition = new Vector3(-spawn.x + info.backdrop.offsetX, info.backdrop.minElevation - info.spawn.elevation, -spawn.y + info.backdrop.offsetZ),
+                spawnYaw = info.spawn.yawDeg,
+                playSwWorld = -spawn,
+                craters = LoadCraters(info),
+                rocks = LoadRocks(info),
+                playSplat = playSplat,
+                playSplatRes = info.play.splatResolution,
+            };
+        }
 
-            EditorUtility.DisplayProgressBar("Mars", "Impact craters…", 0.45f);
-            foreach (Crater c in craters) StampCrater(c, h, ejecta, res, step, half, seed);
-
-            float min = float.MaxValue, max = float.MinValue;
-            foreach (float v in h) { if (v < min) min = v; if (v > max) max = v; }
-            float range = Mathf.Max(1f, max - min);
-
-            var heights = new float[res, res];
-            for (int z = 0; z < res; z++)
-            for (int x = 0; x < res; x++)
-                heights[z, x] = (h[z * res + x] - min) / range;
-
-            EditorUtility.DisplayProgressBar("Mars", "Painting surface layers…", 0.55f);
-            float[,,] splat = Splat(h, dune, ejecta, res, step, half, seed);
+        static TerrainData BuildData(string assetPath, GridInfo grid, TerrainLayer[] layers, bool[,] solid, out Color32[] splatPixels)
+        {
+            int res = grid.resolution;
+            float[,] heights = ReadHeights($"{DataFolder}/{grid.heightFile}", res);
+            float[,,] alpha = ReadSplat($"{DataFolder}/{grid.splatFile}", grid.splatResolution, out splatPixels);
 
             var data = AssetDatabase.LoadAssetAtPath<TerrainData>(assetPath);
             bool isNew = data == null;
             if (isNew) data = new TerrainData();
             data.heightmapResolution = res; // must be set before size
-            data.size = new Vector3(Size, range, Size);
+            data.size = new Vector3(grid.sizeX, Mathf.Max(1f, grid.maxElevation - grid.minElevation), grid.sizeZ);
             data.SetHeights(0, 0, heights);
             data.terrainLayers = layers;
-            data.alphamapResolution = SplatRes;
+            data.alphamapResolution = grid.splatResolution;
             data.baseMapResolution = 1024;
-            data.SetAlphamaps(0, 0, splat);
+            data.SetAlphamaps(0, 0, alpha);
+            if (solid != null) data.SetHoles(0, 0, solid);
             if (isNew) AssetDatabase.CreateAsset(data, assetPath);
             else EditorUtility.SetDirty(data);
-
-            return new Result { data = data, minHeight = min, craters = craters };
+            return data;
         }
 
-        // ------------------------------------------------------------------ height
-
-        static float BaseHeight(float wx, float wz, int seed, List<Mesa> mesas, out float duneMask)
+        /// <summary>gzip of little-endian uint16, row 0 = south, column 0 = west → heights[z, x] normalized 0..1.</summary>
+        static float[,] ReadHeights(string assetPath, int res)
         {
-            float r = Mathf.Sqrt(wx * wx + wz * wz);
-
-            // Rolling plains + a broad regional swell.
-            float h = 7f * MarsNoise.Fbm(wx / 260f, wz / 260f, 5, seed)
-                    + 1.5f * MarsNoise.Fbm(wx / 45f, wz / 45f, 3, seed + 1)
-                    + 10f * MarsNoise.Fbm(wx / 900f, wz / 900f, 2, seed + 2);
-
-            // Basin rim: ridged mountains rising beyond ~650 m, with a wobbly edge.
-            float wobble = 140f * MarsNoise.Fbm(wx / 500f, wz / 500f, 3, seed + 3);
-            float ring = MarsNoise.SmoothStep(620f, 980f, r + wobble);
-            if (ring > 0f)
+            byte[] raw;
+            using (FileStream file = File.OpenRead(Path.GetFullPath(assetPath)))
+            using (var gzip = new GZipStream(file, CompressionMode.Decompress))
+            using (var buffer = new MemoryStream(res * res * 2))
             {
-                float ridges = MarsNoise.Ridged(wx / 380f, wz / 380f, 7, seed + 4);
-                float massif = 0.55f + 0.45f * MarsNoise.Fbm(wx / 700f, wz / 700f, 2, seed + 5);
-                h += ring * (25f + 230f * ridges * massif);
+                gzip.CopyTo(buffer);
+                if (buffer.Length != (long)res * res * 2)
+                    throw new InvalidDataException($"[Mars] {assetPath}: {buffer.Length} bytes, expected {res}×{res} uint16.");
+                raw = buffer.GetBuffer();
             }
 
-            // Terraced buttes (think Gale crater's sedimentary mounds).
-            foreach (Mesa m in mesas)
+            var heights = new float[res, res];
+            const float inv = 1f / 65535f;
+            Parallel.For(0, res, z =>
             {
-                float dx = wx - m.center.x, dz = wz - m.center.y;
-                float d = Mathf.Sqrt(dx * dx + dz * dz);
-                if (d > m.radius * 2.3f) continue;
-                d += MarsNoise.Fbm(wx / 40f, wz / 40f, 3, m.seed) * 0.22f * m.radius;
-                float t = MarsNoise.SmoothStep(m.radius, m.radius * 0.8f, d);
-                const float steps = 3f;
-                float ts = t * steps, ti = Mathf.Floor(ts);
-                t = (ti + MarsNoise.SmoothStep(0.55f, 1f, ts - ti)) / steps;
-                float skirt = MarsNoise.SmoothStep(m.radius * 2.1f, m.radius * 0.9f, d);
-                float top = 1f + 0.06f * MarsNoise.Fbm(wx / 25f, wz / 25f, 3, m.seed + 1);
-                h += m.height * (0.82f * t * top + 0.18f * skirt * skirt);
-            }
-
-            // Dune fields: asymmetric transverse dunes (gentle stoss, steep lee), patchy.
-            duneMask = MarsNoise.SmoothStep(0.05f, 0.45f, MarsNoise.Fbm(wx / 450f + 3.1f, wz / 450f - 1.7f, 3, seed + 6)) * (1f - ring);
-            if (duneMask > 0.001f)
-            {
-                float s = (wx * 0.86f + wz * 0.5f) / 38f + 1.3f * MarsNoise.Fbm(wx / 160f, wz / 160f, 3, seed + 7);
-                float t = s - Mathf.Floor(s);
-                float profile = t < 0.72f ? MarsNoise.SmoothStep(0f, 0.72f, t) : 1f - MarsNoise.SmoothStep(0.72f, 1f, t);
-                float crest = 0.6f + 0.4f * MarsNoise.Fbm(wx / 90f, wz / 90f, 2, seed + 8);
-                h += duneMask * profile * 5f * crest;
-            }
-            return h;
+                int i = z * res * 2;
+                for (int x = 0; x < res; x++, i += 2)
+                    heights[z, x] = (raw[i] | (raw[i + 1] << 8)) * inv;
+            });
+            return heights;
         }
 
-        static List<Mesa> MakeMesas(System.Random rng, int seed)
+        /// <summary>
+        /// RGBA weights (R Dust, G Gravel, B Bedrock, A DarkSand) → alphamap[z, x, layer].
+        /// The PNG's top row is north; Texture2D.LoadImage stores it bottom-up (pixel row 0 = the PNG's last row = south),
+        /// which is exactly the alphamap's z order, so pixels are read row-for-row.
+        /// </summary>
+        static float[,,] ReadSplat(string assetPath, int res, out Color32[] pixels)
         {
-            var list = new List<Mesa>
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
+            try
             {
-                // One butte framed in the initial view, ahead and to the right.
-                new Mesa { center = new Vector2(150f, 360f), radius = 75f, height = 40f, seed = seed + 500 },
-            };
-            for (int i = 0; i < 5; i++)
+                if (!tex.LoadImage(File.ReadAllBytes(Path.GetFullPath(assetPath))))
+                    throw new InvalidDataException($"[Mars] {assetPath} is not a readable PNG.");
+                if (tex.width != res || tex.height != res)
+                    throw new InvalidDataException($"[Mars] {assetPath} is {tex.width}×{tex.height}, expected {res}×{res}.");
+                pixels = tex.GetPixels32();
+            }
+            finally
             {
-                float angle = (float)rng.NextDouble() * Mathf.PI * 2f;
-                float dist = Mathf.Lerp(260f, 560f, (float)rng.NextDouble());
-                list.Add(new Mesa
+                UnityEngine.Object.DestroyImmediate(tex);
+            }
+
+            Color32[] px = pixels;
+            var alpha = new float[res, res, 4];
+            Parallel.For(0, res, z =>
+            {
+                for (int x = 0; x < res; x++)
                 {
-                    center = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * dist,
-                    radius = Mathf.Lerp(45f, 120f, (float)rng.NextDouble()),
-                    height = Mathf.Lerp(18f, 55f, (float)rng.NextDouble()),
-                    seed = seed + 501 + i,
-                });
-            }
-            return list;
-        }
-
-        // ------------------------------------------------------------------ craters
-
-        /// <summary>The craters <see cref="Generate"/> stamps for this seed, without regenerating the terrain.</summary>
-        public static List<Crater> Craters(int seed) => MakeCraters(new System.Random(seed));
-
-        static List<Crater> MakeCraters(System.Random rng)
-        {
-            var list = new List<Crater>
-            {
-                new Crater { center = new Vector2(-60f, 150f), radius = 42f, floor = -0.55f, depth = 0.5f },   // in view at spawn
-                new Crater { center = new Vector2(-430f, 420f), radius = 170f, floor = -0.3f, depth = 0.45f },  // old, filled basin
-                new Crater { center = new Vector2(380f, -250f), radius = 95f, floor = -0.45f, depth = 0.5f },
-            };
-            AddRandomCraters(rng, list, count: 8, minR: 25f, maxR: 70f, maxDist: 650f);
-            AddRandomCraters(rng, list, count: 60, minR: 6f, maxR: 24f, maxDist: 750f);
-            AddRandomCraters(rng, list, count: 160, minR: 2.5f, maxR: 6f, maxDist: 400f);
-            return list;
-        }
-
-        static void AddRandomCraters(System.Random rng, List<Crater> list, int count, float minR, float maxR, float maxDist)
-        {
-            int placed = 0, guard = 0;
-            while (placed < count && guard++ < count * 20)
-            {
-                // Bias toward small radii, like real crater populations.
-                float radius = Mathf.Lerp(minR, maxR, Mathf.Pow((float)rng.NextDouble(), 2f));
-                float dist = Mathf.Sqrt((float)rng.NextDouble()) * maxDist;
-                float angle = (float)rng.NextDouble() * Mathf.PI * 2f;
-                var center = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * dist;
-                if (center.magnitude < radius * 1.8f + 8f) continue; // keep the spawn point clear
-                float freshness = Mathf.Lerp(0.45f, 1f, (float)rng.NextDouble());
-                list.Add(new Crater
-                {
-                    center = center,
-                    radius = radius,
-                    floor = Mathf.Lerp(-0.75f, -0.35f, (float)rng.NextDouble()),
-                    depth = 0.5f * freshness,
-                });
-                placed++;
-            }
-        }
-
-        /// <summary>Crater profile: bowl, optional flat floor and raised rim (after S. Lague's crater function).</summary>
-        static void StampCrater(Crater c, float[] h, float[] ejecta, int res, float step, float half, int seed)
-        {
-            const float rimWidth = 0.7f, rimSteepness = 0.6f, smooth = 0.3f;
-            float reach = c.radius * (1f + rimWidth + 0.6f);
-            int x0 = Mathf.Max(0, Mathf.FloorToInt((c.center.x - reach + half) / step));
-            int x1 = Mathf.Min(res - 1, Mathf.CeilToInt((c.center.x + reach + half) / step));
-            int z0 = Mathf.Max(0, Mathf.FloorToInt((c.center.y - reach + half) / step));
-            int z1 = Mathf.Min(res - 1, Mathf.CeilToInt((c.center.y + reach + half) / step));
-            float noiseScale = Mathf.Max(4f, c.radius * 0.5f);
-            float fresh = c.depth / 0.5f;
-
-            for (int z = z0; z <= z1; z++)
-            {
-                float wz = z * step - half;
-                for (int x = x0; x <= x1; x++)
-                {
-                    float wx = x * step - half;
-                    float dx = wx - c.center.x, dz = wz - c.center.y;
-                    float d = Mathf.Sqrt(dx * dx + dz * dz);
-                    if (d > reach) continue;
-                    d *= 1f + 0.07f * MarsNoise.Fbm(wx / noiseScale, wz / noiseScale, 2, seed + 900);
-                    float xr = d / c.radius;
-
-                    float cavity = xr * xr - 1f;
-                    float rimX = Mathf.Min(xr - 1f - rimWidth, 0f);
-                    float rim = rimSteepness * rimX * rimX;
-                    float shape = MarsNoise.SmoothMax(cavity, c.floor, smooth);
-                    shape = MarsNoise.SmoothMin(shape, rim, smooth);
-
-                    int i = z * res + x;
-                    h[i] += shape * c.radius * c.depth;
-                    if (xr > 0.85f)
-                        ejecta[i] = Mathf.Max(ejecta[i], MarsNoise.SmoothStep(2.2f, 1f, xr) * fresh);
-                }
-            }
-        }
-
-        // ------------------------------------------------------------------ splat
-
-        static float[,,] Splat(float[] h, float[] dune, float[] ejecta, int res, float step, float half, int seed)
-        {
-            var splat = new float[SplatRes, SplatRes, 4];
-            float texel = Size / SplatRes;
-            Parallel.For(0, SplatRes, az =>
-            {
-                for (int ax = 0; ax < SplatRes; ax++)
-                {
-                    float wx = (ax + 0.5f) * texel - half, wz = (az + 0.5f) * texel - half;
-                    int hx = Mathf.Clamp(Mathf.RoundToInt((wx + half) / step), 1, res - 2);
-                    int hz = Mathf.Clamp(Mathf.RoundToInt((wz + half) / step), 1, res - 2);
-                    int i = hz * res + hx;
-
-                    float gx = (h[i + 1] - h[i - 1]) / (2f * step);
-                    float gz = (h[i + res] - h[i - res]) / (2f * step);
-                    float slope = Mathf.Atan(Mathf.Sqrt(gx * gx + gz * gz)) * Mathf.Rad2Deg;
-
-                    float rock = MarsNoise.SmoothStep(24f, 36f, slope);
-                    float gravel = MarsNoise.SmoothStep(10f, 22f, slope) * (1f - rock);
-                    float patches = MarsNoise.SmoothStep(0.1f, 0.45f, MarsNoise.Fbm(wx / 35f, wz / 35f, 3, seed + 20));
-                    gravel = Mathf.Max(gravel, Mathf.Max(patches * 0.8f, ejecta[i] * 0.9f) * (1f - rock));
-                    float dark = MarsNoise.SmoothStep(0.15f, 0.6f, dune[i]) * (1f - rock) * (1f - 0.5f * gravel);
-                    float dust = Mathf.Max(0.05f, 1f - rock - gravel - dark);
-
-                    float sum = dust + gravel + rock + dark;
-                    splat[az, ax, Dust] = dust / sum;
-                    splat[az, ax, Gravel] = gravel / sum;
-                    splat[az, ax, Rock] = rock / sum;
-                    splat[az, ax, DarkSand] = dark / sum;
+                    Color32 c = px[z * res + x];
+                    int sum = c.r + c.g + c.b + c.a;
+                    if (sum == 0) { alpha[z, x, Dust] = 1f; continue; }
+                    float k = 1f / sum;
+                    alpha[z, x, Dust] = c.r * k;
+                    alpha[z, x, Gravel] = c.g * k;
+                    alpha[z, x, Rock] = c.b * k;
+                    alpha[z, x, DarkSand] = c.a * k;
                 }
             });
-            return splat;
+            return alpha;
+        }
+
+        // ------------------------------------------------------------------ craters and boulders
+
+        /// <summary>
+        /// The real craters mapped in the play area, world XZ. <paramref name="seed"/> is ignored (kept for
+        /// MarsRockScience); empty when the Mount Sharp data is missing.
+        /// </summary>
+        public static List<Crater> Craters(int seed)
+        {
+            try
+            {
+                return LoadCraters(LoadInfo());
+            }
+            catch (Exception e) when (e is IOException || e is InvalidDataException)
+            {
+                Debug.LogWarning(e.Message);
+                return new List<Crater>();
+            }
+        }
+
+        static List<Crater> LoadCraters(Info info)
+        {
+            var list = new List<Crater>();
+            foreach (float[] row in ReadCsv(info.cratersFile, 3))
+                list.Add(new Crater
+                {
+                    center = new Vector2(row[0] - info.spawn.x, row[1] - info.spawn.z),
+                    radius = row[2],
+                    floor = -0.5f,
+                    depth = 0.5f,
+                });
+            return list;
+        }
+
+        static List<RealRock> LoadRocks(Info info)
+        {
+            var list = new List<RealRock>();
+            foreach (float[] row in ReadCsv(info.rocksFile, 4))
+                list.Add(new RealRock
+                {
+                    position = new Vector2(row[0] - info.spawn.x, row[1] - info.spawn.z),
+                    diameter = row[2],
+                    height = row[3],
+                });
+            return list;
+        }
+
+        /// <summary>Numeric CSV rows with at least <paramref name="columns"/> values; skips the header and bad lines.</summary>
+        static IEnumerable<float[]> ReadCsv(string fileName, int columns)
+        {
+            if (string.IsNullOrEmpty(fileName)) yield break;
+            string full = Path.GetFullPath($"{DataFolder}/{fileName}");
+            if (!File.Exists(full))
+            {
+                Debug.LogWarning($"[Mars] {DataFolder}/{fileName} not found; skipping.");
+                yield break;
+            }
+            foreach (string line in File.ReadLines(full))
+            {
+                string[] parts = line.Split(',');
+                if (parts.Length < columns) continue;
+                var row = new float[columns];
+                bool ok = true;
+                for (int i = 0; i < columns && ok; i++)
+                    ok = float.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out row[i]);
+                if (ok) yield return row;
+            }
         }
     }
 }

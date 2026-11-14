@@ -25,7 +25,13 @@ namespace NasaSpaceApp.MarsGen
             public Texture2D albedo, normal, mask;
         }
 
-        static readonly Color DustColor = C(0.70f, 0.42f, 0.28f);
+        static readonly Color DustColor = C(0.70f, 0.42f, 0.28f); // boulder dust coating
+
+        // Terrain layer palette, after Curiosity Mastcam views of Gale crater (Murray Buttes to Glen Torridon).
+        static readonly Color TerrainDust = C(0.69f, 0.48f, 0.31f); // ochre airfall dust, ~#B07A50
+        // Murray formation, ~#9E755C: lighter-toned than the regolith in Mastcam frames, but anything paler reads as snow
+        // under the Mars sun + Neutral tonemapping.
+        static readonly Color Mudstone = C(0.62f, 0.46f, 0.36f);
 
         static Color C(float r, float g, float b) => new Color(r, g, b, 1f);
 
@@ -38,7 +44,7 @@ namespace NasaSpaceApp.MarsGen
             {
                 MakeLayer(folder, "Dust", size, tileMeters: 6f, bumpMeters: 0.02f, (u, v) => Dust(u, v, seed)),
                 MakeLayer(folder, "Gravel", size, tileMeters: 4f, bumpMeters: 0.03f, (u, v) => Gravel(u, v, seed + 100)),
-                MakeLayer(folder, "Bedrock", size, tileMeters: 9f, bumpMeters: 0.09f, (u, v) => Bedrock(u, v, seed + 200, 5, 1f)),
+                MakeLayer(folder, "Bedrock", size, tileMeters: 9f, bumpMeters: 0.09f, (u, v) => MurrayBedrock(u, v, seed + 200)),
                 MakeLayer(folder, "DarkSand", size, tileMeters: 5f, bumpMeters: 0.015f, (u, v) => DarkSand(u, v, seed + 300)),
             };
         }
@@ -85,9 +91,9 @@ namespace NasaSpaceApp.MarsGen
             float grain = MarsNoise.TileFbm(u, v, 96, 2, seed + 7);
 
             float h = 0.45f + 0.2f * broad + 0.25f * ripple * patch + 0.08f * grain;
-            Color c = Color.Lerp(C(0.63f, 0.38f, 0.24f), C(0.80f, 0.55f, 0.37f), Mathf.Clamp01(0.5f + broad * 0.9f));
-            c = Color.Lerp(c, DustColor, 0.4f);
-            c *= 0.95f + 0.1f * grain;
+            Color c = Color.Lerp(C(0.62f, 0.43f, 0.28f), C(0.80f, 0.58f, 0.40f), Mathf.Clamp01(0.5f + broad * 0.9f));
+            c = Color.Lerp(c, TerrainDust, 0.4f);
+            c *= 0.97f + 0.1f * grain;
             return new Surface { height = Mathf.Clamp01(h), albedo = c, smoothness = 0.1f };
         }
 
@@ -109,7 +115,8 @@ namespace NasaSpaceApp.MarsGen
 
             float cover = MarsNoise.SmoothStep(0f, 0.35f, dome);
             float gritCover = MarsNoise.SmoothStep(0f, 0.3f, grit) * (1f - cover);
-            Color c = Color.Lerp(dust.albedo * 0.92f, pebble, cover * 0.85f);
+            // Mixed pebbles on dusty mudstone, ~#8C6A52 overall.
+            Color c = Color.Lerp(Color.Lerp(dust.albedo, Mudstone * 0.86f, 0.45f) * 0.86f, pebble, cover * 0.85f);
             c = Color.Lerp(c, gritColor, gritCover * 0.6f);
 
             float h = 0.25f + 0.12f * dust.height + 0.55f * dome + 0.2f * grit * (1f - cover);
@@ -125,9 +132,9 @@ namespace NasaSpaceApp.MarsGen
         static Color PebbleColor(uint id)
         {
             float pick = MarsNoise.Hash01(id, 3);
-            Color c = pick < 0.35f ? C(0.30f, 0.25f, 0.22f)   // basalt
-                    : pick < 0.7f ? C(0.52f, 0.31f, 0.21f)    // oxidised red
-                    : C(0.63f, 0.46f, 0.33f);                 // pale tan
+            Color c = pick < 0.3f ? C(0.32f, 0.29f, 0.27f)    // basalt
+                    : pick < 0.6f ? C(0.50f, 0.36f, 0.27f)    // oxidised
+                    : C(0.68f, 0.55f, 0.45f);                 // pale mudstone chips
             return c * (0.85f + 0.3f * MarsNoise.Hash01(id, 4));
         }
 
@@ -155,6 +162,39 @@ namespace NasaSpaceApp.MarsGen
             return new Surface { height = Mathf.Clamp01(h), albedo = c, smoothness = Mathf.Lerp(0.28f, 0.1f, dustAmount) };
         }
 
+        /// <summary>
+        /// Murray formation mudstone (terrain bedrock layer): pale pinkish tan, fine horizontal laminations and a
+        /// polygonal fracture network with dust-filled joints.
+        /// </summary>
+        static Surface MurrayBedrock(float u, float v, int seed)
+        {
+            MarsNoise.TileWorley(u, v, 7, seed, out float f1, out float f2, out uint id);
+            float crack = MarsNoise.SmoothStep(0f, 0.045f, f2 - f1);
+            MarsNoise.TileWorley(u, v, 19, seed + 5, out float s1, out float s2, out _);
+            float crack2 = MarsNoise.SmoothStep(0f, 0.035f, s2 - s1);
+
+            // Integer frequencies keep the laminae tileable; a low-frequency warp bends them gently.
+            float warp = MarsNoise.TileFbm(u, v, 3, 3, seed + 7);
+            float lamina = 0.5f + 0.5f * Mathf.Sin((v * 48f + u * 2f) * 2f * Mathf.PI + warp * 6f);
+            float bed = 0.5f + 0.5f * Mathf.Sin(v * 11f * 2f * Mathf.PI + warp * 3f);
+
+            float rough = MarsNoise.TileFbm(u, v, 6, 5, seed + 11);
+            float fine = MarsNoise.TileFbm(u, v, 64, 3, seed + 12);
+            float plate = MarsNoise.Hash01(id, 1);
+
+            float h = 0.55f + 0.12f * rough + 0.08f * (plate - 0.5f) + 0.05f * lamina + 0.04f * bed + 0.03f * fine;
+            h *= Mathf.Lerp(0.3f, 1f, crack) * Mathf.Lerp(0.75f, 1f, crack2);
+
+            Color rock = Color.Lerp(Mudstone * 0.92f, Mudstone * 1.07f, plate * 0.6f + bed * 0.4f);
+            float tint = MarsNoise.SmoothStep(0.25f, 0.75f, MarsNoise.TileFbm(u, v, 4, 3, seed + 20));
+            rock = Color.Lerp(rock, C(0.52f, 0.40f, 0.35f), tint * 0.3f); // greyer, hematite-bearing patches
+            rock *= 0.95f + 0.06f * lamina + 0.05f * fine;
+
+            float dustAmount = MarsNoise.SmoothStep(0.40f, 0.22f, h);
+            Color c = Color.Lerp(rock, TerrainDust, dustAmount * 0.85f) * Mathf.Lerp(0.85f, 1f, crack);
+            return new Surface { height = Mathf.Clamp01(h), albedo = c, smoothness = Mathf.Lerp(0.14f, 0.08f, dustAmount) };
+        }
+
         static Surface DarkSand(float u, float v, int seed)
         {
             float broad = MarsNoise.TileFbm(u, v, 3, 5, seed);
@@ -164,8 +204,9 @@ namespace NasaSpaceApp.MarsGen
             float patch = MarsNoise.SmoothStep(-0.1f, 0.4f, MarsNoise.TileFbm(u, v, 2, 3, seed + 9));
 
             float h = 0.45f + 0.15f * broad + 0.3f * ripple + 0.06f * grain;
-            Color c = Color.Lerp(C(0.27f, 0.21f, 0.18f), C(0.36f, 0.27f, 0.22f), 0.5f + 0.5f * broad);
-            c = Color.Lerp(c, C(0.60f, 0.38f, 0.25f), MarsNoise.SmoothStep(0.35f, 0.1f, ripple) * 0.35f * patch);
+            // Basaltic Bagnold sand, dark grey-brown ~#5A4A3F, with dust caught in the ripple troughs.
+            Color c = Color.Lerp(C(0.31f, 0.255f, 0.215f), C(0.40f, 0.325f, 0.27f), 0.5f + 0.5f * broad);
+            c = Color.Lerp(c, C(0.55f, 0.40f, 0.29f), MarsNoise.SmoothStep(0.35f, 0.1f, ripple) * 0.45f * patch);
             c *= 0.94f + 0.12f * (0.5f + 0.5f * grain);
             return new Surface { height = Mathf.Clamp01(h), albedo = c, smoothness = 0.18f };
         }

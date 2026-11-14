@@ -50,7 +50,7 @@ namespace NasaSpaceApp.MarsGen
                 Material sky = MarsTextures.CreateSkyMaterial(texFolder);
 
                 Progress("Generating terrain…", 0.25f);
-                MarsTerrain.Result terrainResult = MarsTerrain.Generate($"{terrainFolder}/MarsTerrainData.asset", layers, Seed);
+                MarsTerrain.Result terrainResult = MarsTerrain.Generate(terrainFolder, layers);
 
                 Progress("Carving boulders…", 0.65f);
                 Mesh[] rockMeshes = CreateRockMeshes(rockFolder, 6);
@@ -67,17 +67,19 @@ namespace NasaSpaceApp.MarsGen
                 var environment = new GameObject("Environment").transform;
                 Light sun = CreateSun(environment);
                 ConfigureRenderSettings(sky, sun);
-                Terrain terrain = CreateTerrain(environment, terrainResult, terrainMat);
+                Terrain terrain = MountSharpTerrain.CreateTerrains(environment, terrainResult, terrainMat);
                 var rocks = new GameObject("Rocks").transform;
                 rocks.SetParent(environment, false);
-                int rockCount = ScatterRocks(terrain, terrainResult.craters, rockMeshes, rockMats, rocks);
+                int rockCount = MountSharpTerrain.ScatterRocks(terrain, terrainResult, rockMeshes, rockMats, rocks, Seed);
                 MarsRockScience.Result science = MarsRockScience.Apply(rocks, terrainResult.craters, Seed, undo: false);
                 CreateVolume(environment, profile);
 
                 GameObject player = CreatePlayer(terrain, dustMat);
+                MountSharpTerrain.PlacePlayer(player, terrain, terrainResult);
                 MarsRockScience.SetupScanner(player, undo: false);
                 CreateDayNightCycle(sun, player);
                 CreateWeather(environment, player);
+                MountSharpTerrain.PointDustDevilsAt(terrain);
                 CreateEventSystem();
 
                 EditorSceneManager.SaveScene(scene, ScenePath);
@@ -91,7 +93,7 @@ namespace NasaSpaceApp.MarsGen
 
                 Selection.activeGameObject = player;
                 SceneView.lastActiveSceneView?.AlignViewToObject(player.GetComponentInChildren<Camera>().transform);
-                Debug.Log($"[Mars] Built {ScenePath}: 2 km terrain, {terrainResult.craters.Count} craters, {rockCount} rocks. Press Play to walk around; N skips to the next time of day.");
+                Debug.Log($"[Mars] Built {ScenePath}: {terrainResult.Describe()}, {rockCount} rocks. Press Play to walk around; N skips to the next time of day.");
                 Debug.Log(MarsRockScience.Describe(science));
             }
             finally
@@ -102,7 +104,7 @@ namespace NasaSpaceApp.MarsGen
 
         // ------------------------------------------------------------------ assets
 
-        static Mesh[] CreateRockMeshes(string folder, int count)
+        internal static Mesh[] CreateRockMeshes(string folder, int count)
         {
             var meshes = new Mesh[count];
             for (int i = 0; i < count; i++)
@@ -125,7 +127,7 @@ namespace NasaSpaceApp.MarsGen
             return meshes;
         }
 
-        static Material[] CreateRockMaterials(string folder, MarsTextures.TextureSet tex)
+        internal static Material[] CreateRockMaterials(string folder, MarsTextures.TextureSet tex)
         {
             Color[] tints = { Color.white, new Color(0.82f, 0.76f, 0.74f), new Color(1f, 0.93f, 0.86f) };
             var mats = new Material[tints.Length];
@@ -149,7 +151,7 @@ namespace NasaSpaceApp.MarsGen
             return mats;
         }
 
-        static Material CreateTerrainMaterial(string folder)
+        internal static Material CreateTerrainMaterial(string folder)
         {
             var mat = MarsTextures.LoadOrCreateMaterial($"{folder}/MarsTerrain.mat", "Universal Render Pipeline/Terrain/Lit");
             // Same keywords TerrainLitShaderGUI.SetupMaterialKeywords would set from the inspector.
@@ -290,99 +292,6 @@ namespace NasaSpaceApp.MarsGen
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogDensity = 0.0009f;
             RenderSettings.fogColor = Horizon;
-        }
-
-        static Terrain CreateTerrain(Transform parent, MarsTerrain.Result result, Material material)
-        {
-            GameObject go = Terrain.CreateTerrainGameObject(result.data);
-            go.name = "Mars Terrain";
-            go.transform.SetParent(parent, false);
-            go.transform.position = new Vector3(-MarsTerrain.Size * 0.5f, result.minHeight, -MarsTerrain.Size * 0.5f);
-            var terrain = go.GetComponent<Terrain>();
-            terrain.materialTemplate = material;
-            terrain.heightmapPixelError = 3f;
-            terrain.basemapDistance = 600f;
-            terrain.drawInstanced = true;
-            terrain.drawTreesAndFoliage = false;
-            terrain.shadowCastingMode = ShadowCastingMode.On;
-            return terrain;
-        }
-
-        static int ScatterRocks(Terrain terrain, List<MarsTerrain.Crater> craters, Mesh[] meshes, Material[] mats, Transform parent)
-        {
-            var rng = new System.Random(Seed + 42);
-            float R() => (float)rng.NextDouble();
-            Vector2 InDisc(float radius)
-            {
-                float a = R() * Mathf.PI * 2f, d = Mathf.Sqrt(R()) * radius;
-                return new Vector2(Mathf.Cos(a) * d, Mathf.Sin(a) * d);
-            }
-
-            TerrainData data = terrain.terrainData;
-            Vector3 origin = terrain.transform.position;
-            float limit = MarsTerrain.Size * 0.5f - 20f;
-            int count = 0;
-
-            void Place(Vector2 p, float size, float bury)
-            {
-                if (Mathf.Abs(p.x) > limit || Mathf.Abs(p.y) > limit) return;
-                if (p.magnitude < size + 2.5f) return; // keep the spawn point clear
-
-                Mesh mesh = meshes[rng.Next(meshes.Length)];
-                Bounds b = mesh.bounds;
-                var scale = new Vector3(size * Mathf.Lerp(0.85f, 1.15f, R()), size * Mathf.Lerp(0.8f, 1.2f, R()), size * Mathf.Lerp(0.85f, 1.15f, R()));
-
-                var world = new Vector3(p.x, 0f, p.y);
-                float ground = terrain.SampleHeight(world) + origin.y;
-                Vector3 normal = data.GetInterpolatedNormal((p.x - origin.x) / data.size.x, (p.y - origin.z) / data.size.z);
-                Quaternion rot = Quaternion.FromToRotation(Vector3.up, Vector3.Slerp(Vector3.up, normal, 0.7f))
-                               * Quaternion.Euler(Mathf.Lerp(-10f, 10f, R()), R() * 360f, Mathf.Lerp(-10f, 10f, R()));
-                world.y = ground - b.min.y * scale.y - b.size.y * scale.y * bury;
-
-                var go = new GameObject("Rock");
-                go.transform.SetParent(parent, false);
-                go.transform.SetPositionAndRotation(world, rot);
-                go.transform.localScale = scale;
-                go.AddComponent<MeshFilter>().sharedMesh = mesh;
-                var renderer = go.AddComponent<MeshRenderer>();
-                renderer.sharedMaterial = mats[rng.Next(mats.Length)];
-
-                // Only rocks you could actually stub a toe on get colliders.
-                if (b.size.y * scale.y * (1f - bury) > 0.3f) go.AddComponent<MeshCollider>().sharedMesh = mesh;
-
-                // Cull small rocks once they are a few pixels tall.
-                float cull = size < 0.5f ? 0.015f : size < 2f ? 0.006f : 0.002f;
-                var lod = go.AddComponent<LODGroup>();
-                lod.SetLODs(new[] { new LOD(cull, new Renderer[] { renderer }) });
-                lod.RecalculateBounds();
-                count++;
-            }
-
-            // Pebble clusters and loose rocks near the spawn, bigger stuff further out.
-            for (int i = 0; i < 220; i++) Place(InDisc(45f), Mathf.Lerp(0.08f, 0.45f, R() * R()), 0.3f);
-            for (int c = 0; c < 50; c++)
-            {
-                Vector2 center = InDisc(220f);
-                int n = 5 + rng.Next(12);
-                for (int k = 0; k < n; k++) Place(center + InDisc(7f), Mathf.Lerp(0.12f, 0.5f, R() * R()), 0.3f);
-            }
-            for (int i = 0; i < 350; i++) Place(InDisc(300f), Mathf.Lerp(0.15f, 0.7f, R() * R()), 0.25f);
-            for (int i = 0; i < 220; i++) Place(InDisc(550f), Mathf.Lerp(0.7f, 1.8f, Mathf.Pow(R(), 1.5f)), 0.25f);
-            for (int i = 0; i < 45; i++) Place(InDisc(650f), Mathf.Lerp(2f, 5.5f, Mathf.Pow(R(), 1.5f)), 0.3f);
-
-            // Ejecta blocks thrown out around the larger craters.
-            foreach (MarsTerrain.Crater crater in craters)
-            {
-                if (crater.radius < 15f || crater.center.magnitude > 600f) continue;
-                int n = Mathf.RoundToInt(crater.radius * 0.35f);
-                for (int k = 0; k < n; k++)
-                {
-                    float a = R() * Mathf.PI * 2f, d = crater.radius * Mathf.Lerp(0.95f, 1.9f, R());
-                    Vector2 p = crater.center + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
-                    Place(p, Mathf.Lerp(0.3f, Mathf.Min(2.5f, crater.radius * 0.05f), R() * R()), 0.3f);
-                }
-            }
-            return count;
         }
 
         static void CreateVolume(Transform parent, VolumeProfile profile)
