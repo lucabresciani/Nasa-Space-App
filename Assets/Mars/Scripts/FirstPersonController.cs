@@ -20,15 +20,21 @@ namespace NasaSpaceApp
         [Header("References")]
         [SerializeField] Transform cameraTransform;
 
+        // HOMELINE spec F3 (suited mobility): level walking 0.98 m/s (ICES-2026-127 anchor), safe-speed caps
+        // 1.0 / 0.6 / 0.3 m/s on 0-10° / 10-17° / 17-20° ground, no-go above 20° (IST-2 tested suits up to ~17°).
+        public const float SpecWalkSpeed = 0.98f;
+        public const float SpecBriskSpeed = 1.5f;
+
         [Header("Movement")]
-        [SerializeField] float walkSpeed = 4f;
-        [SerializeField] float sprintSpeed = 8f;
-        [SerializeField, Tooltip("How fast ground speed changes, in m/s².")] float acceleration = 25f;
+        [SerializeField, Tooltip("Suited level walking speed, m/s (HOMELINE F3: 0.98).")] float walkSpeed = SpecWalkSpeed;
+        [SerializeField, Tooltip("Brisk pace while Sprint is held, m/s. Beyond the spec's sustainable governor.")] float sprintSpeed = SpecBriskSpeed;
+        [SerializeField, Tooltip("How fast ground speed changes, in m/s². Low: a 104 kg suit has inertia.")] float acceleration = 6f;
         [SerializeField, Range(0f, 1f), Tooltip("Fraction of ground acceleration available in the air.")] float airControl = 0.3f;
+        [SerializeField, Tooltip("Steepest ground the crew may walk on, degrees (HOMELINE F2 no-go: 20).")] float noGoSlope = 20f;
 
         [Header("Jump & Gravity")]
         [SerializeField, Tooltip("Mars surface gravity is 3.721 m/s² (Earth is 9.81).")] float gravity = 3.721f;
-        [SerializeField, Tooltip("Peak jump height in meters.")] float jumpHeight = 1.5f;
+        [SerializeField, Tooltip("Peak jump height in meters. Suited crews hop, they don't leap.")] float jumpHeight = 0.3f;
 
         [Header("Look")]
         [SerializeField, Tooltip("Degrees of rotation per pixel of mouse movement.")] float mouseSensitivity = 0.1f;
@@ -46,6 +52,8 @@ namespace NasaSpaceApp
         public bool InputEnabled { get; set; } = true;
         public bool IsGrounded => controller.isGrounded;
         public bool IsSprinting { get; private set; }
+        /// <summary>Slope of the ground under the player, degrees (0 when airborne or unknown).</summary>
+        public float GroundSlope { get; private set; }
         public Vector3 Velocity => velocity;
         public bool CursorLocked => Cursor.lockState == CursorLockMode.Locked;
         public Transform CameraTransform => cameraTransform;
@@ -81,6 +89,7 @@ namespace NasaSpaceApp
             jumpAction = actions.FindAction("Player/Jump", true);
             sprintAction = actions.FindAction("Player/Sprint", true);
 
+            controller.slopeLimit = noGoSlope;
             spawnPosition = transform.position;
             spawnRotation = transform.rotation;
             if (cameraTransform != null) pitch = NormalizeAngle(cameraTransform.localEulerAngles.x);
@@ -153,7 +162,8 @@ namespace NasaSpaceApp
             Vector2 input = readInput ? Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f) : Vector2.zero;
             IsSprinting = readInput && input.sqrMagnitude > 0.01f && sprintAction.IsPressed();
 
-            Vector3 wish = (transform.right * input.x + transform.forward * input.y) * (IsSprinting ? sprintSpeed : walkSpeed);
+            float speed = (IsSprinting ? sprintSpeed : walkSpeed) * SafeSpeedFactor(grounded ? GroundSlope : 0f);
+            Vector3 wish = (transform.right * input.x + transform.forward * input.y) * speed;
             Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
             horizontal = Vector3.MoveTowards(horizontal, wish, acceleration * (grounded ? 1f : airControl) * dt);
 
@@ -172,8 +182,19 @@ namespace NasaSpaceApp
             // Low gravity makes you "skip" down hills; push down by up to a 45° slope's drop to stay grounded.
             if (grounded && !jumped) motion.y -= horizontal.magnitude * dt;
 
-            CollisionFlags flags = controller.Move(motion);
+            GroundSlope = 0f;
+            CollisionFlags flags = controller.Move(motion); // OnControllerColliderHit refreshes GroundSlope
             if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f) velocity.y = 0f;
+        }
+
+        /// <summary>HOMELINE F3 v_safe as a fraction of the 1.0 m/s level cap: 1.0 / 0.6 / 0.3 on 0-10° / 10-17° / 17-20°.</summary>
+        static float SafeSpeedFactor(float slopeDeg) => slopeDeg < 10f ? 1f : slopeDeg < 17f ? 0.6f : 0.3f;
+
+        void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            // Only ground contacts (below the capsule's waist) define the slope we are walking on.
+            if (hit.point.y > transform.position.y + controller.radius) return;
+            GroundSlope = Mathf.Max(GroundSlope, Vector3.Angle(hit.normal, Vector3.up));
         }
 
         static float NormalizeAngle(float degrees) => degrees > 180f ? degrees - 360f : degrees;

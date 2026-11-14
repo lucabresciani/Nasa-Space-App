@@ -103,24 +103,28 @@ namespace NasaSpaceApp.MarsGen
 
             MarsNoise.TileWorley(u, v, 22, seed, out float f1, out _, out uint id);
             float radius = 0.18f + 0.32f * MarsNoise.Hash01(id, 1);
-            float dome = MarsNoise.Hash01(id, 2) < 0.6f ? Dome(f1, radius) : 0f;
+            float dome = MarsNoise.Hash01(id, 2) < 0.35f ? Dome(f1, radius) : 0f;
 
             MarsNoise.TileWorley(u, v, 64, seed + 3, out float g1, out _, out uint gid);
             float gritRadius = 0.15f + 0.25f * MarsNoise.Hash01(gid, 1);
-            float grit = MarsNoise.Hash01(gid, 2) < 0.4f ? Dome(g1, gritRadius) : 0f;
+            float grit = MarsNoise.Hash01(gid, 2) < 0.3f ? Dome(g1, gritRadius) : 0f;
 
             float stoneNoise = MarsNoise.TileFbm(u, v, 48, 3, seed + 9);
-            Color pebble = PebbleColor(id) * (1f + 0.12f * stoneNoise);
-            Color gritColor = PebbleColor(gid);
+            Color ground = Color.Lerp(dust.albedo, Mudstone * 0.86f, 0.45f) * 0.86f;
+            // Pebbles carry a dust coat in every Mastcam frame: pull them toward the ground tone, or they read as
+            // a carpet of black and white discs from eye height.
+            Color pebble = Color.Lerp(PebbleColor(id), ground, 0.45f) * (1f + 0.12f * stoneNoise);
+            Color gritColor = Color.Lerp(PebbleColor(gid), ground, 0.55f);
 
-            float cover = MarsNoise.SmoothStep(0f, 0.35f, dome);
-            float gritCover = MarsNoise.SmoothStep(0f, 0.3f, grit) * (1f - cover);
+            // Wide, soft rims: the dusty skirt hides the disc outline.
+            float cover = MarsNoise.SmoothStep(0.05f, 0.7f, dome);
+            float gritCover = MarsNoise.SmoothStep(0.05f, 0.6f, grit) * (1f - cover);
             // Mixed pebbles on dusty mudstone, ~#8C6A52 overall.
-            Color c = Color.Lerp(Color.Lerp(dust.albedo, Mudstone * 0.86f, 0.45f) * 0.86f, pebble, cover * 0.85f);
-            c = Color.Lerp(c, gritColor, gritCover * 0.6f);
+            Color c = Color.Lerp(ground, pebble, cover * 0.6f);
+            c = Color.Lerp(c, gritColor, gritCover * 0.35f);
 
             float h = 0.25f + 0.12f * dust.height + 0.55f * dome + 0.2f * grit * (1f - cover);
-            return new Surface { height = Mathf.Clamp01(h), albedo = c, smoothness = Mathf.Lerp(0.1f, 0.3f, cover) };
+            return new Surface { height = Mathf.Clamp01(h), albedo = c, smoothness = Mathf.Lerp(0.1f, 0.18f, cover) };
         }
 
         static float Dome(float distance, float radius)

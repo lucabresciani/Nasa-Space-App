@@ -25,7 +25,8 @@ namespace NasaSpaceApp.MarsGen
         /// <summary>Creates "Mars Terrain" (play, with <see cref="MarsGeoReference"/>) then "Mars Backdrop"; returns the play terrain.</summary>
         public static Terrain CreateTerrains(Transform environment, MarsTerrain.Result r, Material material)
         {
-            Terrain play = CreateTerrain(environment, PlayName, r.play, r.playPosition, material, 3f, 600f);
+            // Pixel error 1: keep the 1 m DEM's full vertical detail (1-2 m boxwork ridges) instead of letting LOD flatten it.
+            Terrain play = CreateTerrain(environment, PlayName, r.play, r.playPosition, material, 1f, 600f);
             MarsTerrain.Info i = r.info;
             play.gameObject.AddComponent<MarsGeoReference>()
                 .Configure(i.spawn.elevation, i.planetRadius, i.play.swLat, i.play.swLon, i.metersPerDegree, i.eastScale, r.playSwWorld);
@@ -168,9 +169,19 @@ namespace NasaSpaceApp.MarsGen
             var fps = player.GetComponent<FirstPersonController>();
             if (fps == null) return;
             var so = new SerializedObject(fps);
-            SerializedProperty respawn = so.FindProperty("respawnBelowY");
-            if (respawn == null) return;
-            respawn.floatValue = RespawnBelowY;
+            void Set(string name, float value)
+            {
+                SerializedProperty p = so.FindProperty(name);
+                if (p != null) p.floatValue = value;
+            }
+            Set("respawnBelowY", RespawnBelowY);
+            // HOMELINE spec F3: suited walking 0.98 m/s, slope-governed, no-go above 20°. Scenes built earlier still
+            // hold the old arcade values (4 / 8 m/s, 1.5 m jump), so overwrite them here.
+            Set("walkSpeed", FirstPersonController.SpecWalkSpeed);
+            Set("sprintSpeed", FirstPersonController.SpecBriskSpeed);
+            Set("acceleration", 6f);
+            Set("jumpHeight", 0.3f);
+            Set("noGoSlope", 20f);
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
