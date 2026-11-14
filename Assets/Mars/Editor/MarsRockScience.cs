@@ -81,6 +81,15 @@ namespace NasaSpaceApp.MarsGen
             var volumes = new Dictionary<Mesh, float>();
             var weights = new float[classes.Count];
 
+            // Real terrain (MarsGeoReference): each class keeps to the elevation span of its measured samples.
+            NasaSpaceApp.MarsGeoReference geo = NasaSpaceApp.MarsGeoReference.Instance;
+            var bands = new Dictionary<string, Vector2>();
+            foreach (RockClass c in classes)
+            {
+                List<float> elevations = db.AnalogsOf(c.Id).Where(a => a.ElevationM.HasValue).Select(a => a.ElevationM.Value).ToList();
+                if (elevations.Count > 0) bands[c.Id] = new Vector2(elevations.Min(), elevations.Max());
+            }
+
             // Field ids are permanent once given: re-running keeps them, new rocks continue the numbering.
             // A duplicated rock (Ctrl+D copies the id) keeps the id on its first occurrence and the copy gets a new one.
             int nextFieldNumber = 1;
@@ -135,10 +144,15 @@ namespace NasaSpaceApp.MarsGen
                 }
                 else
                 {
-                    RockClass chosen = Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, respectSize: true)
-                                       ?? Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, respectSize: false);
+                    float? elevation = geo != null ? geo.ElevationMOLA(p) : (float?)null;
+                    RockClass chosen = Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, elevation, bands, respectSize: true)
+                                       ?? Pick(classes, weights, rng, p, largest, nearCrater, inCrater, seed, elevation, bands, respectSize: false);
                     List<RockAnalysis> analogs = db.AnalogsOf(chosen.Id);
                     RockAnalysis analysis = analogs[rng.Next(analogs.Count)];
+                    // On a geo-referenced terrain the rock is an analog of the class sample measured closest in elevation,
+                    // i.e. closest in Mount Sharp's flat-lying stratigraphy.
+                    if (elevation.HasValue && analogs.Any(a => a.ElevationM.HasValue))
+                        analysis = analogs.Where(a => a.ElevationM.HasValue).OrderBy(a => Mathf.Abs(a.ElevationM.Value - elevation.Value)).First();
                     sample.Configure(fieldId, chosen.Id, analysis.Id, rockSeed, volume, size);
                     classId = chosen.Id;
                 }
@@ -183,8 +197,12 @@ namespace NasaSpaceApp.MarsGen
             return !string.IsNullOrEmpty(fieldId) && fieldId.StartsWith("MR-") && int.TryParse(fieldId.Substring(3), out number);
         }
 
+        const float BandMarginM = 15f;  // a class is at full weight within its sampled elevation span ± this
+        const float BandFalloffM = 20f; // then fades by e every this many meters further away
+
         static RockClass Pick(List<RockClass> classes, float[] weights, System.Random rng, Vector3 p, float size,
-                              float nearCrater, float inCrater, int seed, bool respectSize)
+                              float nearCrater, float inCrater, int seed, float? elevation, Dictionary<string, Vector2> bands,
+                              bool respectSize)
         {
             float total = 0f;
             for (int i = 0; i < classes.Count; i++)
@@ -198,6 +216,11 @@ namespace NasaSpaceApp.MarsGen
                     w = c.Abundance * Mathf.Exp(OutcropContrast * outcrop);
                     if (c.Group == "impact") w *= 1f + 8f * nearCrater;
                     else if (c.Group == "meteorite") w *= 1f + 6f * inCrater;
+                    if (elevation.HasValue && bands.TryGetValue(c.Id, out Vector2 band))
+                    {
+                        float outside = Mathf.Max(0f, band.x - BandMarginM - elevation.Value, elevation.Value - band.y - BandMarginM);
+                        w *= Mathf.Exp(-outside / BandFalloffM);
+                    }
                 }
                 weights[i] = w;
                 total += w;

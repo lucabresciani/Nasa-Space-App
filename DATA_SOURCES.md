@@ -105,7 +105,7 @@ References for the class properties (age, density, porosity, hardness, VNIR band
 ### What is not real measured data
 
 - The per-rock variation (random, seeded, within each target's published 1σ uncertainty).
-- Where each rock class appears on the map (procedural placement weighted by `abundance`, a game parameter).
+- Which class each in-game rock gets: chosen from the rock's real MOLA elevation on the Mount Sharp terrain, matched to the elevation span of that class's measured samples (Mount Sharp's layers are nearly flat-lying), mixed with procedural noise and the `abundance` game weight; the analog is the class sample measured closest in elevation.
 - The VNIR reflectance curves: a schematic model built from published band positions and depths, anchored to the albedo.
 - Class unit symbols (`Mm`, `Mvr`, `Cs`, …) and the rock field ids (`MR-0421`).
 - Rock mass: estimated from the in-game mesh volume and the class density range.
