@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Known-answer tests for the HOMELINE logic, run against the planner's official fixture bundle:
+      dotnet run, from Tools/homeline-core/tests. Optional argument: fixture FOLDER (holds plan_bundle.zip and world_pack.zip).
+    A plain console runner (no test framework): exit code 0 = all checks passed.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Homeline.Core.Tests</AssemblyName>
+    <RootNamespace>NasaSpaceApp.Homeline.Tests</RootNamespace>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\lib\HomelineCore.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+  </ItemGroup>
+
+</Project>

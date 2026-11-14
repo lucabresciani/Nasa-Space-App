@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compiles the pure C# HOMELINE logic (Assets/Mars/Scripts/Homeline/Core) OUTSIDE Unity, against the same
+    profile Unity uses (.NET Standard 2.1, C# 9), so it can be built and tested in seconds with `dotnet`.
+    Unity compiles the very same files as part of Assembly-CSharp; this project is never opened by Unity.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>Homeline.Core</AssemblyName>
+    <RootNamespace>NasaSpaceApp.Homeline</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\Assets\Mars\Scripts\Homeline\Core\**\*.cs" LinkBase="Core" />
+    <Compile Include="..\..\..\Assets\Mars\Scripts\Homeline\Net\**\*.cs" LinkBase="Net" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+  </ItemGroup>
+
+</Project>
