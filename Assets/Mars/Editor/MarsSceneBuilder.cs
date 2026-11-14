@@ -77,6 +77,7 @@ namespace NasaSpaceApp.MarsGen
                 GameObject player = CreatePlayer(terrain, dustMat);
                 MarsRockScience.SetupScanner(player, undo: false);
                 CreateDayNightCycle(sun, player);
+                CreateWeather(environment, player);
                 CreateEventSystem();
 
                 EditorSceneManager.SaveScene(scene, ScenePath);
@@ -496,6 +497,10 @@ namespace NasaSpaceApp.MarsGen
             so.ApplyModifiedPropertiesWithoutUndo();
             cycle.Refresh(); // the sky needs its sun and colours before the reflection bake
         }
+
+        // Weather under Environment/Weather, forced to Clear: Clear changes nothing, so the reflection bake below still sees today's sky.
+        static void CreateWeather(Transform environment, GameObject player) =>
+            MarsWeatherSetup.Create(environment, player, undo: false, forceClear: true);
 
         static void CreateEventSystem()
         {

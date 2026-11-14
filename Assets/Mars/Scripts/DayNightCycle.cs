@@ -13,6 +13,11 @@ namespace NasaSpaceApp
     /// The glide runs on two critically damped springs in series, so it starts and lands softly and
     /// a press mid-glide extends it without a jolt. Time also flows on its own (<see cref="solDuration"/>),
     /// and in edit mode the Time Of Day slider previews any moment.
+    ///
+    /// Weather never writes the sun, fog or sky itself: it publishes <see cref="AtmosphereModifiers"/> through
+    /// <see cref="MarsAtmosphere"/> and this component folds them in, so there is a single writer and values are
+    /// always derived from serialized baselines, never read back (no compounding in edit mode). Without weather
+    /// the modifiers are the identity and the output is bit-identical to clear weather.
     /// </summary>
     [ExecuteAlways, DisallowMultipleComponent]
     public class DayNightCycle : MonoBehaviour
@@ -70,6 +75,13 @@ namespace NasaSpaceApp
         float nightLightIntensity = 0.35f;
         [SerializeField] Color nightLightColor = new Color(0.62f, 0.72f, 1f);
 
+        // Baselines, not live values: weather scales these, and RenderSettings/the light are never read back.
+        [Header("Clear-Weather Baseline")]
+        [SerializeField, Min(0f), Tooltip("Exponential-squared fog density in clear weather. 0.0009 gives ~2.2 km visibility (2% contrast at 1.978 / density). Dust multiplies it.")]
+        float fogDensity = 0.0009f;
+        [SerializeField, Range(0f, 1f), Tooltip("Sun shadow strength in clear weather. Dust softens the shadows by scaling it.")]
+        float shadowStrength = 0.92f;
+
         [Header("Look, Blended By Sun Elevation")]
         [SerializeField] SkyLook day = new SkyLook
         {
@@ -120,12 +132,14 @@ namespace NasaSpaceApp
         static readonly int ZenithId = Shader.PropertyToID("_MarsSkyZenith");
         static readonly int StarsId = Shader.PropertyToID("_MarsStars");
         static readonly int CelestialId = Shader.PropertyToID("_MarsCelestial");
+        static readonly int AmbientId = Shader.PropertyToID("_MarsAmbient");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
         // Time in sols, not wrapped. 'follow' chases 'target' and 'current' chases 'follow'.
         float target, follow, current;
         float followVelocity, currentVelocity;
         bool snapPending;
+        int appliedVersion; // the MarsAtmosphere.Version the last Apply used
         MaterialPropertyBlock block;
 
         void Reset() => sun = GetComponent<Light>();
@@ -160,9 +174,9 @@ namespace NasaSpaceApp
                 Tick(Time.deltaTime);
                 Apply();
             }
-            else if (snapped)
+            else if (snapped || appliedVersion != MarsAtmosphere.Version)
             {
-                Apply();
+                Apply(); // edit mode: only on a slider snap or when the weather publishes something new
             }
         }
 
@@ -225,6 +239,9 @@ namespace NasaSpaceApp
 
         void Apply()
         {
+            AtmosphereModifiers m = MarsAtmosphere.Modifiers;
+            appliedVersion = MarsAtmosphere.Version;
+
             // The sky turns about the celestial pole: north, raised by the latitude above the horizon.
             float latitude = (90f - noonElevation) * Mathf.Deg2Rad;
             Vector3 sunrise = Quaternion.Euler(0f, sunriseAzimuth, 0f) * Vector3.forward;
@@ -242,9 +259,15 @@ namespace NasaSpaceApp
                 float intensity = isSun
                     ? sunIntensity * Smooth(-0.03f, 0.2f, h)
                     : nightLightIntensity * Smooth(0.05f, 0.3f, -h);
+                // Beer-Lambert (physics): the direct beam crosses 1/sin(elevation) air masses, so the extra dust
+                // dims it by exp(-dtau / sin(elevation)); rovers measure tau this way, imaging the sun (Lemmon et al.
+                // 2015, Icarus). The flat-layer air mass is capped at 20 near the horizon, where it would diverge.
+                // The night light is dimmed the same way, so storm nights are darker too.
+                intensity *= Mathf.Exp(-m.extraDustDepth / Mathf.Max(Mathf.Abs(h), 0.05f));
                 sun.transform.rotation = Quaternion.LookRotation(isSun ? -towardSun : towardSun, Vector3.up);
                 sun.color = isSun ? Color.Lerp(horizonSunColor, sunColor, Smooth(0.02f, 0.4f, h)) : nightLightColor;
                 sun.intensity = intensity;
+                sun.shadowStrength = shadowStrength * m.shadowScale;
                 bool lit = intensity > 0.001f; // a switched-off light also skips its shadow pass
                 if (sun.enabled != lit) sun.enabled = lit;
             }
@@ -252,19 +275,26 @@ namespace NasaSpaceApp
             // Night until the sun is ~17° below the horizon, twilight at sunset, full day ~20° above it.
             SkyLook look = SkyLook.Lerp(night, twilight, Smooth(-0.30f, -0.02f, h));
             look = SkyLook.Lerp(look, day, Smooth(0f, 0.35f, h));
+            look = ApplyWeather(look, m);
 
             RenderSettings.ambientSkyColor = look.ambientSky;
             RenderSettings.ambientEquatorColor = look.ambientEquator;
             RenderSettings.ambientGroundColor = look.ambientGround;
             RenderSettings.fogColor = look.horizon;
+            RenderSettings.fogDensity = fogDensity * m.fogScale;
             RenderSettings.reflectionIntensity = look.reflections; // the baked reflection is a daytime sky
 
             // Sky colours go as raw vectors (gamma space): the shader blends them like the old baked sky did.
             Shader.SetGlobalVector(SunDirId, towardSun);
             Shader.SetGlobalVector(HorizonId, (Vector4)look.horizon);
             Shader.SetGlobalVector(ZenithId, (Vector4)look.zenith);
-            Shader.SetGlobalFloat(StarsId, 1f - Smooth(-0.25f, -0.02f, h));
+            // Dust dims the stars too. Derived estimate, not a measurement: a typical star ~30° up crosses about
+            // two air masses, hence exp(-2 tau).
+            Shader.SetGlobalFloat(StarsId, (1f - Smooth(-0.25f, -0.02f, h)) * Mathf.Exp(-2f * m.extraDustDepth));
             Shader.SetGlobalMatrix(CelestialId, Matrix4x4.Rotate(Quaternion.Inverse(skyTurn)));
+            // Linear on purpose (SetGlobalVector does no colour-space conversion): dust particles light themselves
+            // with it instead of SampleSH, which renderers with light probes off may not get.
+            Shader.SetGlobalVector(AmbientId, (Vector4)((look.ambientSky + look.ambientEquator) * 0.5f).linear);
 
             if (unlitRenderers != null && unlitRenderers.Length > 0)
             {
@@ -277,7 +307,41 @@ namespace NasaSpaceApp
                     r.SetPropertyBlock(block);
                 }
             }
+
+            // Weather effects (dust devils, sky clouds) follow the same sun without finding this component.
+            MarsAtmosphere.SunHeight = h;
+            MarsAtmosphere.SunDirection = towardSun;
         }
+
+        /// <summary>
+        /// Folds the weather into a look. Pure, so it can be tested on its own. At
+        /// <see cref="AtmosphereModifiers.Identity"/> every step is x1, +0 or Lerp(..., 0): the look is unchanged, bit for bit.
+        /// The flattening and scaling coefficients come from MarsWeather and are derived estimates, not measurements.
+        /// </summary>
+        internal static SkyLook ApplyWeather(SkyLook look, in AtmosphereModifiers m)
+        {
+            // Dust scatters light all over the sky: the dome turns uniform and ochre, so the zenith goes toward the
+            // (already tinted) horizon. fogColor stays equal to the horizon, so the terrain still melts into the sky.
+            look.horizon = Tint(look.horizon, m.hazeTint);
+            look.zenith = Color.Lerp(Tint(look.zenith, m.hazeTint), look.horizon, m.skyFlatten);
+
+            // Diffuse light comes from every direction alike, so the trilight flattens toward its mean.
+            Color mean = (look.ambientSky + look.ambientEquator + look.ambientGround) / 3f;
+            look.ambientSky = FlattenAmbient(look.ambientSky, mean, m);
+            look.ambientEquator = FlattenAmbient(look.ambientEquator, mean, m);
+            look.ambientGround = FlattenAmbient(look.ambientGround, mean, m);
+
+            look.reflections *= m.reflectionScale;
+            look.unlitTint = Scale(look.unlitTint, m.unlitScale); // Color * float would scale alpha and fade the motes
+            return look;
+        }
+
+        static Color FlattenAmbient(Color c, Color mean, in AtmosphereModifiers m) =>
+            Scale(Tint(Color.Lerp(c, mean, m.ambientFlatten), m.hazeTint), m.ambientScale);
+
+        // rgb only: alpha is not a colour here and must not drift with the weather.
+        static Color Tint(Color c, Color tint) => new Color(c.r * tint.r, c.g * tint.g, c.b * tint.b, c.a);
+        static Color Scale(Color c, float s) => new Color(c.r * s, c.g * s, c.b * s, c.a);
 
         static float Smooth(float from, float to, float x) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(from, to, x));
     }
