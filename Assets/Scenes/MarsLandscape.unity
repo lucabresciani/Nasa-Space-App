@@ -88228,7 +88228,8 @@ MonoBehaviour:
   historicalKey: 22
   remsData: {fileID: 4900000, guid: 21f9f0ac47e944042a00de5d405d6751, type: 3}
   tauData: {fileID: 4900000, guid: f6f56f20e75405447b9e8c0f9d656c37, type: 3}
-  historicalSol: 0
+  historicalSol: 2086
+  showChangeLabel: 1
   presets:
   - kind: 0
     opticalDepth: 0.5
@@ -336886,8 +336887,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NasaSpaceApp.FirstPersonController
   cameraTransform: {fileID: 1472335951}
-  walkSpeed: 0.98
-  sprintSpeed: 1.5
+  walkSpeed: 1.4
+  sprintSpeed: 3
   acceleration: 6
   airControl: 0.3
   noGoSlope: 20

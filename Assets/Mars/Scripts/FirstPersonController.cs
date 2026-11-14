@@ -20,14 +20,14 @@ namespace NasaSpaceApp
         [Header("References")]
         [SerializeField] Transform cameraTransform;
 
-        // HOMELINE spec F3 (suited mobility): level walking 0.98 m/s (ICES-2026-127 anchor), safe-speed caps
-        // 1.0 / 0.6 / 0.3 m/s on 0-10° / 10-17° / 17-20° ground, no-go above 20° (IST-2 tested suits up to ~17°).
-        public const float SpecWalkSpeed = 0.98f;
-        public const float SpecBriskSpeed = 1.5f;
+        // Human pace on a 1:1 terrain: ~5 km/h walk, ~11 km/h jog. Steep ground slows you down like HOMELINE F3's
+        // safe-speed caps (full / 60% / 30% on 0-10° / 10-17° / 17-20°), and above 20° is no-go.
+        public const float WalkSpeed = 1.4f;
+        public const float RunSpeed = 3f;
 
         [Header("Movement")]
-        [SerializeField, Tooltip("Suited level walking speed, m/s (HOMELINE F3: 0.98).")] float walkSpeed = SpecWalkSpeed;
-        [SerializeField, Tooltip("Brisk pace while Sprint is held, m/s. Beyond the spec's sustainable governor.")] float sprintSpeed = SpecBriskSpeed;
+        [SerializeField, Tooltip("Level walking speed, m/s (human pace ~1.4).")] float walkSpeed = WalkSpeed;
+        [SerializeField, Tooltip("Speed while Sprint is held, m/s (jog ~3).")] float sprintSpeed = RunSpeed;
         [SerializeField, Tooltip("How fast ground speed changes, in m/s². Low: a 104 kg suit has inertia.")] float acceleration = 6f;
         [SerializeField, Range(0f, 1f), Tooltip("Fraction of ground acceleration available in the air.")] float airControl = 0.3f;
         [SerializeField, Tooltip("Steepest ground the crew may walk on, degrees (HOMELINE F2 no-go: 20).")] float noGoSlope = 20f;
@@ -187,14 +187,30 @@ namespace NasaSpaceApp
             if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f) velocity.y = 0f;
         }
 
-        /// <summary>HOMELINE F3 v_safe as a fraction of the 1.0 m/s level cap: 1.0 / 0.6 / 0.3 on 0-10° / 10-17° / 17-20°.</summary>
+        /// <summary>HOMELINE F3 v_safe as a fraction of the level speed: 1.0 / 0.6 / 0.3 on 0-10° / 10-17° / 17-20°.</summary>
         static float SafeSpeedFactor(float slopeDeg) => slopeDeg < 10f ? 1f : slopeDeg < 17f ? 0.6f : 0.3f;
+
+        const float SlopeHalfWindow = 1.5f; // 3 m window, like HOMELINE F2's 3x3 plane fit on 1 m cells
+        Collider lastGround;
+        Terrain lastTerrain;
 
         void OnControllerColliderHit(ControllerColliderHit hit)
         {
-            // Only ground contacts (below the capsule's waist) define the slope we are walking on.
-            if (hit.point.y > transform.position.y + controller.radius) return;
-            GroundSlope = Mathf.Max(GroundSlope, Vector3.Angle(hit.normal, Vector3.up));
+            // Only ground contacts (below the capsule's waist) count, and only the terrain: stepping onto a boulder
+            // should not throttle the walk. A single 1 m triangle is too rough a slope estimate (DEM noise
+            // reads > 10° on gentle ground), so measure the slope over 3 m instead.
+            if (GroundSlope > 0f || hit.point.y > transform.position.y + controller.radius) return;
+            if (hit.collider != lastGround)
+            {
+                lastGround = hit.collider;
+                lastTerrain = hit.collider is TerrainCollider ? hit.collider.GetComponent<Terrain>() : null;
+            }
+            if (lastTerrain == null) return;
+            Vector3 p = transform.position;
+            float dx = lastTerrain.SampleHeight(p + Vector3.right * SlopeHalfWindow) - lastTerrain.SampleHeight(p - Vector3.right * SlopeHalfWindow);
+            float dz = lastTerrain.SampleHeight(p + Vector3.forward * SlopeHalfWindow) - lastTerrain.SampleHeight(p - Vector3.forward * SlopeHalfWindow);
+            float gradient = Mathf.Sqrt(dx * dx + dz * dz) / (2f * SlopeHalfWindow);
+            GroundSlope = Mathf.Max(0.001f, Mathf.Atan(gradient) * Mathf.Rad2Deg);
         }
 
         static float NormalizeAngle(float degrees) => degrees > 180f ? degrees - 360f : degrees;

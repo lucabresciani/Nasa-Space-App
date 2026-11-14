@@ -175,10 +175,10 @@ namespace NasaSpaceApp.MarsGen
                 if (p != null) p.floatValue = value;
             }
             Set("respawnBelowY", RespawnBelowY);
-            // HOMELINE spec F3: suited walking 0.98 m/s, slope-governed, no-go above 20°. Scenes built earlier still
-            // hold the old arcade values (4 / 8 m/s, 1.5 m jump), so overwrite them here.
-            Set("walkSpeed", FirstPersonController.SpecWalkSpeed);
-            Set("sprintSpeed", FirstPersonController.SpecBriskSpeed);
+            // Human pace (1.4 / 3 m/s), slope-governed, no-go above 20°. Scenes built earlier still hold older values
+            // (4 / 8 m/s arcade, or 0.98 / 1.5 m/s suited), so overwrite them here.
+            Set("walkSpeed", FirstPersonController.WalkSpeed);
+            Set("sprintSpeed", FirstPersonController.RunSpeed);
             Set("acceleration", 6f);
             Set("jumpHeight", 0.3f);
             Set("noGoSlope", 20f);
