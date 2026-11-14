@@ -1,0 +1,47 @@
+# MARTIS
+## Mars surface EVA simulator
+A NASA Space Apps Challenge project. Walk the lower slopes of Mount Sharp in Gale crater, scan the rocks and read what Curiosity measured there.
+
+# Team
+## Vincent Xigu Liu
+## Jan Oliver Schlueter
+## Charlie Verleysen
+## Luca Bresciani
+## Alessandro Battaglini
+## Jonas Balukonis
+
+# Rock science
+## Curiosity APXS, CheMin and ChemCam
+Chemistry and mineralogy of drilled and brushed Mount Sharp targets, from the NASA Planetary Data System Geosciences Node. Every rock in the simulation is an analog of a real measured target.
+> APXS: Curiosity APXS team, PI R. Gellert, University of Guelph; instrument funded by the Canadian Space Agency. Mars Science Laboratory is managed by NASA's Jet Propulsion Laboratory.
+
+# Terrain
+## Gale crater and Mount Sharp
+Elevation model and orthoimage of the Curiosity landing region from the USGS Astrogeology Science Center, boulders measured on HiRISE images, elevations above the MOLA areoid.
+> HiRISE: NASA / JPL-Caltech / University of Arizona. MOLA: NASA / GSFC, Mars Global Surveyor.
+
+# Weather
+## Curiosity REMS and Mastcam
+Air temperature and pressure statistics from the Rover Environmental Monitoring Station. Dust optical depth from Mastcam solar imaging at 880 nm (Lemmon et al.). NASA Planetary Data System.
+
+# Night sky
+## Stars, planets and moons
+Stars from the Bright Star Catalogue, 5th Revised Edition (Hoffleit and Warren, 1991) through NASA HEASARC. Planets, the Earth and the Moon, Phobos and Deimos from NASA JPL Solar System Dynamics. Mars orientation and time from NASA NAIF kernels, checked against the Mars24 Sunclock of NASA GISS.
+> Star names: IAU Working Group on Star Names, Creative Commons Attribution. Constellation figures: d3-celestial by Olaf Frohn, BSD 3-Clause.
+
+# Title screen
+## Mars globe
+Viking Orbiter colour mosaic (MDIM 2.1) from NASA Mars Trek. Relief from the Mars Orbiter Laser Altimeter gridded topography, NASA PDS Geosciences Node.
+> Mosaic: NASA / JPL-Caltech / USGS. Topography: MOLA Science Team, NASA / GSFC.
+## Star field
+Deep Star Maps 2020, NASA Goddard Space Flight Center Scientific Visualization Studio.
+> Gaia DR2: ESA / Gaia / DPAC.
+
+# Typefaces
+## Open Sauce Sans, IBM Plex Mono, JetBrains Mono
+> SIL Open Font License 1.1.
+
+# Made with
+## Unity 6
+
+> Full source list: DATA_SOURCES.md. Use of NASA data and imagery does not imply NASA endorsement of this project.

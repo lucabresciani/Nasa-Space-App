@@ -6,8 +6,8 @@ using UnityEngine.InputSystem;
 namespace NasaSpaceApp.Science
 {
     /// <summary>
-    /// Developer readout for <see cref="RockScanner"/>: a crosshair and a plain text dump of the targeted
-    /// rock's data. Temporary scaffolding to verify the raycast and the dataset until the real HUD
+    /// Developer readout for <see cref="RockScanner"/>: a crosshair, the player's map coordinates
+    /// (<see cref="MarsGeoReference.ToMapCoordinates"/>) and a plain text dump of the targeted rock's data. Temporary scaffolding to verify the raycast and the dataset until the real HUD
     /// panel exists. It is also the only crosshair for now, so it is drawn in every build; remove this
     /// component when the HUD replaces it (Assign Rock Data does not add it back). F3 toggles it.
     /// </summary>
@@ -19,10 +19,16 @@ namespace NasaSpaceApp.Science
         [SerializeField] bool visible = true;
 
         RockScanner scanner;
+        Transform body; // player's feet (map elevation = ground), not the camera
         GUIStyle style;
         readonly StringBuilder text = new StringBuilder(2048);
 
-        void Awake() => scanner = GetComponent<RockScanner>();
+        void Awake()
+        {
+            scanner = GetComponent<RockScanner>();
+            var player = GetComponentInParent<FirstPersonController>();
+            body = player != null ? player.transform : transform;
+        }
 
         void Update()
         {
@@ -48,6 +54,8 @@ namespace NasaSpaceApp.Science
             GUI.Label(new Rect(center.x - 6f, center.y - 10f, 24f, 20f), scanner.Target != null ? "[+]" : "+");
 
             text.Clear();
+            MarsGeoReference geo = MarsGeoReference.Instance;
+            if (geo != null) text.Append("Position: ").Append(geo.ToMapCoordinates(body.position).ToString()).AppendLine();
             RockReading r = scanner.TargetReading;
             if (scanner.Target == null)
             {

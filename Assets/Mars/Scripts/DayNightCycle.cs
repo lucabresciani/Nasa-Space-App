@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,6 +9,15 @@ namespace NasaSpaceApp
     /// Day/night cycle for the Mars scene. Moves the sun along its daily arc and derives everything else
     /// from the sun's elevation: the sky (NasaSpaceApp/Mars Sky shader), ambient light, fog, reflections
     /// and the tint of unlit effects. Martian twilight is long, and the sky around a setting sun turns blue.
+    ///
+    /// With <see cref="realSky"/> on (the default) the sky is the real one over the scene's map coordinates
+    /// (<see cref="MarsGeoReference"/>: Gale crater, the HOMELINE pad). Sol 0 is the local sol containing <see cref="startDateUtc"/>,
+    /// Time Of Day is local true solar time (0.5 = the sun on the meridian), and <see cref="MarsEphemeris"/> gives the
+    /// sun's direction and the orientation of the star field for that instant, so the sun rises and sets where and when
+    /// it really does in that season. With it off, the sun follows the artistic path set by <see cref="sunriseAzimuth"/>
+    /// and <see cref="noonElevation"/>, and the real star field turns with it, the sun at its true right ascension
+    /// among the stars. Either way the clock and the sky's orientation go out through <see cref="MarsSkyState"/> and the
+    /// shader global _MarsCelestial, for the night sky (stars, planets, moons) to read.
     ///
     /// Press <see cref="skipKey"/> (N) to glide forward to the next moment: dawn, noon, dusk, night.
     /// The glide runs on two critically damped springs in series, so it starts and lands softly and
@@ -48,7 +58,7 @@ namespace NasaSpaceApp
         }
 
         [Header("Time")]
-        [SerializeField, Range(0f, 1f), Tooltip("Fraction of the sol: 0 midnight, 0.25 sunrise, 0.5 noon, 0.75 sunset.")]
+        [SerializeField, Range(0f, 1f), Tooltip("Fraction of the sol: 0 midnight, 0.5 noon. Real Sky: local true solar time (0.5 = the sun on the meridian), so sunrise and sunset are only about 0.25 and 0.75: they follow the season. Artistic: 0.25 sunrise, 0.75 sunset.")]
         float timeOfDay = 0.64f;
         [SerializeField, Min(0f), Tooltip("Real seconds for a full sol. 0 stops the clock (the skip key still works).")]
         float solDuration = 1200f;
@@ -59,11 +69,20 @@ namespace NasaSpaceApp
         [SerializeField, Min(0.2f), Tooltip("Roughly how long the glide takes, in seconds.")]
         float transitionDuration = 3f;
 
+        [Header("Real Sky")]
+        [SerializeField, Tooltip("Sun, stars, planets and moons from real ephemerides at the scene's map coordinates (MarsGeoReference). Off: the artistic sun path below, with the real star field turning around it.")]
+        bool realSky = true;
+        // Delayed: parsed when the field is committed (Enter or focus lost), not on every keystroke.
+        [SerializeField, Delayed, Tooltip("Earth date (UTC) of sol 0: yyyy-MM-dd or yyyy-MM-ddTHH:mm. Sol 0 is the local sol whose true noon is nearest this instant: 12:00 UTC on 14 Nov 2026 is mid-morning at Gale, so sol 0 is that Earth day (00:00 UTC would be ~22:00 local and pick the 13th). Default: the HOMELINE event weekend, Ls ≈ 22, inside the REMS season window (Ls 10-35) the historical weather uses.")]
+        string startDateUtc = "2026-11-14T12:00";
+        [SerializeField, Tooltip("Observer latitude (x, degrees, south negative) and east longitude (y). Used only when the scene has no MarsGeoReference.")]
+        Vector2 fallbackLatLon = new Vector2(-4.802f, 137.385f);
+
         [Header("Sun")]
         [SerializeField] Light sun;
-        [SerializeField, Tooltip("Compass heading (degrees) where the sun rises; it sets on the opposite side.")]
+        [SerializeField, Tooltip("Compass heading (degrees) where the sun rises; it sets on the opposite side. Artistic mode only (Real Sky off).")]
         float sunriseAzimuth = 133f;
-        [SerializeField, Range(5f, 85f), Tooltip("Sun elevation at noon (90 minus the latitude).")]
+        [SerializeField, Range(5f, 85f), Tooltip("Sun elevation at noon (90 minus the latitude). Artistic mode only (Real Sky off).")]
         float noonElevation = 58f;
         [SerializeField, Min(0f)] float sunIntensity = 1.5f;
         [SerializeField] Color sunColor = new Color(1f, 0.92f, 0.80f);
@@ -119,7 +138,7 @@ namespace NasaSpaceApp
         [SerializeField, Tooltip("Renderers whose unlit material colour (_BaseColor) follows the light level.")]
         Renderer[] unlitRenderers = Array.Empty<Renderer>();
 
-        /// <summary>Current time as a fraction of the sol (0 midnight, 0.5 noon).</summary>
+        /// <summary>Current time as a fraction of the sol (0 midnight, 0.5 noon; local true solar time with Real Sky on).</summary>
         public float TimeOfDay => Mathf.Repeat(current, 1f);
 
         /// <summary>True while gliding toward a moment picked with the skip key.</summary>
@@ -128,10 +147,20 @@ namespace NasaSpaceApp
         // Sun elevation at the dawn and dusk moments: low and golden, with long shadows.
         const float GoldenHourElevation = 5f;
 
+        const double DegToRad = Math.PI / 180.0;
+
+        // Observer radius without a MarsGeoReference: the maps' 3396.19 km sphere plus the HOMELINE pad's MOLA
+        // elevation, -3643 m (MarsLandscape's geo-reference datum).
+        const double FallbackRadiusKm = 3392.5;
+
+        // Used when startDateUtc does not parse. The HOMELINE event weekend; Mars is at Ls ~22 then.
+        static readonly DateTime DefaultStartDate = new DateTime(2026, 11, 14, 12, 0, 0, DateTimeKind.Utc);
+
         static readonly int SunDirId = Shader.PropertyToID("_MarsSunDir");
         static readonly int HorizonId = Shader.PropertyToID("_MarsSkyHorizon");
         static readonly int ZenithId = Shader.PropertyToID("_MarsSkyZenith");
         static readonly int StarsId = Shader.PropertyToID("_MarsStars");
+        static readonly int SkyDarkId = Shader.PropertyToID("_MarsSkyDark");
         static readonly int CelestialId = Shader.PropertyToID("_MarsCelestial");
         static readonly int AmbientId = Shader.PropertyToID("_MarsAmbient");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -143,10 +172,33 @@ namespace NasaSpaceApp
         int appliedVersion; // the MarsAtmosphere.Version the last Apply used
         MaterialPropertyBlock block;
 
+        // Whole sols since the start date. Runtime only: enabling starts again at sol 0, and the slider (SnapTo) moves
+        // within the sol without changing it; only the clock running past midnight (Tick's wrap) advances it.
+        int sol;
+
+        // The observing site (the world origin, i.e. the spawn): latitude and east longitude in degrees, distance from
+        // Mars's centre in km. From MarsGeoReference, else fallbackLatLon.
+        bool siteResolved;
+        double siteLatitude, siteLongitude, siteRadiusKm;
+
+        // startDateUtc as parsed, redone only when the text changes, so a bad date warns once.
+        string parsedStartText;
+        DateTime startDate = DefaultStartDate;
+
+        // True noon of sol 0 and of the current sol, and the sun's declination at the latter. LocalTrueNoon iterates the
+        // ephemeris, so these are recomputed only when their key (start date, longitude, sol) changes.
+        bool firstNoonValid, noonValid;
+        DateTime noonKeyStart;
+        double noonKeyLongitude;
+        int noonKeySol;
+        double firstNoonDays, noonDays, noonDeclination;
+
         void Reset() => sun = GetComponent<Light>();
 
         void OnEnable()
         {
+            sol = 0;
+            siteResolved = false;
             SnapTo(timeOfDay);
             Apply();
         }
@@ -156,6 +208,7 @@ namespace NasaSpaceApp
             // Applied from Update: lights can't be switched on or off from inside OnValidate.
             // In play mode only a moved slider jumps; other edits must not cut a glide short.
             snapPending = !Application.isPlaying || !Mathf.Approximately(timeOfDay, TimeOfDay);
+            siteResolved = false; // the fallback coordinates may have changed
 #if UNITY_EDITOR
             if (!Application.isPlaying) UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
 #endif
@@ -184,13 +237,14 @@ namespace NasaSpaceApp
         /// <summary>Glides to the next moment of the sol after the one already being headed for.</summary>
         public void SkipToNextMoment()
         {
-            float golden = GoldenHourOffset();
+            float golden = GoldenHalfArc();
             float from = target + 0.01f; // a moment less than ~15 minutes away counts as reached
-            float sol = Mathf.Floor(from);
+            float solFloor = Mathf.Floor(from);
             float next = float.MaxValue;
-            foreach (float moment in new[] { 0f, 0.25f + golden, 0.5f, 0.75f - golden })
+            // Midnight, dawn (the sun 5° up in the morning), true noon, dusk (5° up in the evening).
+            foreach (float moment in new[] { 0f, 0.5f - golden, 0.5f, 0.5f + golden })
             {
-                float t = sol + moment;
+                float t = solFloor + moment;
                 if (t <= from) t += 1f;
                 next = Mathf.Min(next, t);
             }
@@ -221,6 +275,7 @@ namespace NasaSpaceApp
                 target -= whole;
                 follow -= whole;
                 current -= whole;
+                sol += (int)whole; // past midnight: the sky's date moves on with it
             }
             timeOfDay = current;
         }
@@ -231,11 +286,31 @@ namespace NasaSpaceApp
             followVelocity = currentVelocity = 0f;
         }
 
-        // Fraction of a sol between sunrise and the sun standing GoldenHourElevation above the horizon.
-        float GoldenHourOffset()
+        // Fraction of a sol between true noon and the sun standing GoldenHourElevation above the horizon: the hour angle
+        // of an elevation h, cos H = (sin h - sin(lat) sin(dec)) / (cos(lat) cos(dec)), as a fraction of a turn.
+        // Real sky: the site's latitude and the sun's declination at this sol's noon (it moves < 0.5° a sol).
+        // Artistic: the sun stays on the celestial equator (dec 0) at latitude 90 - noonElevation, which gives the old
+        // moments exactly: 0.5 -/+ acos(x) / 2 pi = 0.25 + asin(x) / 2 pi and 0.75 - asin(x) / 2 pi, x = sin 5° / sin noonElevation.
+        // Clamped: where the sun never reaches 5° (or never drops below it) dawn and dusk merge with noon (or midnight).
+        float GoldenHalfArc()
         {
-            float s = Mathf.Sin(GoldenHourElevation * Mathf.Deg2Rad) / Mathf.Sin(noonElevation * Mathf.Deg2Rad);
-            return Mathf.Asin(Mathf.Clamp01(s)) / (2f * Mathf.PI);
+            double latitude, declination;
+            if (realSky)
+            {
+                EnsureSite();
+                NoonDays();
+                latitude = siteLatitude;
+                declination = noonDeclination;
+            }
+            else
+            {
+                latitude = 90.0 - noonElevation;
+                declination = 0.0;
+            }
+            double lat = latitude * DegToRad, dec = declination * DegToRad;
+            double cosH = (Math.Sin(GoldenHourElevation * DegToRad) - Math.Sin(lat) * Math.Sin(dec))
+                / Math.Max(Math.Cos(lat) * Math.Cos(dec), 1e-9); // the floor only matters at a pole
+            return (float)(Math.Acos(Math.Clamp(cosH, -1.0, 1.0)) / (2.0 * Math.PI));
         }
 
         void Apply()
@@ -243,13 +318,32 @@ namespace NasaSpaceApp
             AtmosphereModifiers m = MarsAtmosphere.Modifiers;
             appliedVersion = MarsAtmosphere.Version;
 
-            // The sky turns about the celestial pole: north, raised by the latitude above the horizon.
-            float latitude = (90f - noonElevation) * Mathf.Deg2Rad;
-            Vector3 sunrise = Quaternion.Euler(0f, sunriseAzimuth, 0f) * Vector3.forward;
-            Vector3 north = Quaternion.Euler(0f, sunriseAzimuth - 90f, 0f) * Vector3.forward;
-            Vector3 pole = north * Mathf.Cos(latitude) + Vector3.up * Mathf.Sin(latitude);
-            Quaternion skyTurn = Quaternion.AngleAxis((TimeOfDay - 0.25f) * 360f, pole);
-            Vector3 towardSun = skyTurn * sunrise;
+            EnsureSite();
+            double days = InstantDays();
+            Vector3 towardSun;
+            // ICRF -> world. Improper (determinant -1, see MarsSkyState), so a matrix and never a Quaternion.
+            Matrix4x4 celestialToWorld;
+            if (realSky)
+            {
+                // The real sky over the site: the ephemeris turns ICRF into the local east/up/north frame (IAU rotation
+                // model of Mars), and the sun and the stars go through the same matrix, so they can never drift apart.
+                DMat3 icrfToUnity = MarsEphemeris.IcrfToUnity(days, siteLatitude, siteLongitude);
+                DVec3 sunDir = icrfToUnity * MarsEphemeris.MarsCentricIcrf(SkyBody.Sun, days).Normalized;
+                towardSun = new Vector3((float)sunDir.X, (float)sunDir.Y, (float)sunDir.Z);
+                celestialToWorld = ToMatrix(icrfToUnity);
+            }
+            else
+            {
+                // The sky turns about the celestial pole: north, raised by the latitude above the horizon.
+                float latitude = (90f - noonElevation) * Mathf.Deg2Rad;
+                Vector3 sunrise = Quaternion.Euler(0f, sunriseAzimuth, 0f) * Vector3.forward;
+                Vector3 north = Quaternion.Euler(0f, sunriseAzimuth - 90f, 0f) * Vector3.forward;
+                Vector3 pole = north * Mathf.Cos(latitude) + Vector3.up * Mathf.Sin(latitude);
+                Quaternion skyTurn = Quaternion.AngleAxis((TimeOfDay - 0.25f) * 360f, pole);
+                towardSun = skyTurn * sunrise;
+                // The real stars ride the same turn: set as they stand at this sol's sunrise, then carried with the sun.
+                celestialToWorld = Matrix4x4.Rotate(skyTurn) * ArtisticSunriseSky(days, sunrise, pole);
+            }
             float h = towardSun.y; // sine of the sun's elevation
 
             if (sun != null)
@@ -265,7 +359,11 @@ namespace NasaSpaceApp
                 // 2015, Icarus). The flat-layer air mass is capped at 20 near the horizon, where it would diverge.
                 // The night light is dimmed the same way, so storm nights are darker too.
                 intensity *= Mathf.Exp(-m.extraDustDepth / Mathf.Max(Mathf.Abs(h), 0.05f));
-                sun.transform.rotation = Quaternion.LookRotation(isSun ? -towardSun : towardSun, Vector3.up);
+                // The real sun can pass within a hair of the zenith at Gale (its declination spans +/-25°, the site is at
+                // 4.8° S), where an up hint of Vector3.up would be parallel to the beam; any up serves a directional light.
+                // The artistic sun never climbs above 85°, so it always takes the Vector3.up branch.
+                Vector3 beam = isSun ? -towardSun : towardSun;
+                sun.transform.rotation = Quaternion.LookRotation(beam, Mathf.Abs(beam.y) < 0.9999f ? Vector3.up : Vector3.forward);
                 sun.color = isSun ? Color.Lerp(horizonSunColor, sunColor, Smooth(0.02f, 0.4f, h)) : nightLightColor;
                 sun.intensity = intensity;
                 sun.shadowStrength = shadowStrength * m.shadowScale;
@@ -289,10 +387,16 @@ namespace NasaSpaceApp
             Shader.SetGlobalVector(SunDirId, towardSun);
             Shader.SetGlobalVector(HorizonId, (Vector4)look.horizon);
             Shader.SetGlobalVector(ZenithId, (Vector4)look.zenith);
+            // How dark the sky is from the sun's elevation alone: 0 by day, 1 once the sun is ~14° down. Artistic ramp.
+            float darkness = 1f - Smooth(-0.25f, -0.02f, h);
             // Dust dims the stars too. Derived estimate, not a measurement: a typical star ~30° up crosses about
-            // two air masses, hence exp(-2 tau).
-            Shader.SetGlobalFloat(StarsId, (1f - Smooth(-0.25f, -0.02f, h)) * Mathf.Exp(-2f * m.extraDustDepth));
-            Shader.SetGlobalMatrix(CelestialId, Matrix4x4.Rotate(Quaternion.Inverse(skyTurn)));
+            // two air masses, hence exp(-2 tau). (The sky shader's Milky Way glow uses this.)
+            Shader.SetGlobalFloat(StarsId, darkness * Mathf.Exp(-2f * m.extraDustDepth));
+            // The same darkness without the dust term, for the star and planet sprites: they dim each point by its own
+            // air mass (MarsExtinction, Beer-Lambert), so a dust factor here would count the dust twice.
+            Shader.SetGlobalFloat(SkyDarkId, darkness);
+            // World -> ICRF. The transpose is the inverse: the matrix is orthogonal, improper or not.
+            Shader.SetGlobalMatrix(CelestialId, celestialToWorld.transpose);
             // Linear on purpose (SetGlobalVector does no colour-space conversion): dust particles light themselves
             // with it instead of SampleSH, which renderers with light probes off may not get.
             Shader.SetGlobalVector(AmbientId, (Vector4)((look.ambientSky + look.ambientEquator) * 0.5f).linear);
@@ -312,6 +416,124 @@ namespace NasaSpaceApp
             // Weather effects (dust devils, sky clouds) follow the same sun without finding this component.
             MarsAtmosphere.SunHeight = h;
             MarsAtmosphere.SunDirection = towardSun;
+            // The night sky (stars, planets, moons, labels) reads the clock and the orientation the same way.
+            MarsSkyState.Publish(realSky, days, celestialToWorld, siteLatitude, siteLongitude, siteRadiusKm,
+                sol, TimeOfDay, darkness, StartDate());
+        }
+
+        /// <summary>
+        /// ICRF -> world for the artistic sky at its sunrise (Time Of Day 0.25, before skyTurn): Mars's north pole p goes
+        /// to the artistic celestial pole and the sun's direction s, projected on Mars's equator, to the sunrise point,
+        /// so the sun keeps its true right ascension among the stars (its declination is not kept: the artistic sun
+        /// stays on the celestial equator). B = F E^T with orthonormal columns E = (e1, e2 = p x e1, p) in ICRF
+        /// (right-handed) and F = (sunrise, f2, pole) in world, f2 = Vector3.Cross(sunrise, pole): the physical
+        /// pole x sunrise, since Unity's (east, up, north) frame is left-handed. So B, like the real map, has
+        /// determinant -1 and the constellations are not mirrored.
+        /// </summary>
+        static Matrix4x4 ArtisticSunriseSky(double days, Vector3 sunrise, Vector3 pole)
+        {
+            DVec3 p = MarsEphemeris.MarsPoleIcrf(days);
+            DVec3 s = MarsEphemeris.MarsCentricIcrf(SkyBody.Sun, days).Normalized;
+            DVec3 e1 = (s - p * DVec3.Dot(s, p)).Normalized; // never degenerate: the sun stays within ~25° of the equator
+            DVec3 e2 = DVec3.Cross(p, e1);
+            Vector3 f2 = Vector3.Cross(sunrise, pole);
+            // Row i of F E^T = sum over k of F[i, k] * (column k of E)^T.
+            return ToMatrix(DMat3.FromRows(
+                e1 * sunrise.x + e2 * f2.x + p * pole.x,
+                e1 * sunrise.y + e2 * f2.y + p * pole.y,
+                e1 * sunrise.z + e2 * f2.z + p * pole.z));
+        }
+
+        // DMat3 (row-major, double) as a float Matrix4x4 without translation; mRC is row R, column C in both.
+        static Matrix4x4 ToMatrix(in DMat3 d)
+        {
+            Matrix4x4 r = Matrix4x4.identity;
+            r.m00 = (float)d.M00; r.m01 = (float)d.M01; r.m02 = (float)d.M02;
+            r.m10 = (float)d.M10; r.m11 = (float)d.M11; r.m12 = (float)d.M12;
+            r.m20 = (float)d.M20; r.m21 = (float)d.M21; r.m22 = (float)d.M22;
+            return r;
+        }
+
+        // The instant shown, in days since J2000 TT, such that Time Of Day is local true solar time: the sun's hour angle
+        // is (TimeOfDay - 0.5) * 360°. First guess: this sol's true noon plus the offset at the mean sol length. That is
+        // exact at noon, but true sols run up to ~45 s longer or shorter than the mean one (the equation of time drifts),
+        // so on its own it would make the sky hop by up to ~0.18° at every midnight wrap (~3 px at 1080p). A Newton
+        // step on the hour angle (which turns at 360° a sol to within 0.05%) removes that: both sides of midnight then
+        // solve for the same instant (hour angle 180°) and the wrap is seamless.
+        double InstantDays()
+        {
+            double hourAngle = (TimeOfDay - 0.5) * 360.0;
+            double days = NoonDays() + hourAngle / 360.0 * MarsEphemeris.SolDays;
+            for (int i = 0; i < 3; i++)
+            {
+                double error = MarsEphemeris.SunHourAngleDeg(days, siteLongitude) - hourAngle;
+                error -= 360.0 * Math.Floor((error + 180.0) / 360.0); // to [-180, 180): -180 and +180 are both midnight
+                if (Math.Abs(error) < 1e-7) break; // two steps get there from anywhere in the sol
+                days -= error / 360.0 * MarsEphemeris.SolDays;
+            }
+            return days;
+        }
+
+        // True noon of the current sol (days since J2000 TT); also refreshes noonDeclination.
+        double NoonDays()
+        {
+            DateTime start = StartDate();
+            if (!firstNoonValid || start != noonKeyStart || siteLongitude != noonKeyLongitude)
+            {
+                noonKeyStart = start;
+                noonKeyLongitude = siteLongitude;
+                // Sol 0's noon is the one nearest the start instant: sol 0 is the local sol (midnight to midnight, true
+                // solar time at the site) that contains it. At Gale, 2026-11-14 00:00 UTC is about 22:00 local time.
+                firstNoonDays = MarsEphemeris.LocalTrueNoon(MarsEphemeris.DaysTT(MarsEphemeris.JulianDateUtc(start)), siteLongitude);
+                firstNoonValid = true;
+                noonValid = false;
+            }
+            if (!noonValid || sol != noonKeySol)
+            {
+                noonKeySol = sol;
+                // Searched from sol 0's noon rather than chained sol to sol, so no error builds up over a long session.
+                noonDays = sol == 0
+                    ? firstNoonDays
+                    : MarsEphemeris.LocalTrueNoon(firstNoonDays + sol * MarsEphemeris.SolDays, siteLongitude);
+                noonDeclination = MarsEphemeris.SunDeclinationDeg(noonDays);
+                noonValid = true;
+            }
+            return noonDays;
+        }
+
+        DateTime StartDate()
+        {
+            if (startDateUtc == parsedStartText) return startDate;
+            parsedStartText = startDateUtc;
+            if (!DateTime.TryParse(startDateUtc, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out startDate))
+            {
+                startDate = DefaultStartDate;
+                Debug.LogWarning($"DayNightCycle: Start Date Utc '{startDateUtc}' is not a date (yyyy-MM-dd or yyyy-MM-ddTHH:mm); using 2026-11-14.", this);
+            }
+            return startDate;
+        }
+
+        void EnsureSite()
+        {
+            // In edit mode the terrain tools can add or reconfigure the geo-reference at any time, and Apply is rare there.
+            if (siteResolved && Application.isPlaying) return;
+            siteResolved = true;
+            MarsGeoReference geo = MarsGeoReference.Instance;
+            if (geo != null)
+            {
+                // The observer stands at the world origin (the spawn): its map coordinates and its MOLA elevation.
+                Vector2 latLon = geo.LatLon(Vector3.zero);
+                siteLatitude = latLon.x;
+                siteLongitude = latLon.y;
+                siteRadiusKm = ((double)geo.PlanetRadius + geo.ElevationMOLA(Vector3.zero)) / 1000.0;
+            }
+            else
+            {
+                siteLatitude = fallbackLatLon.x;
+                siteLongitude = fallbackLatLon.y;
+                siteRadiusKm = FallbackRadiusKm;
+            }
         }
 
         /// <summary>
