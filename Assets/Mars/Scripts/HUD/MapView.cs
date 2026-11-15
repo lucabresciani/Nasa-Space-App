@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace NasaSpaceApp.HUD
 {
     /// <summary>Toggleable layers of the map screen (bottom toggles, in this order).</summary>
-    public enum MapLayer { Terrain, Topology, Mineral, Weather }
+    public enum MapLayer { Terrain, Topology, Mineral, Weather, Satellite }
 
     /// <summary>Glyph the map legend draws for an entry.</summary>
     public enum MapLegendShape { Swatch, Star, Dot, Arrow, Line }
@@ -150,7 +150,7 @@ namespace NasaSpaceApp.HUD
         private const int MaxGratLabels = 24;
         private const int MaxGratLines = 64;
         private const int MaxDevils = 8;
-        private const int LayerCount = 4;
+        private const int LayerCount = 5;
 
         private static readonly double[] GratSteps = { 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0 };
         private static readonly float[] ScaleSteps = { 1f, 2f, 5f, 10f, 20f, 50f, 100f, 200f, 500f, 1000f, 2000f, 5000f };
@@ -165,7 +165,7 @@ namespace NasaSpaceApp.HUD
 
         private readonly HudContext ctx;
         private readonly RectTransform clip;
-        private readonly RawImage baseImage, topoImage, slopeImage, unitImage;
+        private readonly RawImage baseImage, satImage, topoImage, slopeImage, unitImage;
         private readonly HudLineMesh weatherMesh, frameMesh, marksMesh;
         private readonly Text homeLabel, scaleLabel, northLabel, status;
         private readonly Text[] lonLabels = new Text[MaxGratLabels];
@@ -173,7 +173,15 @@ namespace NasaSpaceApp.HUD
         private readonly GameObject hoverPanel, weatherPanel;
         private readonly Text hoverText, weatherText;
 
-        private readonly bool[] layers = { false, true, false, false };   // Terrain, Topology, Mineral, Weather
+        private readonly bool[] layers = { false, true, false, false, false };   // Terrain, Topology, Mineral, Weather, Satellite
+
+        // Satellite: HiRISE image of the HD play terrain (Resources/MarsPlayOrtho.jpg, Tools/ortho/build_play_ortho.py), the
+        // Mission Planer's basemap. Loaded on first use; its world rect comes from the lat/lon bounds in MarsPlayOrtho_meta.
+        private const float TopoOverSatelliteAlpha = 0.35f;   // contours and tint stay faintly visible over the image
+        private Texture2D satTexture;
+        private Rect satBounds;
+        private bool satLoaded, satFailed;
+
         private readonly List<MapLegendEntry> legend = new List<MapLegendEntry>(24);
         private readonly List<MapLegendEntry> scannedLegend = new List<MapLegendEntry>(8);
         private readonly List<string> scannedClassIds = new List<string>(8);
@@ -245,6 +253,7 @@ namespace NasaSpaceApp.HUD
 
             // Sibling order = draw order.
             baseImage = CreateRaw("Base");
+            satImage = CreateRaw("Satellite");
             topoImage = CreateRaw("Topology");
             slopeImage = CreateRaw("Terrain");
             unitImage = CreateRaw("Mineral");
@@ -554,8 +563,15 @@ namespace NasaSpaceApp.HUD
         private void ApplyLayers()
         {
             bool topo = layers[(int)MapLayer.Topology];
-            SetEnabled(baseImage, mapReady && !topo && baseImage.texture != null);
+            bool sat = layers[(int)MapLayer.Satellite] && EnsureSatellite();
+            SetEnabled(satImage, mapReady && sat);
+            SetEnabled(baseImage, mapReady && !topo && !sat && baseImage.texture != null);
             SetEnabled(topoImage, mapReady && topo && topoImage.texture != null);
+            Color topoTint = new Color(1f, 1f, 1f, sat ? TopoOverSatelliteAlpha : 1f);
+            if (topoImage.color != topoTint)
+            {
+                topoImage.color = topoTint;
+            }
             SetEnabled(slopeImage, mapReady && layers[(int)MapLayer.Terrain] && slopeImage.texture != null);
             SetEnabled(unitImage, mapReady && layers[(int)MapLayer.Mineral] && unitImage.texture != null);
             bool weather = layers[(int)MapLayer.Weather];
@@ -567,6 +583,46 @@ namespace NasaSpaceApp.HUD
             {
                 weatherPanel.SetActive(weather);
             }
+        }
+
+        // Loads the satellite image and its world rect once; false when it is missing (the layer then shows nothing).
+        private bool EnsureSatellite()
+        {
+            if (satLoaded || satFailed)
+            {
+                return satLoaded;
+            }
+            MarsGeoReference g = geo != null ? geo : MarsGeoReference.Instance;
+            if (g == null)
+            {
+                return false;   // try again once the geo-reference is found
+            }
+            TextAsset metaText = Resources.Load<TextAsset>("MarsPlayOrtho_meta");
+            satTexture = Resources.Load<Texture2D>("MarsPlayOrtho");
+            if (metaText == null || satTexture == null)
+            {
+                satFailed = true;
+                Debug.LogWarning("[HUD] Satellite layer: Resources/MarsPlayOrtho(.jpg / _meta.json) missing; run Tools/ortho/build_play_ortho.py");
+                return false;
+            }
+            try
+            {
+                var b = Newtonsoft.Json.Linq.JObject.Parse(metaText.text)["bounds"];
+                Vector3 sw = g.WorldXZ((double)b["lat_south"], (double)b["lon_west"]);
+                Vector3 ne = g.WorldXZ((double)b["lat_north"], (double)b["lon_east"]);
+                satBounds = Rect.MinMaxRect(sw.x, sw.z, ne.x, ne.z);
+            }
+            catch (Exception e)
+            {
+                satFailed = true;
+                Debug.LogException(e);
+                return false;
+            }
+            satImage.texture = satTexture;
+            satLoaded = true;
+            viewDirty = true;
+            legendDirty = true;
+            return true;
         }
 
         private static void SetEnabled(Behaviour b, bool on)
@@ -583,6 +639,10 @@ namespace NasaSpaceApp.HUD
             legend.Clear();
             legend.Add(new MapLegendEntry("Home", HudTokens.InkPrimary, MapLegendShape.Star));
             legend.Add(new MapLegendEntry("You", HudTokens.InkPrimary, MapLegendShape.Arrow));
+            if (layers[(int)MapLayer.Satellite] && satLoaded)
+            {
+                legend.Add(new MapLegendEntry("HiRISE image (NASA/JPL/UArizona)", HudTokens.Hex(0xB07A55, 1f), MapLegendShape.Swatch));
+            }
             if (MissionLink.Current != null)
             {
                 legend.Add(new MapLegendEntry("Planned route", MissionRouteStyle.Route, MapLegendShape.Line));
@@ -681,6 +741,11 @@ namespace NasaSpaceApp.HUD
             topoImage.uvRect = main;
             slopeImage.uvRect = over;
             unitImage.uvRect = over;
+            if (satLoaded)
+            {
+                satImage.uvRect = new Rect((xMin - satBounds.x) / satBounds.width, (zMin - satBounds.y) / satBounds.height,
+                                           w / satBounds.width, h / satBounds.height);
+            }
         }
 
         // World XZ to box-local units (origin at the box centre, north up).

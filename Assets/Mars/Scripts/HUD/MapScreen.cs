@@ -81,7 +81,7 @@ namespace NasaSpaceApp.HUD
         private readonly Text sunsetValue, sunriseValue, lightLabel, lightValue, haulStatus, haulValue, doseValue;
         private readonly float haulRowY;
         private readonly string rangeText;
-        private readonly Checkbox[] checks = new Checkbox[4];
+        private readonly Checkbox[] checks = new Checkbox[5];
         private readonly RectTransform legendRect;
         private readonly HudLineMesh legendMesh;
         private readonly List<Text> legendTexts = new List<Text>(16);
@@ -157,6 +157,7 @@ namespace NasaSpaceApp.HUD
                 map.SetLayer(MapLayer.Topology, true);
                 map.SetLayer(MapLayer.Mineral, false);
                 map.SetLayer(MapLayer.Weather, false);
+                map.SetLayer(MapLayer.Satellite, true);   // like the Mission Planer's basemap
                 map.SetVisible(false);
             }
             catch (Exception e)
@@ -173,6 +174,7 @@ namespace NasaSpaceApp.HUD
             BuildCheckbox(1, MapLayer.Topology, "Topology", skin, true);
             BuildCheckbox(2, MapLayer.Mineral, "Mineral", skin, false);
             BuildCheckbox(3, MapLayer.Weather, "Weather", skin, false);
+            BuildCheckbox(4, MapLayer.Satellite, "Satellite", skin, true);
 
             // Key hint at the right end of the checkbox row: [G] Close.
             int advFoot = HudTokens.Advance(HudTokens.SizeFoot);
