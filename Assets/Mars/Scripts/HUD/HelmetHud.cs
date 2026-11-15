@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using NasaSpaceApp.Mission;
 using NasaSpaceApp.Science;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -35,8 +36,13 @@ namespace NasaSpaceApp.HUD
         private static bool s_OverlayVisibleResolved;
 
         private SuitTelemetry telemetry;
+        private int missionVersion = -1;   // MissionLink.Version the tracker follows
+        private Light headlamp;            // helmet lamp (L), a spot on the camera; null without a camera
+        private bool headlampOn;
+        private readonly EvaLogger evaLog = new EvaLogger();
         private HudTooltip tooltip;
         private MissionCaption caption;
+        private MissionPanel missionPanel;
         private VitalsStack vitals;
         private CompassDial dial;
         private HeadingCaret caret;
@@ -204,9 +210,11 @@ namespace NasaSpaceApp.HUD
             // 7. Widgets. Telemetry and tooltip first: vitals, caption and alerts read them in their constructors.
             telemetry = new SuitTelemetry();
             ctx.Telemetry = telemetry;
+            ctx.Mission = new MissionTracker();
             tooltip = new HudTooltip(ctx);
             ctx.Tooltip = tooltip;
             caption = new MissionCaption(ctx);
+            missionPanel = new MissionPanel(ctx);
             vitals = new VitalsStack(ctx);
             dial = new CompassDial(ctx);
             caret = new HeadingCaret(ctx);
@@ -243,6 +251,12 @@ namespace NasaSpaceApp.HUD
             {
                 heldUnlock = false;
                 return;
+            }
+
+            // Head lamp: L toggles (also with the map open).
+            if (input.HeadlampPressed)
+            {
+                SetHeadlamp(!headlampOn);
             }
 
             // Map screen: G / Select toggles; X / East close it (and are then consumed: no rock card closes with it).
@@ -396,7 +410,22 @@ namespace NasaSpaceApp.HUD
             FillWeather(ref ti);
             float targetDarkness = TargetDarkness();
             ti.Darkness = targetDarkness;
+            SyncMission();
+            telemetry.HeadlampOn = headlampOn;   // its power draw (a fresh EVA swaps the telemetry instance)
             telemetry.Tick(simDt, in ti);
+
+            // 2b. Web mission: compare the live EVA with the plan (after telemetry: MET and O₂ of this frame).
+            if (ctx.Mission != null && ctx.Mission.Active)
+            {
+                Vector3 feet = player != null ? player.transform.position : ctx.CameraPosition;
+                ctx.Mission.Tick(feet, telemetry.MetSeconds / 60f, telemetry.O2LeftL);
+                evaLog.Sample();
+                float dose = MissionEnvironment.DoseRateMsvH(ctx.Mission.Plan, ctx.Mission.EvaMin, SuitTelemetry.DoseRateGaleMsvH);
+                if (!float.IsNaN(dose))
+                {
+                    telemetry.DoseRateMsvH = dose;   // D39 storm replay on the EVA clock
+                }
+            }
 
             // 3. Night dimming: ink and scrim dim together through the root group.
             darkness = Mathf.MoveTowards(darkness, targetDarkness, dt / HudTokens.DayNightSmoothS);
@@ -416,6 +445,7 @@ namespace NasaSpaceApp.HUD
             caret.Tick(dt);
             vitals.Tick(dt);
             caption.Tick(dt);
+            missionPanel.Tick(dt);
             alerts.Tick(dt);
             tooltip.Tick(dt);
 
@@ -427,8 +457,68 @@ namespace NasaSpaceApp.HUD
             }
         }
 
+        /// <summary>True while the head lamp (L) is on.</summary>
+        public bool HeadlampOn => headlampOn;
+
+        /// <summary>Switches the head lamp: a warm spot light on the helmet, slightly above the eyes so boulders cast shadows.</summary>
+        public void SetHeadlamp(bool on)
+        {
+            headlampOn = on;
+            if (headlamp == null && on)
+            {
+                Camera cam = Context != null ? Context.Camera : null;
+                if (cam == null)
+                {
+                    return;
+                }
+                var go = new GameObject("Headlamp");
+                go.transform.SetParent(cam.transform, false);
+                go.transform.localPosition = new Vector3(0f, 0.12f, 0.08f);   // helmet brow, ahead of the near plane
+                go.transform.localRotation = Quaternion.Euler(10f, 0f, 0f);    // down, toward the next steps
+                headlamp = go.AddComponent<Light>();
+                headlamp.type = LightType.Spot;
+                headlamp.color = new Color(1f, 0.95f, 0.86f);                // warm white LED
+                headlamp.range = 45f;
+                headlamp.spotAngle = 58f;
+                headlamp.innerSpotAngle = 30f;
+                headlamp.intensity = 80f;                                     // inverse square: ~0.8 at 10 m, ~0.2 at 20 m
+                headlamp.shadows = LightShadows.Soft;
+                headlamp.shadowStrength = 0.85f;
+                headlamp.renderMode = LightRenderMode.ForcePixel;
+            }
+            if (headlamp != null && headlamp.enabled != on)
+            {
+                headlamp.enabled = on;
+            }
+        }
+
+        // A new mission (MissionLink) starts a fresh EVA: new suit model (MET 0, full O₂, battery, cooling water) and a
+        // new tracker run. Widgets read ctx.Telemetry every frame, so swapping the instance is enough.
+        private void SyncMission()
+        {
+            HudContext ctx = Context;
+            if (ctx.Mission == null || MissionLink.Version == missionVersion)
+            {
+                return;
+            }
+            missionVersion = MissionLink.Version;
+            MissionPlan plan = MissionLink.Current;
+            evaLog.End(plan == null ? "mission cleared" : "another mission loaded");
+            if (plan == null)
+            {
+                ctx.Mission.End();
+                return;
+            }
+            telemetry = new SuitTelemetry();
+            ctx.Telemetry = telemetry;
+            ctx.Mission.Begin(plan);
+            evaLog.Begin(ctx.Mission);
+            Debug.Log("[Mission] fresh EVA: suit refilled, mission clock 0");
+        }
+
         private void OnDestroy()
         {
+            evaLog.End("scene ended");
             if (mapOpen)
             {
                 RestoreAfterMap();

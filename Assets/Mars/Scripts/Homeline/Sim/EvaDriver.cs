@@ -101,6 +101,9 @@ namespace NasaSpaceApp.Homeline.Sim
         {
             if (plan == null || mode == EvaMode.None) return;
             if (Active) StopMission();
+            // One mission at a time: a mission loaded from a web mission.json (the Mission link) gives way to this one.
+            global::NasaSpaceApp.Mission.MissionLink web = global::NasaSpaceApp.Mission.MissionLink.Instance;
+            if (web != null && global::NasaSpaceApp.Mission.MissionLink.Current != null) web.Clear();
             player = FindAnyObjectByType<FirstPersonController>();
             body = player != null ? player.GetComponent<CharacterController>() : null;
             if (player == null)
@@ -146,7 +149,7 @@ namespace NasaSpaceApp.Homeline.Sim
             // Home for the helmet HUD and the map: this plan's pad.
             double hx, hz;
             plan.Frame.LocalToWorld(plan.Route.PadX, plan.Route.PadY, out hx, out hz);
-            SuitTelemetry.HomeXZ = new Vector2((float)hx, (float)hz);
+            HomeBase.Set(ground.OnGround(hx, hz, 0f)); // HOME of the helmet, dial, map and radio link
             SuitTelemetry.AfterTick = FeedHelmet;
             SuitTelemetry.MissionActivityVo2 = ActivityVo2;
             SuitTelemetry.MissionTimeScale = 1f;
@@ -163,7 +166,7 @@ namespace NasaSpaceApp.Homeline.Sim
             {
                 sky.Release();
                 SuitTelemetry.AfterTick = null;
-                SuitTelemetry.HomeXZ = Vector2.zero;
+                HomeBase.Reset();
                 SuitTelemetry.MissionActivityVo2 = null;
                 SuitTelemetry.MissionTimeScale = 1f;
                 SuitTelemetry.MissionStressBpm = 0f;

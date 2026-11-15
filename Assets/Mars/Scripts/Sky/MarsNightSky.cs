@@ -24,7 +24,7 @@ namespace NasaSpaceApp
     /// projector (artistic). Which points show at all (twilight, air mass, dust, ice clouds) the shader decides per
     /// vertex from the same globals the sky uses, so the stars come out together with the sky darkening.
     ///
-    /// Overlays, off by default and toggled in play mode: star names (<see cref="starNamesKey"/>, L), constellation
+    /// Overlays, off by default and toggled in play mode: star names (<see cref="starNamesKey"/>, J; L is the head lamp), constellation
     /// lines and names (<see cref="constellationsKey"/>, K), planet and moon names (<see cref="planetsKey"/>, P).
     /// Each press shows a small legend with the keys and the sky's clock (sol, Ls, local true solar time, site, UTC);
     /// it also shows once, by itself, the first time night falls in a session.
@@ -64,7 +64,7 @@ namespace NasaSpaceApp
         [SerializeField, Tooltip("Names of the planets, the Earth and its Moon, Phobos and Deimos, each with a thin ring. The bodies themselves are always drawn.")]
         bool showPlanets;
         [SerializeField, Tooltip("Toggles star names in play mode. None disables the key.")]
-        Key starNamesKey = Key.L;
+        Key starNamesKey = Key.J;
         [SerializeField, Tooltip("Toggles constellation lines and names in play mode. None disables the key.")]
         Key constellationsKey = Key.K;
         [SerializeField, Tooltip("Toggles planet and moon names in play mode. None disables the key.")]

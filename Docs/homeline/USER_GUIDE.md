@@ -62,6 +62,22 @@ PLANNER PLAN** undoes every move.
 - Where the planner's data has no 1 m terrain, the re-routed leg times are about 2 % off.
 - Dragging needs the mouse; there is no keyboard or gamepad equivalent yet.
 
+## Station cards
+
+Click a station on the plan map to read its card under the map: what is there (the planner's science target),
+the landmarks around it with bearing and distance and, on the official unedited plan, what to do if the partner
+goes down and the latest departure. The same card appears at the top left of the EVA while the crew is at the
+station. The texts are the planner's own; a station moved by hand says so, because the science target stays at
+the planner's point.
+
+## Missions from the web planner
+
+The build also contains the Mission link (see `Assets/Mars/Scripts/Mission/README.md` in the repository): a
+`mission.json` downloaded from the web planner's Mission page is loaded from the EVA map (`G`, tab **Missions**)
+or with `F5`. It has its own HUD panel, a **Waypoints** tab with the notes and tags written on the web, a HiRISE
+satellite layer on the map and an EVA log. One mission runs at a time: starting a plan from the planning screen
+ends a web mission, and loading a web mission ends the plan.
+
 ## Keys during the EVA
 
 | Key | Action |

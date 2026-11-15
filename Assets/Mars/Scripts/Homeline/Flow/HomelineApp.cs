@@ -120,12 +120,14 @@ namespace NasaSpaceApp.Homeline.Flow
                 MartisMenu.Closed += OnMenuClosed;
             }
             SceneManager.sceneLoaded += OnSceneLoaded;
+            global::NasaSpaceApp.Mission.MissionLink.Changed += OnWebMissionChanged;
             if (SelfTest.Requested) gameObject.AddComponent<SelfTest>();
         }
 
         void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            global::NasaSpaceApp.Mission.MissionLink.Changed -= OnWebMissionChanged;
             MartisMenu.Closed -= OnMenuClosed;
             if (Driver != null) Driver.StopMission();
             if (Instance == this) Instance = null;
@@ -177,6 +179,18 @@ namespace NasaSpaceApp.Homeline.Flow
                 Physio = null;
                 Debug.LogWarning("[HOMELINE] planner O2 model not available (" + e.Message + "): free walk keeps the game's O2");
             }
+        }
+
+        /// <summary>
+        /// A mission loaded from a web mission.json (the Mission link, map tab Missions or F5) takes over: the plan
+        /// started from the planning screen stops, so that only one mission sets HOME, the route and the sky.
+        /// </summary>
+        void OnWebMissionChanged(global::NasaSpaceApp.Mission.MissionPlan webPlan)
+        {
+            if (webPlan == null || Driver == null || !Driver.Active) return;
+            Debug.Log("[HOMELINE] a web mission was loaded: the planning screen's plan stops");
+            pendingStart = false;
+            Driver.StopMission();
         }
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)

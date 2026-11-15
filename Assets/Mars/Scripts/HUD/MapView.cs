@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using NasaSpaceApp.Mission;
 using NasaSpaceApp.Science;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,7 +10,7 @@ using UnityEngine.UI;
 namespace NasaSpaceApp.HUD
 {
     /// <summary>Toggleable layers of the map screen (bottom toggles, in this order).</summary>
-    public enum MapLayer { Terrain, Topology, Mineral, Weather }
+    public enum MapLayer { Terrain, Topology, Mineral, Weather, Satellite }
 
     /// <summary>Glyph the map legend draws for an entry.</summary>
     public enum MapLegendShape { Swatch, Star, Dot, Arrow, Line }
@@ -149,7 +150,7 @@ namespace NasaSpaceApp.HUD
         private const int MaxGratLabels = 24;
         private const int MaxGratLines = 64;
         private const int MaxDevils = 8;
-        private const int LayerCount = 4;
+        private const int LayerCount = 5;
 
         private static readonly double[] GratSteps = { 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0 };
         private static readonly float[] ScaleSteps = { 1f, 2f, 5f, 10f, 20f, 50f, 100f, 200f, 500f, 1000f, 2000f, 5000f };
@@ -164,7 +165,7 @@ namespace NasaSpaceApp.HUD
 
         private readonly HudContext ctx;
         private readonly RectTransform clip;
-        private readonly RawImage baseImage, topoImage, slopeImage, unitImage;
+        private readonly RawImage baseImage, satImage, topoImage, slopeImage, unitImage;
         private readonly HudLineMesh weatherMesh, frameMesh, marksMesh;
         private readonly Text homeLabel, scaleLabel, northLabel, status;
         private readonly Text[] lonLabels = new Text[MaxGratLabels];
@@ -172,7 +173,15 @@ namespace NasaSpaceApp.HUD
         private readonly GameObject hoverPanel, weatherPanel;
         private readonly Text hoverText, weatherText;
 
-        private readonly bool[] layers = { false, true, false, false };   // Terrain, Topology, Mineral, Weather
+        private readonly bool[] layers = { false, true, false, false, false };   // Terrain, Topology, Mineral, Weather, Satellite
+
+        // Satellite: HiRISE image of the HD play terrain (Resources/MarsPlayOrtho.jpg, Tools/ortho/build_play_ortho.py), the
+        // Mission Planer's basemap. Loaded on first use; its world rect comes from the lat/lon bounds in MarsPlayOrtho_meta.
+        private const float TopoOverSatelliteAlpha = 0.35f;   // contours and tint stay faintly visible over the image
+        private Texture2D satTexture;
+        private Rect satBounds;
+        private bool satLoaded, satFailed;
+
         private readonly List<MapLegendEntry> legend = new List<MapLegendEntry>(24);
         private readonly List<MapLegendEntry> scannedLegend = new List<MapLegendEntry>(8);
         private readonly List<string> scannedClassIds = new List<string>(8);
@@ -222,6 +231,13 @@ namespace NasaSpaceApp.HUD
 
         private int legendVersion;
 
+        // Web mission (MissionLink.Current): route, numbered waypoints; HOME follows HomeBase.
+        private readonly MissionRouteDrawer routeDrawer = new MissionRouteDrawer();
+        private readonly List<Text> wpLabels = new List<Text>(16);
+        private readonly List<string> wpNumbers = new List<string>(16);
+        private Font wpFont;
+        private int missionVersion = -1, homeVersion = -1, trackerVersion = -1;
+
         /// <summary>Builds the view as a full-stretch child of <paramref name="parent"/> (the map box).</summary>
         public MapView(HudContext ctx, RectTransform parent)
         {
@@ -237,6 +253,7 @@ namespace NasaSpaceApp.HUD
 
             // Sibling order = draw order.
             baseImage = CreateRaw("Base");
+            satImage = CreateRaw("Satellite");
             topoImage = CreateRaw("Topology");
             slopeImage = CreateRaw("Terrain");
             unitImage = CreateRaw("Mineral");
@@ -250,6 +267,7 @@ namespace NasaSpaceApp.HUD
                 lonLabels[i] = CreateLabel("Lon" + i, regular, HudTokens.SizeMicro, HudTokens.InkSecondary, TextAnchor.MiddleCenter, mid);
                 latLabels[i] = CreateLabel("Lat" + i, regular, HudTokens.SizeMicro, HudTokens.InkSecondary, TextAnchor.MiddleLeft, leftMid);
             }
+            wpFont = medium;
             homeLabel = CreateLabel("HomeLabel", medium, HudTokens.SizeMicro, HudTokens.InkPrimary, TextAnchor.MiddleLeft, leftMid);
             homeLabel.text = "HOME";
             scaleLabel = CreateLabel("ScaleLabel", regular, HudTokens.SizeMicro, HudTokens.InkSecondary, TextAnchor.MiddleCenter, mid);
@@ -347,6 +365,18 @@ namespace NasaSpaceApp.HUD
             viewDirty = true;
         }
 
+        /// <summary>Centres the view on a world position (zoom kept, clamped to the HD area).</summary>
+        public void CenterOn(Vector3 world)
+        {
+            if (!mapReady)
+            {
+                return;
+            }
+            center = new Vector2(world.x, world.z);
+            ClampCenter();
+            viewDirty = true;
+        }
+
         /// <summary>Per frame (unscaled dt): binds the map when built, tracks scans, then input and redraws while shown.</summary>
         public void Tick(float dt)
         {
@@ -399,6 +429,7 @@ namespace NasaSpaceApp.HUD
 
             HandlePointer(dt);
             TrackPlayer();
+            TrackMission();
             if (layers[(int)MapLayer.Weather])
             {
                 TrackWeather(dt);
@@ -532,8 +563,15 @@ namespace NasaSpaceApp.HUD
         private void ApplyLayers()
         {
             bool topo = layers[(int)MapLayer.Topology];
-            SetEnabled(baseImage, mapReady && !topo && baseImage.texture != null);
+            bool sat = layers[(int)MapLayer.Satellite] && EnsureSatellite();
+            SetEnabled(satImage, mapReady && sat);
+            SetEnabled(baseImage, mapReady && !topo && !sat && baseImage.texture != null);
             SetEnabled(topoImage, mapReady && topo && topoImage.texture != null);
+            Color topoTint = new Color(1f, 1f, 1f, sat ? TopoOverSatelliteAlpha : 1f);
+            if (topoImage.color != topoTint)
+            {
+                topoImage.color = topoTint;
+            }
             SetEnabled(slopeImage, mapReady && layers[(int)MapLayer.Terrain] && slopeImage.texture != null);
             SetEnabled(unitImage, mapReady && layers[(int)MapLayer.Mineral] && unitImage.texture != null);
             bool weather = layers[(int)MapLayer.Weather];
@@ -545,6 +583,46 @@ namespace NasaSpaceApp.HUD
             {
                 weatherPanel.SetActive(weather);
             }
+        }
+
+        // Loads the satellite image and its world rect once; false when it is missing (the layer then shows nothing).
+        private bool EnsureSatellite()
+        {
+            if (satLoaded || satFailed)
+            {
+                return satLoaded;
+            }
+            MarsGeoReference g = geo != null ? geo : MarsGeoReference.Instance;
+            if (g == null)
+            {
+                return false;   // try again once the geo-reference is found
+            }
+            TextAsset metaText = Resources.Load<TextAsset>("MarsPlayOrtho_meta");
+            satTexture = Resources.Load<Texture2D>("MarsPlayOrtho");
+            if (metaText == null || satTexture == null)
+            {
+                satFailed = true;
+                Debug.LogWarning("[HUD] Satellite layer: Resources/MarsPlayOrtho(.jpg / _meta.json) missing; run Tools/ortho/build_play_ortho.py");
+                return false;
+            }
+            try
+            {
+                var b = Newtonsoft.Json.Linq.JObject.Parse(metaText.text)["bounds"];
+                Vector3 sw = g.WorldXZ((double)b["lat_south"], (double)b["lon_west"]);
+                Vector3 ne = g.WorldXZ((double)b["lat_north"], (double)b["lon_east"]);
+                satBounds = Rect.MinMaxRect(sw.x, sw.z, ne.x, ne.z);
+            }
+            catch (Exception e)
+            {
+                satFailed = true;
+                Debug.LogException(e);
+                return false;
+            }
+            satImage.texture = satTexture;
+            satLoaded = true;
+            viewDirty = true;
+            legendDirty = true;
+            return true;
         }
 
         private static void SetEnabled(Behaviour b, bool on)
@@ -561,6 +639,17 @@ namespace NasaSpaceApp.HUD
             legend.Clear();
             legend.Add(new MapLegendEntry("Home", HudTokens.InkPrimary, MapLegendShape.Star));
             legend.Add(new MapLegendEntry("You", HudTokens.InkPrimary, MapLegendShape.Arrow));
+            if (layers[(int)MapLayer.Satellite] && satLoaded)
+            {
+                legend.Add(new MapLegendEntry("HiRISE image (NASA/JPL/UArizona)", HudTokens.Hex(0xB07A55, 1f), MapLegendShape.Swatch));
+            }
+            if (MissionLink.Current != null)
+            {
+                legend.Add(new MapLegendEntry("Planned route", MissionRouteStyle.Route, MapLegendShape.Line));
+                legend.Add(new MapLegendEntry("Way home", MissionRouteStyle.RouteHome, MapLegendShape.Line));
+                legend.Add(new MapLegendEntry("Walked / closed", MissionRouteStyle.Done, MapLegendShape.Line));
+                legend.Add(new MapLegendEntry("Waypoint", MissionRouteStyle.Route, MapLegendShape.Dot));
+            }
             for (int i = 0; i < scannedLegend.Count; i++)
             {
                 legend.Add(scannedLegend[i]);
@@ -652,6 +741,11 @@ namespace NasaSpaceApp.HUD
             topoImage.uvRect = main;
             slopeImage.uvRect = over;
             unitImage.uvRect = over;
+            if (satLoaded)
+            {
+                satImage.uvRect = new Rect((xMin - satBounds.x) / satBounds.width, (zMin - satBounds.y) / satBounds.height,
+                                           w / satBounds.width, h / satBounds.height);
+            }
         }
 
         // World XZ to box-local units (origin at the box centre, north up).
@@ -799,6 +893,24 @@ namespace NasaSpaceApp.HUD
         }
 
         // ---- tracked state
+
+        // A new/cleared mission or a moved HOME redraws the marks and the legend.
+        private void TrackMission()
+        {
+            int tv = ctx.Mission != null ? ctx.Mission.Version : 0;
+            if (MissionLink.Version != missionVersion || HomeBase.Version != homeVersion)
+            {
+                missionVersion = MissionLink.Version;
+                homeVersion = HomeBase.Version;
+                marksDirty = true;
+                legendDirty = true;
+            }
+            if (tv != trackerVersion)
+            {
+                trackerVersion = tv;
+                marksDirty = true;   // waypoint closed, leg changed
+            }
+        }
 
         private void TrackPlayer()
         {
@@ -1143,8 +1255,8 @@ namespace NasaSpaceApp.HUD
             {
                 float hw = 0.5f * boxSize.x + 12f, hh = 0.5f * boxSize.y + 12f;   // cull with a margin
 
-                // HOME: 4-point star at home (the world origin unless a mission plan set the rover's pad), labelled.
-                Vector2 home = ToLocal(SuitTelemetry.HomeXZ.x, SuitTelemetry.HomeXZ.y);
+                // HOME: 4-point star at HomeBase (scene spawn, or the mission pad), labelled.
+                Vector2 home = ToLocal(HomeBase.Position.x, HomeBase.Position.z);
                 bool homeIn = Mathf.Abs(home.x) <= hw && Mathf.Abs(home.y) <= hh;
                 if (homeIn)
                 {
@@ -1176,6 +1288,8 @@ namespace NasaSpaceApp.HUD
                     marksMesh.Ring(c, 2f, 4f, dotCol[i], 16);
                 }
 
+                DrawMission(hw, hh);
+
                 // Player: chevron pointing along the camera heading (clockwise from north).
                 Vector2 pos = ToLocal(lastPlayer.x, lastPlayer.z);
                 float th = (float.IsNaN(lastHeading) ? 0f : lastHeading) * Mathf.Deg2Rad;
@@ -1186,8 +1300,79 @@ namespace NasaSpaceApp.HUD
             else
             {
                 Hide(homeLabel);
+                HideWaypointLabels(0);
             }
             marksMesh.Commit();
+        }
+
+        // Planned route (outbound solid, way home dimmer) and numbered waypoint rings, culled to the box.
+        private void DrawMission(float hw, float hh)
+        {
+            MissionPlan plan = MissionLink.Current;
+            if (plan == null)
+            {
+                HideWaypointLabels(0);
+                return;
+            }
+            float inv = 1f / mpu;
+            Vector2 ax = new Vector2(inv, 0f), ay = new Vector2(0f, inv);
+            Vector2 extent = new Vector2(hw, hh);
+            MissionTracker tr = ctx.Mission != null && ctx.Mission.Plan == plan ? ctx.Mission : null;
+            routeDrawer.DrawRoute(marksMesh, plan, center, ax, ay, MissionRouteDrawer.ClipShape.Rect, extent,
+                                  tr != null ? tr.DoneBeforePoint : 0);
+            MissionRouteDrawer.DrawWaypoints(marksMesh, plan, center, ax, ay, MissionRouteDrawer.ClipShape.Rect, extent,
+                                             MissionRouteStyle.WaypointRadius, tr != null ? tr.States : null,
+                                             tr != null ? tr.NextWaypoint : -1);
+            int shown = 0;
+            for (int i = 0; i < plan.Waypoints.Count; i++)
+            {
+                MissionWaypoint w = plan.Waypoints[i];
+                Vector2 c = ToLocal(w.World.x, w.World.z);
+                if (Mathf.Abs(c.x) > hw || Mathf.Abs(c.y) > hh)
+                {
+                    continue;
+                }
+                Text label = WaypointLabel(shown);
+                Place(label, WaypointNumber(w.Index), c + new Vector2(MissionRouteStyle.WaypointRadius + 4f, 8f));
+                bool closed = tr != null && i < tr.States.Length
+                              && (tr.States[i] == WaypointState.Done || tr.States[i] == WaypointState.Skipped);
+                Color want = closed ? MissionRouteStyle.Done : MissionRouteStyle.Route;
+                if (label.color != want)
+                {
+                    label.color = want;
+                }
+                shown++;
+            }
+            HideWaypointLabels(shown);
+        }
+
+        private Text WaypointLabel(int i)
+        {
+            while (wpLabels.Count <= i)
+            {
+                Text t = CreateLabel("Waypoint" + wpLabels.Count, wpFont, HudTokens.SizeMicro, MissionRouteStyle.Route,
+                                     TextAnchor.MiddleLeft, new Vector2(0f, 0.5f));
+                t.rectTransform.sizeDelta = new Vector2(40f, 20f);
+                wpLabels.Add(t);
+            }
+            return wpLabels[i];
+        }
+
+        private string WaypointNumber(int index)
+        {
+            while (wpNumbers.Count <= index)
+            {
+                wpNumbers.Add(wpNumbers.Count.ToString(CultureInfo.InvariantCulture));
+            }
+            return wpNumbers[index];
+        }
+
+        private void HideWaypointLabels(int from)
+        {
+            for (int i = from; i < wpLabels.Count; i++)
+            {
+                Hide(wpLabels[i]);
+            }
         }
 
         private void DrawGlyph(Vector2[] shape, Vector2 pos, Vector2 right, Vector2 fwd)

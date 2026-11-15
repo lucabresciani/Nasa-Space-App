@@ -160,7 +160,7 @@ namespace NasaSpaceApp.HUD
             bool dirty = false;
             Vector3 cam = ctx.CameraPosition;
 
-            // Home = world origin (pad). Telemetry owns the numbers; the local formula is only a null fallback.
+            // Home = HomeBase (spawn or mission pad). Telemetry owns the numbers; the local formula is only a null fallback.
             float dist, bearing;
             SuitTelemetry telemetry = ctx.Telemetry;
             if (telemetry != null)

@@ -117,6 +117,39 @@ namespace NasaSpaceApp
             CursorLockChanged?.Invoke(locked);
         }
 
+        /// <summary>
+        /// Moves the player to stand on <paramref name="ground"/> (a point on the terrain), facing
+        /// <paramref name="yawDeg"/> (clockwise from north), camera level. <paramref name="makeSpawn"/> = falling off
+        /// the world (<see cref="Respawn"/>) returns here from now on.
+        /// </summary>
+        public void PlaceAt(Vector3 ground, float yawDeg, bool makeSpawn)
+        {
+            Vector3 pos = ground + new Vector3(0f, 0.05f, 0f);   // as the scene builder places the spawn
+            Quaternion rot = Quaternion.Euler(0f, yawDeg, 0f);
+            if (controller != null) controller.enabled = false;
+            transform.SetPositionAndRotation(pos, rot);
+            if (controller != null) controller.enabled = true;
+            velocity = Vector3.zero;
+            pitch = 0f;
+            if (cameraTransform != null) cameraTransform.localRotation = Quaternion.identity;
+            if (makeSpawn)
+            {
+                spawnPosition = pos;
+                spawnRotation = rot;
+            }
+        }
+
+        /// <summary>Where <see cref="Respawn"/> sends the player.</summary>
+        public Vector3 SpawnPosition => spawnPosition;
+        public Quaternion SpawnRotation => spawnRotation;
+
+        /// <summary>Changes where <see cref="Respawn"/> sends the player (no move now).</summary>
+        public void SetSpawn(Vector3 position, Quaternion rotation)
+        {
+            spawnPosition = position;
+            spawnRotation = rotation;
+        }
+
         public void Respawn()
         {
             controller.enabled = false;

@@ -81,10 +81,11 @@ namespace NasaSpaceApp.HUD
         private readonly Text sunsetValue, sunriseValue, lightLabel, lightValue, haulStatus, haulValue, doseValue;
         private readonly float haulRowY;
         private readonly string rangeText;
-        private readonly Checkbox[] checks = new Checkbox[4];
+        private readonly Checkbox[] checks = new Checkbox[5];
         private readonly RectTransform legendRect;
         private readonly HudLineMesh legendMesh;
         private readonly List<Text> legendTexts = new List<Text>(16);
+        private readonly MapWaypointsTab waypointsTab;   // web mission: Legend | Waypoints tabs (null if it failed)
 
         private bool open, mapBroken, fading;
         private float visibility, fadeFrom, fadeTo, fadeElapsed, fadeDuration;
@@ -156,6 +157,7 @@ namespace NasaSpaceApp.HUD
                 map.SetLayer(MapLayer.Topology, true);
                 map.SetLayer(MapLayer.Mineral, false);
                 map.SetLayer(MapLayer.Weather, false);
+                map.SetLayer(MapLayer.Satellite, true);   // like the Mission Planer's basemap
                 map.SetVisible(false);
             }
             catch (Exception e)
@@ -172,6 +174,7 @@ namespace NasaSpaceApp.HUD
             BuildCheckbox(1, MapLayer.Topology, "Topology", skin, true);
             BuildCheckbox(2, MapLayer.Mineral, "Mineral", skin, false);
             BuildCheckbox(3, MapLayer.Weather, "Weather", skin, false);
+            BuildCheckbox(4, MapLayer.Satellite, "Satellite", skin, true);
 
             // Key hint at the right end of the checkbox row: [G] Close.
             int advFoot = HudTokens.Advance(HudTokens.SizeFoot);
@@ -192,11 +195,23 @@ namespace NasaSpaceApp.HUD
                                                TopLeft, RightMid, new Vector2(ColRight, -haulRowY), new Vector2(120f, RowH));
             doseValue = Row("Dose", "Daily dose rate", haulRowY + RowPitch, out _);
             Divider("Divider2", Divider2Y);
-            HudFactory.CreateText("LegendTitle", frame, medium, SizeRow, HudTokens.InkPrimary, TextAnchor.MiddleLeft,
-                                  TopLeft, LeftMid, new Vector2(ColX, -LegendHeadY), new Vector2(300f, RowH)).text = "Map legend";
+            Text legendTitle = HudFactory.CreateText("LegendTitle", frame, medium, SizeRow, HudTokens.InkPrimary, TextAnchor.MiddleLeft,
+                                                     TopLeft, LeftMid, new Vector2(ColX, -LegendHeadY), new Vector2(300f, RowH));
+            legendTitle.text = "Map legend";
             Vector2 legendSize = new Vector2(ColRight - ColX, LegendMaxRows * LegendPitch);
             legendRect = HudFactory.CreateRect("Legend", frame, TopLeft, TopLeft, new Vector2(ColX, -LegendTop), legendSize);
             legendMesh = HudFactory.CreateLineMesh("LegendIcons", legendRect, TopLeft, TopLeft, Vector2.zero, legendSize);
+            try
+            {
+                waypointsTab = new MapWaypointsTab(ctx, frame, skin, regular, medium, map, legendTitle, legendRect,
+                                                   new Vector2(ColX - 8f, -LegendHeadY), new Vector2(ColX, -LegendTop),
+                                                   new Vector2(ColRight - ColX, PanelY + PanelH - LegendTop - 16f));
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);   // the legend still works without the waypoint tab
+                waypointsTab = null;
+            }
             rangeText = Km(Mathf.RoundToInt(PartnerHaulRangeM / 100f));
 
             // ---- close button (32x32) in the panel's top-right corner, last so it is on top
@@ -289,6 +304,7 @@ namespace NasaSpaceApp.HUD
             RefreshClock();
             RefreshSun();
             RefreshStatus();
+            waypointsTab?.Refresh();
             if (map != null && !mapBroken)
             {
                 try
@@ -528,8 +544,8 @@ namespace NasaSpaceApp.HUD
         {
             SuitTelemetry t = ctx.Telemetry;
 
-            // Partner haul: distance home (world origin) against the cart-haul range.
-            float dist = t != null ? t.DistanceHomeM : new Vector2(ctx.CameraPosition.x, ctx.CameraPosition.z).magnitude;
+            // Partner haul: distance home (HomeBase) against the cart-haul range.
+            float dist = t != null ? t.DistanceHomeM : HomeBase.OffsetFrom(ctx.CameraPosition).magnitude;
             int key = Finite(dist) ? Mathf.RoundToInt(Mathf.Max(0f, dist) / 100f) : -1;   // tenths of a km
             bool within = dist <= PartnerHaulRangeM;
             int state = key < 0 ? -1 : (within ? 1 : 0);

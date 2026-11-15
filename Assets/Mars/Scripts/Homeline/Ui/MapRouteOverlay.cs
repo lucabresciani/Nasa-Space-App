@@ -206,7 +206,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 run = new Vector2[routeXZ.Length];
             }
 
-            // The pad first, at the point the HUD calls HOME (EvaDriver sets SuitTelemetry.HomeXZ from Route.PadX/PadY),
+            // The pad first, at the point the HUD calls HOME (EvaDriver sets HomeBase from Route.PadX/PadY),
             // so the ring is concentric with the map's HOME star.
             bool hasPad = plan.Route != null;
             Vector2 pad = hasPad ? ToWorld(frame, plan.Route.PadX, plan.Route.PadY) : Vector2.zero;

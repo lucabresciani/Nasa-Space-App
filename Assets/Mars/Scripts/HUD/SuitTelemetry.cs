@@ -44,8 +44,6 @@ namespace NasaSpaceApp.HUD
     public sealed class SuitTelemetry
     {
         // ---- external mission feed (HOMELINE planner integration). Left unset, the suit simulation runs on its own.
-        /// <summary>Home (the rover) on the world XZ plane: x = east, y = north. Default: the world origin.</summary>
-        public static Vector2 HomeXZ;
         /// <summary>Called at the end of every <see cref="Tick"/>, also while paused: a mission layer may overwrite the O2 and mission-time read-outs here.</summary>
         public static System.Action<SuitTelemetry> AfterTick;
         /// <summary>
@@ -67,7 +65,6 @@ namespace NasaSpaceApp.HUD
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetMissionFeed()
         {
-            HomeXZ = Vector2.zero;
             AfterTick = null;
             MissionTimeScale = 1f;
             MissionActivityVo2 = null;
@@ -276,7 +273,7 @@ namespace NasaSpaceApp.HUD
         private float obstructionDb;
         private bool homeGroundKnown;
         private float homeGroundY;
-        private Vector2 homeGroundFor;
+        private int homeVersion = -1;          // HomeBase.Version the ground probe belongs to
         private float weatherVo2Raw;
         private float stressTarget;
 
@@ -384,6 +381,8 @@ namespace NasaSpaceApp.HUD
         public float BatteryMinutesLeft { get; private set; }  // at the 60 s mean load
         public float HeaterW { get; private set; }
         public float LightsW { get; private set; }
+        /// <summary>Head lamp switched on (L, set by HelmetHud each frame): the helmet lights draw <see cref="HelmetLightsW"/>.</summary>
+        public bool HeadlampOn { get; set; }
         public float CommW { get; private set; }
         public HudSeverity BatteryState { get; private set; }
         public HudSeverity PowerState { get; private set; }
@@ -437,7 +436,9 @@ namespace NasaSpaceApp.HUD
             DustDevilProximity = Mathf.Clamp01(Finite(input.DustDevilProximity, 0f));
             Darkness = Mathf.Clamp01(Finite(input.Darkness, 0f));
 
-            float x = input.CameraPosition.x - HomeXZ.x, z = input.CameraPosition.z - HomeXZ.y;
+            // HOME = HomeBase (world origin, or the loaded mission's pad).
+            Vector3 home = HomeBase.Position;
+            float x = input.CameraPosition.x - home.x, z = input.CameraPosition.z - home.z;
             DistanceHomeM = Mathf.Sqrt(x * x + z * z);
             BearingHomeDeg = Mathf.Repeat(Mathf.Atan2(-x, -z) * Mathf.Rad2Deg, 360f);
 
@@ -711,7 +712,8 @@ namespace NasaSpaceApp.HUD
                 CheckLineOfSight(helmet);
             }
 
-            Vector3 antenna = new Vector3(HomeXZ.x, (homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM) + HomeAntennaM, HomeXZ.y);
+            Vector3 home = HomeBase.Position;
+            Vector3 antenna = new Vector3(home.x, (homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM) + HomeAntennaM, home.z);
             float d = Mathf.Max(1f, Vector3.Distance(helmet, antenna));
             LinkDistanceM = d;
             float logD = Mathf.Log10(d);
@@ -741,23 +743,24 @@ namespace NasaSpaceApp.HUD
         // a point 10 m higher. Allocation-free (RaycastNonAlloc into a cached buffer).
         private void CheckLineOfSight(Vector3 helmet)
         {
-            if (homeGroundKnown && homeGroundFor != HomeXZ)
+            Vector3 home = HomeBase.Position;
+            if (homeVersion != HomeBase.Version)
             {
-                homeGroundKnown = false;   // home moved (a mission plan set another pad)
+                homeVersion = HomeBase.Version;   // HOME moved (mission pad): measure its ground again
+                homeGroundKnown = false;
             }
             if (!homeGroundKnown)
             {
                 float top = helmet.y + 3000f;
-                if (TerrainHit(new Vector3(HomeXZ.x, top, HomeXZ.y), Vector3.down, 6000f, out float y))
+                if (TerrainHit(new Vector3(home.x, top, home.z), Vector3.down, 6000f, out float y))
                 {
                     homeGroundY = y;
                     homeGroundKnown = true;
-                    homeGroundFor = HomeXZ;
                 }
             }
 
             float baseY = homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM;
-            Vector3 antenna = new Vector3(HomeXZ.x, baseY + HomeAntennaM, HomeXZ.y);
+            Vector3 antenna = new Vector3(home.x, baseY + HomeAntennaM, home.z);
             if ((antenna - helmet).sqrMagnitude < 25f)
             {
                 obstructionDb = 0f;
@@ -816,7 +819,7 @@ namespace NasaSpaceApp.HUD
             float windFactor = 1f + HeaterWindGain * Mathf.Min(WindSpeedMs, 30f);
             float heaterTarget = HeaterMaxW * Mathf.Clamp01(cold * windFactor) * (1f - 0.5f * Activity);
             HeaterW += (heaterTarget - HeaterW) * (1f - Mathf.Exp(-dt / 20f));
-            LightsW = HelmetLightsW * Mathf.Clamp01((Darkness - 0.3f) / 0.4f);
+            LightsW = HeadlampOn ? HelmetLightsW : 0f;   // the real lamp (L) instead of an automatic night light
             CommW = CommBaseW + (!float.IsNaN(LinkMarginDb) && LinkMarginDb < CommBoostBelowDb ? CommBoostW : 0f);
 
             BatteryLoadW = AvionicsW + CommW + FanPowerW + PumpW + HeaterW + LightsW;
