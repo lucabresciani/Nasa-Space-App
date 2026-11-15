@@ -30,6 +30,7 @@ namespace NasaSpaceApp.Homeline.Ui
         readonly List<Image> rowMarks = new List<Image>();
         MenuButton generate, startReplay, startWalk;
         Text table, result;
+        PlanMap map;
         int chosen;
         MissionPlan generated;
 
@@ -116,6 +117,9 @@ namespace NasaSpaceApp.Homeline.Ui
             startWalk = MenuButton.Create(ctx, content, "START EVA · FREE WALK", MenuTokens.SizeTab, topLeft,
                                           new Vector2(0f, 0.5f), new Vector2(startReplay.Width + 60f, -by), () => Begin(EvaMode.FreeWalk));
 
+            // The map of the generated plan sits to the right of the panel box.
+            map = new PlanMap(ctx, content, new Vector2(W + MenuTokens.PanelPad + 28f, MenuTokens.PanelHeaderHeight - 4f), 600f);
+
             WireNavigation();
             Choose(DefaultIndex());
         }
@@ -170,6 +174,11 @@ namespace NasaSpaceApp.Homeline.Ui
             if (table == null) return;
 
             PlanEntry e = chosen >= 0 && chosen < app.Catalog.Plans.Count ? app.Catalog.Plans[chosen] : null;
+            if (map != null)
+            {
+                if (ready) map.Show(generated);
+                else map.Hide();
+            }
             if (!ready)
             {
                 table.text = e == null ? "" : "No waypoints yet for this plan.\nPress GENERATE WAYPOINTS FROM PLAN.";

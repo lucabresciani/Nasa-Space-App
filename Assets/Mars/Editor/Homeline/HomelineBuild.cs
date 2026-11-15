@@ -115,6 +115,9 @@ namespace NasaSpaceApp.Homeline.EditorTools
                                  "Run Tools/homeline-data/fetch.ps1 first.");
             }
 
+            string guide = Path.Combine(projectRoot, "Docs", "homeline", "USER_GUIDE.md");
+            if (File.Exists(guide)) File.Copy(guide, Path.Combine(outDir, "README.md"), true);
+
             if (!batch) EditorUtility.RevealInFinder(options.locationPathName);
             return true;
         }

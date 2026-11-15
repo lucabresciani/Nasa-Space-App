@@ -13,7 +13,7 @@ namespace NasaSpaceApp.Homeline.World
     /// </summary>
     public sealed class RouteWorldView : MonoBehaviour
     {
-        const float RibbonLift = 0.15f, RibbonWidth = 0.32f;
+        const float RibbonLift = 0.12f, RibbonWidth = 0.45f;
         const float BeaconHeight = 90f, BeaconWidth = 1.4f;
         const float NavHeight = 5f, NavWidth = 0.3f;
 
@@ -58,6 +58,9 @@ namespace NasaSpaceApp.Homeline.World
                     buffer.Add(ground.OnGround(wx, wz, RibbonLift));
                 }
                 LineRenderer line = NewLine("Leg " + leg.Number, RouteColor, RibbonWidth);
+                // Lie flat on the ground like a painted track: the ribbon faces the object's Z axis, turned to point up.
+                line.alignment = LineAlignment.TransformZ;
+                line.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
                 line.positionCount = buffer.Count;
                 line.SetPositions(buffer.ToArray());
                 line.numCornerVertices = 2;

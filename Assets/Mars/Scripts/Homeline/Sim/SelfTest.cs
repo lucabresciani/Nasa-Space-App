@@ -93,6 +93,7 @@ namespace NasaSpaceApp.Homeline.Sim
             Check(Dist(player.position, 1014.1f, 1475.2f) < 15f, "player starts at the official pad");
             yield return new WaitForSecondsRealtime(1.5f); // menu dissolve
             yield return Shot("eva_start");
+            CheckSun(app);
 
             app.Driver.SetSpeed(300);
             trace.Append("t_min,world_x,world_y,world_z,local_x,local_y,plan_o2_L,plan_margin_min,binding,hud_o2_L,hud_met_min,hud_home_m,detailed_terrain\n");
@@ -178,6 +179,30 @@ namespace NasaSpaceApp.Homeline.Sim
                 Check(false, "watchdog: the self-test did not finish in " + WatchdogSeconds + " s");
                 Finish();
             }
+        }
+
+        /// <summary>
+        /// The scene's sun against the planner's (conditions/sun.json of the official bundle: azimuth 74.8 deg and
+        /// elevation 36.7 deg at EVA start, rising about 0.23 deg per EVA minute).
+        /// </summary>
+        void CheckSun(HomelineApp app)
+        {
+            DayNightCycle cycle = FindAnyObjectByType<DayNightCycle>();
+            Light sun = cycle != null ? cycle.GetComponent<Light>() : null;
+            if (sun == null || !app.EvaStartUtc.HasValue)
+            {
+                Note("sun check skipped (no sun light or no EVA start instant)");
+                return;
+            }
+            Vector3 toSun = -sun.transform.forward;
+            float elevation = Mathf.Asin(Mathf.Clamp(toSun.y, -1f, 1f)) * Mathf.Rad2Deg;
+            float azimuth = Mathf.Repeat(Mathf.Atan2(toSun.x, toSun.z) * Mathf.Rad2Deg, 360f);
+            double t = app.Driver.TMin;
+            double wantEl = 36.697 + 0.2338 * t, wantAz = 74.811 - 0.0696 * t;
+            Note("sun at t = " + F(t) + " min: azimuth " + F(azimuth) + ", elevation " + F(elevation) +
+                 " (planner about " + F(wantAz) + ", " + F(wantEl) + "); LTST " + F(MarsSkyState.LocalSolarTime * 24f) + " h");
+            Check(Math.Abs(elevation - wantEl) < 2.0 && Math.Abs(Mathf.DeltaAngle(azimuth, (float)wantAz)) < 3.0,
+                  "the scene's sun is the planner's sun for this minute of the EVA");
         }
 
         static SuitTelemetry Telemetry()

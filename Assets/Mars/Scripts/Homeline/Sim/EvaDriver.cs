@@ -87,6 +87,8 @@ namespace NasaSpaceApp.Homeline.Sim
         float nextCapAt;
         double originalWalk = -1, originalSprint = -1;
         double appliedCap = -1;
+        readonly SkySync sky = new SkySync();
+        bool skyForce;
 
         void Awake()
         {
@@ -138,6 +140,7 @@ namespace NasaSpaceApp.Homeline.Sim
             plan.Frame.LocalToWorld(plan.Route.PadX, plan.Route.PadY, out hx, out hz);
             SuitTelemetry.HomeXZ = new Vector2((float)hx, (float)hz);
             SuitTelemetry.AfterTick = FeedHelmet;
+            skyForce = true;
             Debug.Log("[HOMELINE] EVA started: plan " + plan.Entry.Id + ", mode " + mode + ", live O2 model " + (Live != null ? "yes" : "no"));
         }
 
@@ -146,6 +149,7 @@ namespace NasaSpaceApp.Homeline.Sim
             RestoreSpeeds();
             if (Plan != null)
             {
+                sky.Release();
                 SuitTelemetry.AfterTick = null;
                 SuitTelemetry.HomeXZ = Vector2.zero;
             }
@@ -178,6 +182,17 @@ namespace NasaSpaceApp.Homeline.Sim
             if (Plan == null) return;
             TMin = System.Math.Max(Plan.Track.StartMin, System.Math.Min(Plan.EndMin, tMin));
             ReplayFinished = TMin >= Plan.EndMin;
+            skyForce = true;
+        }
+
+        /// <summary>The sun of this minute of the plan: the scene's sky follows the EVA clock, at the EVA's speed.</summary>
+        void SyncSky()
+        {
+            HomelineApp app = HomelineApp.Instance;
+            if (app == null || !app.EvaStartUtc.HasValue) return;
+            double flow = Mode == EvaMode.Replay ? (Playing && !ReplayFinished ? Speed : 0) : 1;
+            sky.Apply(app.EvaStartUtc.Value, TMin, flow, skyForce);
+            skyForce = false;
         }
 
         /// <summary>The free walk starts from the plan's state at the current EVA time: O2 used so far, stations already left.</summary>
@@ -231,6 +246,7 @@ namespace NasaSpaceApp.Homeline.Sim
         void LateUpdate()
         {
             if (!Active || player == null) return;
+            SyncSky();
             if (Mode == EvaMode.Replay)
             {
                 RoutePose pose = Plan.Track.PoseAt(TMin);

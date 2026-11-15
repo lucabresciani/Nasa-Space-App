@@ -46,6 +46,8 @@ namespace NasaSpaceApp.Homeline.Flow
         public Physio Physio { get; private set; }
         /// <summary>Minutes from EVA start to dark at the pad (planner conditions/sun.json); null if unknown.</summary>
         public double? TDarkMin { get; private set; }
+        /// <summary>The real instant the planned EVA starts (plan.json eva_start.utc: 09:00 local mean solar time); null if unknown.</summary>
+        public DateTime? EvaStartUtc { get; private set; }
         /// <summary>The planning panel currently hosted by the menu; null until it has been opened.</summary>
         public PlanningPanel Panel { get { return panel; } }
 
@@ -117,6 +119,14 @@ namespace NasaSpaceApp.Homeline.Flow
                     Physio = new Physio(Config);
                     if (bundle.Has("conditions/sun.json"))
                         TDarkMin = HlJson.NumOrNull(bundle.ReadJson("conditions/sun.json"), "t_dark_min");
+                    if (bundle.Has("plan.json"))
+                    {
+                        string utc = HlJson.Str(bundle.ReadJson("plan.json")["eva_start"], "utc");
+                        DateTime parsed;
+                        if (utc != null && DateTime.TryParse(utc, System.Globalization.CultureInfo.InvariantCulture,
+                                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out parsed))
+                            EvaStartUtc = parsed;
+                    }
                 }
                 Debug.Log("[HOMELINE] planner O2 model loaded: capacity " + HlJson.F(Config.O2CapacityL, 2) + " L, reserve " +
                           HlJson.F(Config.O2ReserveL, 1) + " L, level speed " + HlJson.F(Physio.Governor(0), 3) + " m/s");
