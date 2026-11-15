@@ -8,11 +8,12 @@ using UnityEngine.UI;
 namespace NasaSpaceApp.HUD
 {
     /// <summary>
-    /// "Waypoints" tab of the map screen's right column, next to the legend, shown while a web mission is loaded. A list
+    /// Tab bar of the map screen's right column: "Map legend | Waypoints | Missions" (<see cref="MapMissionsView"/>: load or
+    /// browse for a mission file). The "Waypoints" tab, shown while a web mission is loaded: a list
     /// of the mission's waypoints (number, state, planned arrival, note) and a detail box for the selected one: planned
     /// arrive / stop / leave, what actually happened, the Mission Planer's tags and note, a <b>Complete</b> button
     /// (<see cref="MissionTracker.CompleteWaypoint"/>: ends the stop, or closes a waypoint without visiting it) and
-    /// <b>Show on map</b>. Without a mission the tabs hide and the column shows the plain "Map legend" title.
+    /// <b>Show on map</b>. Without a mission the Waypoints tab hides.
     /// Refreshes at the screen's 10 Hz only when the selection, page or the tracker's state changed.
     /// </summary>
     public sealed class MapWaypointsTab
@@ -30,8 +31,11 @@ namespace NasaSpaceApp.HUD
         private readonly RectTransform legendRect;
         private readonly RectTransform root;
         private readonly GameObject tabsGo;
-        private readonly Text legendTabText, waypointTabText;
-        private readonly Image legendTabLine, waypointTabLine;
+        private readonly Text legendTabText, waypointTabText, missionsTabText;
+        private readonly Image legendTabLine, waypointTabLine, missionsTabLine;
+        private readonly GameObject waypointTabGo;
+        private readonly RectTransform missionsTabRect;
+        private readonly MapMissionsView missions;
         private readonly List<Row> rows = new List<Row>(RowsPerPage);
         private readonly Button prevPage, nextPage;
         private readonly Text pageText;
@@ -40,8 +44,11 @@ namespace NasaSpaceApp.HUD
         private readonly Text completeText;
         private readonly float width;
 
-        private bool waypointsTab;
+        private const int TabLegend = 0, TabWaypoints = 1, TabMissions = 2;
+        private int tab = TabLegend;
+        private bool hadMission;
         private int selected = -1, page;
+        private bool followCurrent = true;   // selection follows the stop / next waypoint until a row is clicked
         private int shownKey = int.MinValue;
         private int missionVersionShown = -1;
 
@@ -68,8 +75,13 @@ namespace NasaSpaceApp.HUD
             // Tabs: "Map legend" | "Waypoints", underline on the active one.
             RectTransform tabs = HudFactory.CreateRect("MapTabs", frame, tl, left, titlePos, new Vector2(2f * TabW + 8f, TabH));
             tabsGo = tabs.gameObject;
-            legendTabText = TabButton(tabs, skin, medium, "Map legend", 0f, () => SetTab(false), out legendTabLine);
-            waypointTabText = TabButton(tabs, skin, medium, "Waypoints", TabW + 8f, () => SetTab(true), out waypointTabLine);
+            legendTabText = TabButton(tabs, skin, medium, "Map legend", 0f, () => SetTab(TabLegend), out legendTabLine);
+            waypointTabText = TabButton(tabs, skin, medium, "Waypoints", TabW + 8f, () => SetTab(TabWaypoints), out waypointTabLine);
+            missionsTabText = TabButton(tabs, skin, medium, "Missions", 2f * (TabW + 8f), () => SetTab(TabMissions), out missionsTabLine);
+            waypointTabGo = waypointTabText.transform.parent.gameObject;
+            missionsTabRect = (RectTransform)missionsTabText.transform.parent;
+            tabs.sizeDelta = new Vector2(3f * TabW + 16f, TabH);
+            missions = new MapMissionsView(ctx, frame, skin, regular, medium, areaPos, areaSize, () => SetTab(TabWaypoints));
 
             root = HudFactory.CreateRect("Waypoints", frame, tl, tl, areaPos, areaSize);
 
@@ -118,7 +130,8 @@ namespace NasaSpaceApp.HUD
             Outline(showButton, skin);
 
             root.gameObject.SetActive(false);
-            tabsGo.SetActive(false);
+            legendTitle.enabled = false;   // the tab bar replaces the plain title
+            hadMission = true;             // forces the first layout in Refresh
         }
 
         /// <summary>Called by the map screen at 10 Hz while it is open.</summary>
@@ -126,16 +139,19 @@ namespace NasaSpaceApp.HUD
         {
             MissionTracker m = ctx.Mission;
             bool has = m != null && m.Active;
-            if (tabsGo.activeSelf != has)
+            if (has != hadMission)
             {
-                tabsGo.SetActive(has);
-                legendTitle.enabled = !has;
-                if (!has)
+                hadMission = has;
+                // Waypoints only with a mission; Missions slides into its place without one.
+                waypointTabGo.SetActive(has);
+                missionsTabRect.anchoredPosition = new Vector2((has ? 2f : 1f) * (TabW + 8f), missionsTabRect.anchoredPosition.y);
+                if (!has && tab == TabWaypoints)
                 {
-                    waypointsTab = false;
+                    tab = TabLegend;
                 }
                 ApplyTab();
             }
+            missions.Refresh();
             if (!has)
             {
                 return;
@@ -146,8 +162,19 @@ namespace NasaSpaceApp.HUD
                 selected = m.NextWaypoint >= 0 ? m.NextWaypoint : 0;
                 page = selected / RowsPerPage;
                 shownKey = int.MinValue;
+                followCurrent = true;
             }
-            if (!waypointsTab)
+            if (followCurrent)
+            {
+                int want = m.StopWaypoint >= 0 ? m.StopWaypoint : m.NextWaypoint >= 0 ? m.NextWaypoint : selected;
+                if (want != selected && want >= 0)
+                {
+                    selected = want;
+                    page = selected / RowsPerPage;
+                    shownKey = int.MinValue;
+                }
+            }
+            if (tab != TabWaypoints)
             {
                 return;
             }
@@ -260,23 +287,27 @@ namespace NasaSpaceApp.HUD
 
         // ---- actions
 
-        private void SetTab(bool waypoints)
+        private void SetTab(int which)
         {
-            waypointsTab = waypoints;
+            tab = which;
             shownKey = int.MinValue;
             ApplyTab();
         }
 
         private void ApplyTab()
         {
-            bool has = tabsGo.activeSelf;
-            bool wp = has && waypointsTab;
+            bool wp = tab == TabWaypoints && hadMission;
+            bool ms = tab == TabMissions;
+            bool lg = !wp && !ms;
             if (root.gameObject.activeSelf != wp) root.gameObject.SetActive(wp);
-            if (legendRect.gameObject.activeSelf == wp) legendRect.gameObject.SetActive(!wp);
-            legendTabText.color = wp ? HudTokens.InkSecondary : HudTokens.InkPrimary;
+            if (legendRect.gameObject.activeSelf != lg) legendRect.gameObject.SetActive(lg);
+            missions.SetVisible(ms);
+            legendTabText.color = lg ? HudTokens.InkPrimary : HudTokens.InkSecondary;
             waypointTabText.color = wp ? HudTokens.InkPrimary : HudTokens.InkSecondary;
-            legendTabLine.enabled = !wp;
+            missionsTabText.color = ms ? HudTokens.InkPrimary : HudTokens.InkSecondary;
+            legendTabLine.enabled = lg;
             waypointTabLine.enabled = wp;
+            missionsTabLine.enabled = ms;
         }
 
         private void Select(int slot)
@@ -287,6 +318,7 @@ namespace NasaSpaceApp.HUD
             if (i < m.Plan.Waypoints.Count)
             {
                 selected = i;
+                followCurrent = false;
                 shownKey = int.MinValue;
             }
         }
@@ -326,7 +358,7 @@ namespace NasaSpaceApp.HUD
             return t;
         }
 
-        private static Button MakeButton(string name, Transform parent, HudSkin skin, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size,
+        internal static Button MakeButton(string name, Transform parent, HudSkin skin, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size,
                                          Action onClick, Font font = null, string label = null)
         {
             Image hit = HudFactory.CreatePanel(name, parent, skin, Color.white, HudTokens.RadiusButton, anchor, pivot, pos, size);
@@ -356,7 +388,7 @@ namespace NasaSpaceApp.HUD
             return button;
         }
 
-        private static void Outline(Button b, HudSkin skin)
+        internal static void Outline(Button b, HudSkin skin)
         {
             RectTransform r = (RectTransform)b.transform;
             HudFactory.CreateOutline(b.name + "Outline", r, skin, HudTokens.StrokeHair, HudTokens.RadiusButton, new Vector2(0.5f, 0.5f),

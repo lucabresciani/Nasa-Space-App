@@ -7,14 +7,17 @@ draft) in home-line; the log back is `contracts/bundle/eva_log.schema.json`.
 ## Use it
 
 1. Plan on the web, press **Download mission.json** (lands in `~/Downloads`).
-2. Play `Assets/Scenes/MarsLandscape.unity`, press **F5** (newest `~/Downloads/mission*.json`),
-   or **Tools ▸ Mars ▸ Load Mission JSON…**. Start-up also loads `-mission <path>` or
+2. Play `Assets/Scenes/MarsLandscape.unity`, then press **G ▸ Missions**: pick a file found in
+   Downloads / Desktop / the save folder and press **Load**, or **Browse…** for any file (the system's
+   file dialog). Shortcuts: **F5** loads the newest `~/Downloads/mission*.json`; in the editor also
+   **Tools ▸ Mars ▸ Load Mission JSON…**. Start-up also loads `-mission <path>` or
    `{persistentDataPath}/mission.json`. WebGL: `SendMessage("MissionLink", "LoadMission", json)`.
 3. A fresh EVA starts on the mission pad: the player stands on it facing the first leg, HOME
    moves there, the suit is refilled and the mission clock restarts.
 4. Walk. Top right: status, next waypoint, schedule and O₂ against the plan, live margin, advice;
-   at a waypoint the stop counter with its tags and note. **G** opens the map: route, numbered
-   waypoints, and the **Waypoints** tab (details, **Complete**, **Show on map**).
+   at a waypoint the stop counter with its tags and note. **G** opens the map: HiRISE satellite
+   image (Satellite checkbox), route, numbered waypoints, and the **Waypoints** tab (details,
+   **Complete**, **Show on map**). **L** switches the head lamp (star names moved to J).
 5. Back at the pad the EVA log is written to `~/Downloads/eva_log_*.json`
    (also **Tools ▸ Mars ▸ Export EVA Log**). **Tools ▸ Mars ▸ Clear Mission** ends it.
 
@@ -28,6 +31,8 @@ draft) in home-line; the log back is `contracts/bundle/eva_log.schema.json`.
 | `MissionLink.cs` | loading (F5, file, WebGL), `Current`, moves player and HOME (`HomeBase`) to the pad |
 | `MissionTracker.cs` | live comparison: current leg, cross-track, stops, schedule / O₂ deltas, margin, status |
 | `EvaLogger.cs` | track + events → `eva_log.json` |
+| `MissionEnvironment.cs`, `../Sky/MarsClock.cs` | sky at the EVA start (LMST, Mars24), real-time sol, Clear weather, storm dose |
+| `MissionFileBrowser.cs`, `../HUD/MapMissionsView.cs` | the map's Missions tab: files on disk, system file dialog |
 | `../HUD/MissionPanel.cs`, `MissionRouteDrawer.cs`, `MapWaypointsTab.cs` | HUD panel, route on dial and map, Waypoints tab |
 | `../../Editor/MissionMenu.cs`, `MissionSelfTest.cs` | Tools menu; self-test |
 

@@ -95,14 +95,29 @@ namespace NasaSpaceApp.MarsGen
                     {
                         NasaSpaceApp.Menu.MartisMenu.StartNow();
                     }
-                    if (phaseFrame > 60 && hud != null && MissionLink.Instance != null && !NasaSpaceApp.Menu.MartisMenu.IsOpen)
+                    if (phaseFrame == 61 && hud != null && !NasaSpaceApp.Menu.MartisMenu.IsOpen)
                     {
-                        if (!MissionLink.Instance.LoadFile(missionPath))
+                        CallHud(hud, "OpenMap");   // load through the map's Missions tab, as a player would
+                        Invoke(Tab(hud), "SetTab", 2);
+                        Capture("0_missions_tab");
+                        return;
+                    }
+                    if (phaseFrame > 70 && hud != null && MissionLink.Instance != null && !NasaSpaceApp.Menu.MartisMenu.IsOpen)
+                    {
+                        object view = Tab(hud)?.GetType().GetField("missions", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(Tab(hud));
+                        if (view == null)
                         {
-                            Finish("load failed: " + MissionLink.LastError);
+                            Finish("no Missions tab");
+                            return;
+                        }
+                        Invoke(view, "Load", missionPath);
+                        if (MissionLink.Current == null)
+                        {
+                            Finish("load through the Missions tab failed: " + MissionLink.LastError);
                             return;
                         }
                         plan = MissionLink.Current;
+                        CallHud(hud, "CloseMap");
                         Next();
                     }
                     break;
@@ -237,8 +252,19 @@ namespace NasaSpaceApp.MarsGen
             CallHud(hud, "OpenMap");
             object screen = typeof(HelmetHud).GetField("mapScreen", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(hud);
             object tab = screen?.GetType().GetField("waypointsTab", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(screen);
-            tab?.GetType().GetMethod("SetTab", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(tab, new object[] { true });
+            tab?.GetType().GetMethod("SetTab", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(tab, new object[] { 1 });
             tab?.GetType().GetMethod("Refresh")?.Invoke(tab, null);
+        }
+
+        private static object Tab(HelmetHud hud)
+        {
+            object screen = typeof(HelmetHud).GetField("mapScreen", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(hud);
+            return screen?.GetType().GetField("waypointsTab", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(screen);
+        }
+
+        private static void Invoke(object target, string method, object arg)
+        {
+            target?.GetType().GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(target, new[] { arg });
         }
 
         private static void CallHud(HelmetHud hud, string method)
