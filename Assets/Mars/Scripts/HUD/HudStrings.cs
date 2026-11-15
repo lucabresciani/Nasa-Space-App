@@ -80,6 +80,23 @@ namespace NasaSpaceApp.HUD
         }
 
         /// <summary>"LTST 14:32" for minute 0..1439 of the sol (wrapped); negative input gives "LTST --:--".</summary>
+        /// <summary>"LMST HH:MM" (local mean solar time, the web planner's clock); cached per minute.</summary>
+        public static string Lmst(int minuteOfSol)
+        {
+            if (minuteOfSol < 0)
+            {
+                return "LMST --:--";
+            }
+            if (s_Lmst == null)
+            {
+                s_Lmst = new string[MinutesPerSol];
+            }
+            int m = minuteOfSol % MinutesPerSol;
+            return s_Lmst[m] ??= "LMST " + (m / 60).ToString("00", Inv) + ":" + (m % 60).ToString("00", Inv);
+        }
+
+        private static string[] s_Lmst;
+
         public static string Ltst(int minuteOfSol)
         {
             if (minuteOfSol < 0)

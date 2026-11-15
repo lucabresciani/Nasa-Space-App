@@ -29,6 +29,15 @@ namespace NasaSpaceApp.MarsGen
         private static MissionPlan plan;
         private static string firstError;
 
+        // Optional screenshots (-captureDir <dir>): the HUD canvas is switched to camera space for a few frames and the
+        // helmet camera renders into a 1920x1080 texture that is written as PNG.
+        private static string captureDir;
+        private static string captureName;
+        private static int captureFrame;
+        private static RenderTexture captureRt;
+        private static RenderMode savedMode;
+        private static bool nightDone, dayShot, mapShot;
+
         public static void Run()
         {
             missionPath = ArgAfter("-missionTest") ?? MissionLink.NewestCandidate();
@@ -39,6 +48,9 @@ namespace NasaSpaceApp.MarsGen
                 return;
             }
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            captureDir = ArgAfter("-captureDir");
+            captureName = null;
+            nightDone = dayShot = mapShot = false;
             frame = errors = phase = phaseFrame = 0;
             tPlan = 0f;
             firstError = null;
@@ -69,8 +81,13 @@ namespace NasaSpaceApp.MarsGen
             {
                 return;
             }
-            phaseFrame++;
             HelmetHud hud = HelmetHud.Instance;
+            if (captureName != null)
+            {
+                StepCapture(hud);
+                return;   // the walk waits while a shot is taken
+            }
+            phaseFrame++;
             switch (phase)
             {
                 case 0:   // let the scene and the HUD start; leave the title menu (it pauses the HUD)
@@ -97,8 +114,22 @@ namespace NasaSpaceApp.MarsGen
                         if (phaseFrame > 30) Finish("tracker not active 30 frames after load");
                         return;   // the HUD picks the mission up in its next LateUpdate
                     }
+                    if (!dayShot && phaseFrame == 40)
+                    {
+                        dayShot = true;
+                        Capture("1_hud_day");
+                        return;
+                    }
+                    if (phaseFrame < 40) return;
                     tPlan += 0.2f;
                     Place(At(plan, tPlan));
+                    if (tr.StopWaypoint >= 0 && !mapShot && captureDir != null)
+                    {
+                        mapShot = true;
+                        CallHud(hud, "OpenMap");   // satellite layer on by default; the Waypoints tab comes next
+                        Capture("2_map_satellite");
+                        return;
+                    }
                     if (tr.StopWaypoint >= 0 && phaseFrame % 50 == 0)
                     {
                         OpenMapOnWaypoints(hud);
@@ -112,9 +143,18 @@ namespace NasaSpaceApp.MarsGen
                     }
                     break;
                 }
-                case 2:   // stand on the pad a moment, close the map, then clear
+                case 2:   // stand on the pad a moment, close the map, then (screenshot at night with the lamp) clear
                     Place(plan.PadWorld);
                     if (phaseFrame == 30) CallHud(hud, "CloseMap");
+                    if (phaseFrame == 60 && captureDir != null && !nightDone)
+                    {
+                        nightDone = true;
+                        DayNightCycle sky = UnityEngine.Object.FindAnyObjectByType<DayNightCycle>();
+                        if (sky != null) sky.SetInstant(MarsSkyState.StartDateUtc.AddHours(11.0));   // ~2 h after dark
+                        hud.SetHeadlamp(true);
+                        Capture("3_lamp_night");
+                        return;
+                    }
                     if (phaseFrame > 90)
                     {
                         MissionTracker tr = hud.Context.Mission;
@@ -126,6 +166,55 @@ namespace NasaSpaceApp.MarsGen
                     }
                     break;
             }
+        }
+
+        private static void Capture(string name)
+        {
+            if (captureDir == null) return;
+            captureName = name;
+            captureFrame = 0;
+        }
+
+        private static void StepCapture(HelmetHud hud)
+        {
+            Camera cam = hud != null ? hud.Context.Camera : null;
+            Canvas canvas = hud != null ? hud.Context.Canvas : null;
+            if (cam == null || canvas == null)
+            {
+                captureName = null;
+                return;
+            }
+            captureFrame++;
+            if (captureFrame == 1)
+            {
+                captureRt = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32);
+                savedMode = canvas.renderMode;
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = cam;
+                canvas.planeDistance = Mathf.Max(cam.nearClipPlane * 2f, 0.3f);
+                cam.targetTexture = captureRt;
+                return;
+            }
+            if (captureFrame < 90)
+            {
+                return;   // layout, map fades and lights settle (unscaled frames are short in batch)
+            }
+            RenderTexture prev = RenderTexture.active;
+            RenderTexture.active = captureRt;
+            var tex = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
+            tex.Apply();
+            RenderTexture.active = prev;
+            Directory.CreateDirectory(captureDir);
+            string path = Path.Combine(captureDir, captureName + ".png");
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            cam.targetTexture = null;
+            canvas.renderMode = savedMode;
+            captureRt.Release();
+            UnityEngine.Object.DestroyImmediate(captureRt);
+            Debug.Log("[MissionSmoke] screenshot " + path);
+            captureName = null;
         }
 
         private static void Next()

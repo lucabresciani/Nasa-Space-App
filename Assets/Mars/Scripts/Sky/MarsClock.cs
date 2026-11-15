@@ -26,6 +26,13 @@ namespace NasaSpaceApp
             return h;
         }
 
+        /// <summary>LMST in hours [0, 24) at <paramref name="daysTT"/> (days since J2000 TT, e.g. MarsSkyState.DaysTT).</summary>
+        public static double LmstHoursAtDays(double daysTT, double eastLonDeg)
+        {
+            double h = 24.0 * SolDate(daysTT) + eastLonDeg / 15.0;
+            return h - 24.0 * Math.Floor(h / 24.0);
+        }
+
         /// <summary>The instant nearest <paramref name="near"/> at which the LMST at the longitude is <paramref name="lmstHours"/>.</summary>
         public static DateTime UtcForLmst(DateTime near, double lmstHours, double eastLonDeg)
         {

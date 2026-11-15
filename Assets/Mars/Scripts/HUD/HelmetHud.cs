@@ -474,14 +474,14 @@ namespace NasaSpaceApp.HUD
                 var go = new GameObject("Headlamp");
                 go.transform.SetParent(cam.transform, false);
                 go.transform.localPosition = new Vector3(0f, 0.12f, 0.08f);   // helmet brow, ahead of the near plane
-                go.transform.localRotation = Quaternion.Euler(4f, 0f, 0f);     // a little down, where the feet go
+                go.transform.localRotation = Quaternion.Euler(10f, 0f, 0f);    // down, toward the next steps
                 headlamp = go.AddComponent<Light>();
                 headlamp.type = LightType.Spot;
                 headlamp.color = new Color(1f, 0.95f, 0.86f);                // warm white LED
                 headlamp.range = 45f;
                 headlamp.spotAngle = 58f;
                 headlamp.innerSpotAngle = 30f;
-                headlamp.intensity = 40f;                                     // inverse square: ~0.4 at 10 m, ~0.1 at 20 m
+                headlamp.intensity = 80f;                                     // inverse square: ~0.8 at 10 m, ~0.2 at 20 m
                 headlamp.shadows = LightShadows.Soft;
                 headlamp.shadowStrength = 0.85f;
                 headlamp.renderMode = LightRenderMode.ForcePixel;

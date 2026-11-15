@@ -75,7 +75,17 @@ namespace NasaSpaceApp.HUD
                 metMinutes = Mathf.FloorToInt(t.MetSeconds / 60f);
             }
 
-            Assign(ltst, ref ltstShown, HudStrings.Ltst(minuteOfSol));
+            // During a web mission the clock is the planner's: LMST at the mission pad (Mars24), not LTST.
+            NasaSpaceApp.Mission.MissionTracker mission = ctx.Mission;
+            if (mission != null && mission.Active && MarsSkyState.Version > 0)
+            {
+                double h = MarsClock.LmstHoursAtDays(MarsSkyState.DaysTT, mission.Plan.Source.Frame.Pad.Lon);
+                Assign(ltst, ref ltstShown, HudStrings.Lmst(Mathf.Min(1439, Mathf.FloorToInt((float)h * 60f))));
+            }
+            else
+            {
+                Assign(ltst, ref ltstShown, HudStrings.Ltst(minuteOfSol));
+            }
             Assign(sol, ref solShown, HudStrings.Sol(solNumber));
             Assign(met, ref metShown, HudStrings.Met(metMinutes));
             bool lampOn = t != null && t.HeadlampOn;
