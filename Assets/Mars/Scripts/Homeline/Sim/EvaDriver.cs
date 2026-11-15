@@ -170,7 +170,10 @@ namespace NasaSpaceApp.Homeline.Sim
                 SuitTelemetry.MissionActivityVo2 = null;
                 SuitTelemetry.MissionTimeScale = 1f;
                 SuitTelemetry.MissionStressBpm = 0f;
+                if (lastTelemetry != null) lastTelemetry.DoseRateMsvH = SuitTelemetry.DoseRateGaleMsvH;
             }
+            lastTelemetry = null;
+            Alarm = default(HudAlarm);
             probe = null;
             Plan = null;
             Mode = EvaMode.None;
@@ -283,6 +286,7 @@ namespace NasaSpaceApp.Homeline.Sim
                 if (probe != null && !MartisMenu.IsOpen && Time.deltaTime > 0f && (running || ReplayFinished))
                     probe.Step(Time.deltaTime * (running ? Speed : 1.0), pose.X, pose.Y, player.transform.position.y);
                 SuitTelemetry.MissionStressBpm = MissionStress(Plan.MarginAt(TMin), MinutesToReserve());
+                UpdateAlarm(Plan.MarginAt(TMin));
                 return;
             }
 
@@ -312,6 +316,7 @@ namespace NasaSpaceApp.Homeline.Sim
             UpdateLiveMargin();
             SuitTelemetry.MissionTimeScale = 1f;
             SuitTelemetry.MissionStressBpm = MissionStress(LiveMarginMin, MinutesToReserve());
+            UpdateAlarm(LiveMarginMin);
             // Weather work, cold and stress cost oxygen on top of the planner's model: the tank pays for them.
             if (Live != null && !MartisMenu.IsOpen && Time.deltaTime > 0f)
                 Live.AddExtra((ExtraWeatherLpm + ExtraStressLpm) * Time.deltaTime / 60.0);
@@ -320,6 +325,7 @@ namespace NasaSpaceApp.Homeline.Sim
         // ---- physiology feed of the helmet (SuitTelemetry): activity from the route, stress from the mission state
 
         LiveState probe;
+        SuitTelemetry lastTelemetry;
 
         /// <summary>O2 used on top of the planner's model, L/min: weather (wind work, bracing, footing, cold) and stress. SIM.</summary>
         public double ExtraWeatherLpm { get; private set; }
@@ -332,6 +338,17 @@ namespace NasaSpaceApp.Homeline.Sim
         /// </summary>
         public const float StressMarginBpm = 12f, StressMarginFromMin = 60f, StressLimitBrokenBpm = 6f,
                            StressLowO2Bpm = 8f, StressLowO2FromMin = 30f, StressMissionMaxBpm = 22f;
+
+        /// <summary>The planner's HUD alarm for the current state (<see cref="HudAlarms"/>); not active when none fires.</summary>
+        public HudAlarm Alarm { get; private set; }
+
+        void UpdateAlarm(double? marginMin)
+        {
+            HomelineApp app = HomelineApp.Instance;
+            StormTrack storm = Plan.Storm ?? (app != null ? app.Storm : null);
+            Alarm = HudAlarms.Evaluate(marginMin, storm != null && storm.TripwireFired(TMin), THomeMin,
+                                       storm != null ? storm.TauDoseMin(TMin) : (double?)null);
+        }
 
         public static float MissionStress(double? marginMin, double? minutesToReserve)
         {
@@ -424,6 +441,13 @@ namespace NasaSpaceApp.Homeline.Sim
             t.MetState = t.MetSeconds >= SuitTelemetry.MetWarningS ? HudSeverity.Warning
                        : t.MetSeconds >= SuitTelemetry.MetCautionS ? HudSeverity.Caution
                        : HudSeverity.Nominal;
+
+            // RAD read-out: the helmet's Gale background scaled by the planner's storm on the EVA clock (the series
+            // is absorbed dose, the helmet shows dose equivalent: the ratio to the quiet level is what is carried over).
+            HomelineApp appRad = HomelineApp.Instance;
+            StormTrack storm = Plan.Storm ?? (appRad != null ? appRad.Storm : null);
+            if (storm != null) t.DoseRateMsvH = (float)(SuitTelemetry.DoseRateGaleMsvH * storm.RateOverBaseline(TMin));
+            lastTelemetry = t;
 
             double? o2 = O2LeftL;
             if (!o2.HasValue) return; // free walk without the planner's model: the suit simulation stays in charge

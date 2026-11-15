@@ -23,7 +23,8 @@ namespace NasaSpaceApp.Homeline.Ui
     /// </summary>
     public sealed class PlanMap
     {
-        const int ReliefSize = 176;              // relief texture, pixels per side
+        const int ReliefSize = 320;              // relief and shade textures, pixels per side
+        const string OrthoResource = "MarsPlayOrtho", OrthoMetaResource = "MarsPlayOrtho_meta";
         const float Pad = 14f;
         const float MarginFraction = 0.10f, EditMarginFraction = 0.22f;
         const float MinHalfExtentM = 350f;
@@ -50,6 +51,12 @@ namespace NasaSpaceApp.Homeline.Ui
         public Func<string, string> Card;
         /// <summary>The station whose card is shown; null = none.</summary>
         public string SelectedId { get; private set; }
+        /// <summary>Raised when another station (or none) is selected.</summary>
+        public Action<string> SelectionChanged;
+        /// <summary>True when the HiRISE image of the play area is available as the map's background.</summary>
+        public bool HasSatellite { get { return satTexture != null; } }
+        /// <summary>True while the background is the satellite image; false = shaded relief.</summary>
+        public bool Satellite { get; private set; } = true;
         /// <summary>True when stations of the shown plan may be dragged.</summary>
         public bool Editable;
 
@@ -58,6 +65,11 @@ namespace NasaSpaceApp.Homeline.Ui
         readonly HudLineMesh lines;
         readonly List<Text> labels = new List<Text>();
         readonly Text caption, card;
+        readonly RawImage sat, shade;
+        readonly MenuButton modeButton;
+        Texture2D satTexture, shadeTexture;
+        bool orthoTried, shadeHasMask;
+        double orthoX0, orthoX1, orthoZ0, orthoZ1;   // world rect of the satellite image
         string pressId;
         readonly Font font;
         readonly float size;
@@ -99,7 +111,13 @@ namespace NasaSpaceApp.Homeline.Ui
             // The route and the marks are children of the map square: an edited route that leaves the view is cut at
             // its edge, and a press on a mark or a label reaches the square's pointer handler.
             go.AddComponent<RectMask2D>();
+            // Satellite image over the relief, then a dark veil over ground where a station cannot stand.
+            sat = NewLayer("Satellite", rt, center);
+            shade = NewLayer("Shade", rt, center);
+            shade.rectTransform.sizeDelta = new Vector2(size, size);
             lines = HudFactory.CreateLineMesh("Lines", rt, center, center, Vector2.zero, new Vector2(size, size));
+            modeButton = MenuButton.Create(ctx, root, "RELIEF", MenuTokens.SizeTab, topLeft, new Vector2(0f, 0.5f),
+                                           new Vector2(Pad + 10f, -(Pad + 22f)), ToggleBackground);
             caption = MenuUi.Paragraph("Caption", root, ctx.Assets != null ? ctx.Assets.Regular : null, MenuTokens.SizeFine, MenuTokens.SandDim,
                                        TextAnchor.UpperLeft, topLeft, topLeft, new Vector2(Pad, -(Pad + size + 6f)), new Vector2(size, 34f), "");
             card = MenuUi.Paragraph("Card", root, ctx.Assets != null ? ctx.Assets.Regular : null, MenuTokens.SizeFine, MenuTokens.Sand,
@@ -107,11 +125,87 @@ namespace NasaSpaceApp.Homeline.Ui
             root.gameObject.SetActive(false);
         }
 
+        static RawImage NewLayer(string name, RectTransform parent, Vector2 center)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = center;
+            RawImage image = go.AddComponent<RawImage>();
+            image.raycastTarget = false;
+            image.enabled = false;
+            return image;
+        }
+
         /// <summary>Shows the card of a station (what clicking its mark does); null hides it.</summary>
         public void Select(string stationId)
         {
+            bool changed = SelectedId != stationId;
             SelectedId = stationId;
             if (plan != null && root.gameObject.activeSelf) Redraw();
+            if (changed && SelectionChanged != null) SelectionChanged(SelectedId);
+        }
+
+        /// <summary>Switches the background between the satellite image and the shaded relief.</summary>
+        public void ToggleBackground()
+        {
+            Satellite = !Satellite;
+            ApplyBackground();
+            if (plan != null && root.gameObject.activeSelf) Redraw();
+        }
+
+        /// <summary>
+        /// The HiRISE image of the play area (Resources/MarsPlayOrtho, north up, linear in longitude and latitude;
+        /// NASA/JPL/University of Arizona) and where it lies in the world, from its lat/lon bounds.
+        /// </summary>
+        void EnsureOrtho()
+        {
+            if (orthoTried || plan == null) return;
+            orthoTried = true;
+            try
+            {
+                TextAsset meta = Resources.Load<TextAsset>(OrthoMetaResource);
+                Texture2D tex = Resources.Load<Texture2D>(OrthoResource);
+                if (meta == null || tex == null) return;
+                Newtonsoft.Json.Linq.JToken b = HlJson.Parse(meta.text)["bounds"];
+                double x, y, w0, z0, w1, z1;
+                plan.Frame.LonLatToLocal(HlJson.Num(b, "lon_west"), HlJson.Num(b, "lat_south"), out x, out y);
+                plan.Frame.LocalToWorld(x, y, out w0, out z0);
+                plan.Frame.LonLatToLocal(HlJson.Num(b, "lon_east"), HlJson.Num(b, "lat_north"), out x, out y);
+                plan.Frame.LocalToWorld(x, y, out w1, out z1);
+                if (!(w1 > w0) || !(z1 > z0)) return;
+                orthoX0 = w0; orthoX1 = w1; orthoZ0 = z0; orthoZ1 = z1;
+                satTexture = tex;
+                sat.texture = tex;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[HOMELINE] satellite image not usable on the plan map: " + e.Message);
+            }
+        }
+
+        /// <summary>Places the part of the satellite image that the view covers, and shows the layers of the chosen background.</summary>
+        void ApplyBackground()
+        {
+            bool covered = false;
+            if (satTexture != null)
+            {
+                double x0 = Math.Max(cx - half, orthoX0), x1 = Math.Min(cx + half, orthoX1);
+                double z0 = Math.Max(cz - half, orthoZ0), z1 = Math.Min(cz + half, orthoZ1);
+                covered = x1 > x0 && z1 > z0;
+                if (covered)
+                {
+                    sat.rectTransform.anchoredPosition = new Vector2((float)((0.5 * (x0 + x1) - cx) * scale), (float)((0.5 * (z0 + z1) - cz) * scale));
+                    sat.rectTransform.sizeDelta = new Vector2((float)((x1 - x0) * scale), (float)((z1 - z0) * scale));
+                    sat.uvRect = new Rect((float)((x0 - orthoX0) / (orthoX1 - orthoX0)), (float)((z0 - orthoZ0) / (orthoZ1 - orthoZ0)),
+                                          (float)((x1 - x0) / (orthoX1 - orthoX0)), (float)((z1 - z0) / (orthoZ1 - orthoZ0)));
+                }
+            }
+            bool on = Satellite && covered;
+            sat.enabled = on;
+            shade.enabled = on && shadeHasMask;   // in relief mode the dark ground is painted into the relief itself
+            modeButton.gameObject.SetActive(satTexture != null);
+            modeButton.SetLabel(Satellite ? "RELIEF" : "SATELLITE");
         }
 
         public bool Dragging { get { return dragId != null; } }
@@ -153,6 +247,8 @@ namespace NasaSpaceApp.Homeline.Ui
                 if (half < MinHalfExtentM) half = MinHalfExtentM;
                 scale = (float)(size * 0.5 / half); // map units per metre
                 DrawRelief();
+                EnsureOrtho();
+                ApplyBackground();
             }
             Redraw();
         }
@@ -224,12 +320,13 @@ namespace NasaSpaceApp.Homeline.Ui
                 caption.text = dragValid
                     ? "Moving " + dragId + ": " + dragReadout + "\nRelease to re-route the plan through this point."
                     : "Moving " + dragId + ": a station cannot stand here (not walkable, not reachable, or off the detailed terrain).\nRelease to put it back.";
-            else if (Editable)
-                caption.text = "North up · scale bar " + HlJson.F(barM, 0) + " m · square: rover, diamond: station, dot: navigation point\n" +
-                               "Drag a station with the mouse to move it. Dark ground: not reachable, or off the detailed terrain.";
             else
-                caption.text = "North up · scale bar " + HlJson.F(barM, 0) + " m · terrain relief: this simulator\n" +
-                               "Square: rover · diamond: station · dot: navigation point";
+            {
+                string background = sat.enabled ? "image: HiRISE (NASA/JPL/University of Arizona)" : "shaded relief of this simulator's terrain";
+                caption.text = "North up · scale bar " + HlJson.F(barM, 0) + " m · " + background + "\n" +
+                               (Editable ? "Drag a station to move it, click it for its card. Dark ground: no station can stand there."
+                                         : "Square: rover, diamond: station, dot: navigation point. Click a station for its card.");
+            }
 
             bool known = false;
             if (SelectedId != null)
@@ -298,7 +395,11 @@ namespace NasaSpaceApp.Homeline.Ui
             Vector2 at = dragPos;
             dragId = null;
             pressId = null;
-            if (Vector2.Distance(dragPos, dragFrom) <= 2f) SelectedId = id; // pressed and released in place: a click
+            if (Vector2.Distance(dragPos, dragFrom) <= 2f)
+            {
+                Select(id); // pressed and released in place: a click
+                return;
+            }
             if (moved && StationMoved != null)
             {
                 double x, y;
@@ -388,6 +489,8 @@ namespace NasaSpaceApp.Homeline.Ui
             }
             bool mask = plan.HasReturnFields;
             var pixels = new Color32[n * n];
+            var veil = new Color32[n * n];               // for the satellite background: dark where a station cannot stand
+            var veilDark = new Color32(8, 6, 10, 165);
             float k = 2.2f / (float)step;
             for (int j = 0; j < n; j++)
             {
@@ -403,11 +506,26 @@ namespace NasaSpaceApp.Homeline.Ui
                         double x, y;
                         plan.Frame.WorldToLocal(cx - half + (i + 0.5) * step, cz - half + (j + 0.5) * step, out x, out y);
                         bool placeable = Placeable != null ? Placeable(x, y) : plan.THomeAt(x, y).HasValue;
-                        if (!placeable) c = new Color(c.r * UnreachableShade, c.g * UnreachableShade, c.b * UnreachableShade, 1f);
+                        if (!placeable)
+                        {
+                            c = new Color(c.r * UnreachableShade, c.g * UnreachableShade, c.b * UnreachableShade, 1f);
+                            veil[j * n + i] = veilDark;
+                        }
                     }
                     pixels[j * n + i] = c;
                 }
             }
+            if (shadeTexture == null)
+            {
+                shadeTexture = new Texture2D(n, n, TextureFormat.RGBA32, false);
+                shadeTexture.wrapMode = TextureWrapMode.Clamp;
+                shadeTexture.filterMode = FilterMode.Bilinear;
+                shadeTexture.name = "HOMELINE plan map veil";
+                shade.texture = shadeTexture;
+            }
+            shadeTexture.SetPixels32(veil);
+            shadeTexture.Apply(false);
+            shadeHasMask = mask;
             if (texture == null)
             {
                 texture = new Texture2D(n, n, TextureFormat.RGBA32, false);

@@ -51,6 +51,14 @@ namespace NasaSpaceApp.Homeline
         /// <summary>Smallest margin of an edited plan's timeline and where it occurs; null when not edited.</summary>
         public EditedPlanData EditData { get; private set; }
         IDictionary<string, string> stationNames;
+        Dictionary<string, EditStop> activities;
+
+        /// <summary>The planned work at a station of an edited plan (labels, note, stop time); null when none was set.</summary>
+        public EditStop ActivityOf(string stationId)
+        {
+            EditStop a;
+            return activities != null && stationId != null && activities.TryGetValue(stationId, out a) ? a : null;
+        }
         /// <summary>Planned end of the EVA: the return to the pad, EVA minutes.</summary>
         public double EndMin { get { return Track.EndMin; } }
 
@@ -172,6 +180,8 @@ namespace NasaSpaceApp.Homeline
             plan.PlannerHomeMap = root.PlannerHomeMap;
             plan.Storm = data.Storm;
             plan.EditData = data;
+            plan.activities = new Dictionary<string, EditStop>(StringComparer.Ordinal);
+            foreach (EditStop s in data.Stops) plan.activities[s.Id] = s;
             return plan;
         }
 
@@ -195,7 +205,14 @@ namespace NasaSpaceApp.Homeline
             {
                 RouteLeg leg = Track.Legs[i];
                 int n = leg.X.Length;
-                stops.Add(new EditStop { Id = leg.To, X = leg.X[n - 1], Y = leg.Y[n - 1], DwellMin = Track.Legs[i + 1].StartMin - leg.EndMin });
+                var stop = new EditStop { Id = leg.To, X = leg.X[n - 1], Y = leg.Y[n - 1], DwellMin = Track.Legs[i + 1].StartMin - leg.EndMin };
+                EditStop a = ActivityOf(leg.To);
+                if (a != null)
+                {
+                    stop.Tags = a.Tags != null ? (string[])a.Tags.Clone() : new string[0];
+                    stop.Note = a.Note ?? "";
+                }
+                stops.Add(stop);
             }
             return stops;
         }

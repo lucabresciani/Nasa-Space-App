@@ -133,6 +133,7 @@ namespace NasaSpaceApp.Homeline.Ui
                                      topLeft, topLeft, new Vector2(0f, -tableTop), new Vector2(W, 150f), "");
             table.horizontalOverflow = HorizontalWrapMode.Overflow;
             table.lineSpacing = 1.2f;
+            BuildActivityEditor(ctx, content, tableTop, regular, medium, mono);
 
             result = MenuUi.Paragraph("Result", content, regular, MenuTokens.SizeFine, MenuTokens.SandDim, TextAnchor.UpperLeft,
                                       topLeft, topLeft, new Vector2(0f, -(MenuTokens.ContentHeight - 118f)), new Vector2(W, 64f), "");
@@ -149,6 +150,7 @@ namespace NasaSpaceApp.Homeline.Ui
             map.Probe = (x, y) => app.ProbeStationPoint(generated, x, y);
             map.Placeable = (x, y) => app.CanPlaceStation(generated, x, y);
             map.Card = id => app.StationCardText(generated, id, 3);
+            map.SelectionChanged = id => RefreshState();
 
             Rebind();
             Choose(DefaultIndex());
@@ -283,6 +285,179 @@ namespace NasaSpaceApp.Homeline.Ui
             if (map != null) map.Select(stationId);
         }
 
+        // ---- planned work at the selected station (labels of the web Mission page, stop time, free note)
+
+        const double MaxStopMin = 120.0, StopStepMin = 5.0;
+        GameObject activityRoot;
+        Text actTitle, actStop;
+        InputField noteField;
+        MenuButton stopMinus, stopPlus;
+        readonly List<Button> tagButtons = new List<Button>();
+        readonly List<Image> tagMarks = new List<Image>();
+        readonly List<Text> tagLabels = new List<Text>();
+
+        /// <summary>True when the satellite image is available on the plan map.</summary>
+        public bool MapHasSatellite { get { return map != null && map.HasSatellite; } }
+
+        void BuildActivityEditor(MenuContext ctx, RectTransform content, float top, Font regular, Font medium, Font mono)
+        {
+            var topLeft = new Vector2(0f, 1f);
+            var go = new GameObject("Activity", typeof(RectTransform));
+            go.transform.SetParent(content, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = topLeft;
+            rt.anchoredPosition = new Vector2(0f, -top);
+            rt.sizeDelta = new Vector2(W, 150f);
+            activityRoot = go;
+
+            actTitle = MenuUi.Label("Title", rt, medium, MenuTokens.SizeSmall, MenuTokens.Sand, TextAnchor.MiddleLeft,
+                                    topLeft, topLeft, new Vector2(0f, -2f), new Vector2(400f, 24f), "");
+            stopMinus = MenuButton.Create(ctx, rt, "-5 MIN", MenuTokens.SizeTab, topLeft, new Vector2(0f, 0.5f), new Vector2(420f, -14f), () => StepStop(-StopStepMin));
+            actStop = MenuUi.Label("Stop", rt, mono, MenuTokens.SizeValue, MenuTokens.Sand, TextAnchor.MiddleCenter,
+                                   topLeft, topLeft, new Vector2(506f, -2f), new Vector2(130f, 24f), "");
+            stopPlus = MenuButton.Create(ctx, rt, "+5 MIN", MenuTokens.SizeTab, topLeft, new Vector2(0f, 0.5f), new Vector2(646f, -14f), () => StepStop(StopStepMin));
+
+            for (int i = 0; i < EditStop.KnownTags.Length; i++)
+            {
+                string tag = EditStop.KnownTags[i];
+                Image bg = MenuUi.Pill("Tag" + tag, rt, ctx, Color.white, MenuTokens.RowRadius, topLeft, topLeft,
+                                       new Vector2(i * 92f, -38f), new Vector2(86f, 32f));
+                bg.raycastTarget = true;
+                Button b = bg.gameObject.AddComponent<Button>();
+                b.targetGraphic = bg;
+                ColorBlock colors = b.colors;
+                colors.normalColor = MenuTokens.Alpha(MenuTokens.RowFocus, 0.35f);
+                colors.highlightedColor = MenuTokens.RowFocus;
+                colors.selectedColor = HudTokens.Light(0xEAD8BE, 0.30f);
+                colors.pressedColor = HudTokens.Light(0xEAD8BE, 0.40f);
+                colors.disabledColor = MenuTokens.Alpha(MenuTokens.RowFocus, 0.15f);
+                colors.colorMultiplier = 1f;
+                colors.fadeDuration = MenuTokens.Dur(MenuTokens.DurFocus);
+                b.colors = colors;
+                b.onClick.AddListener(() => ToggleTag(tag));
+                // An active label carries a bar on its left edge and brighter text: shape and weight, not colour alone.
+                Image mark = HudFactory.CreateImage("Mark", bg.transform, null, MenuTokens.BronzeBright, new Vector2(0f, 0.5f),
+                                                    new Vector2(0f, 0.5f), new Vector2(5f, 0f), new Vector2(4f, 18f));
+                Text label = MenuUi.Label("Label", bg.transform, medium, MenuTokens.SizeSmall, MenuTokens.SandDim, TextAnchor.MiddleCenter,
+                                          new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(3f, 0f), new Vector2(76f, 30f), tag);
+                tagButtons.Add(b);
+                tagMarks.Add(mark);
+                tagLabels.Add(label);
+            }
+
+            MenuUi.Label("NoteLabel", rt, medium, MenuTokens.SizeSmall, MenuTokens.SandDim, TextAnchor.MiddleLeft,
+                         topLeft, topLeft, new Vector2(0f, -80f), new Vector2(54f, 32f), "Note");
+            Image nb = MenuUi.Pill("Note", rt, ctx, MenuTokens.Alpha(MenuTokens.RowFocus, 1.6f), MenuTokens.RowRadius, topLeft, topLeft,
+                                   new Vector2(56f, -80f), new Vector2(W - 56f, 32f));
+            nb.raycastTarget = true;
+            Text nt = MenuUi.Label("Text", nb.transform, regular, MenuTokens.SizeSmall, MenuTokens.Sand, TextAnchor.MiddleLeft,
+                                   new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(12f, 0f), new Vector2(W - 84f, 28f), "");
+            nt.supportRichText = false;
+            Text ph = MenuUi.Label("Placeholder", nb.transform, regular, MenuTokens.SizeSmall, MenuTokens.SandFaint, TextAnchor.MiddleLeft,
+                                   new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(12f, 0f), new Vector2(W - 84f, 28f),
+                                   "Click here, write what to do at this stop, press Enter");
+            noteField = nb.gameObject.AddComponent<InputField>();
+            noteField.textComponent = nt;
+            noteField.placeholder = ph;
+            noteField.targetGraphic = nb;
+            noteField.characterLimit = 90;
+            noteField.lineType = InputField.LineType.SingleLine;
+            noteField.navigation = new Navigation { mode = Navigation.Mode.None }; // typing W A S D must not move the focus
+            noteField.onEndEdit.AddListener(NoteEdited);
+
+            MenuUi.Paragraph("Hint", rt, regular, MenuTokens.SizeFine, MenuTokens.SandDim, TextAnchor.UpperLeft, topLeft, topLeft,
+                             new Vector2(0f, -118f), new Vector2(W, 30f),
+                             "Labels and the note describe the work; only the stop time changes the plan. Click empty ground on the map for the table.");
+            activityRoot.SetActive(false);
+        }
+
+        Waypoint SelectedStation()
+        {
+            string id = map != null ? map.SelectedId : null;
+            if (id == null || generated == null) return null;
+            foreach (Waypoint w in generated.Waypoints.Main)
+                if (w.Kind == WaypointKind.Station && w.Id == id) return w;
+            return null;
+        }
+
+        static double StopOf(Waypoint w)
+        {
+            return w.LeaveMin.HasValue ? w.LeaveMin.Value - w.ArriveMin : 0;
+        }
+
+        void RefreshActivityEditor()
+        {
+            if (activityRoot == null) return;
+            Waypoint w = SelectedStation();
+            activityRoot.SetActive(w != null);
+            table.enabled = w == null;
+            if (w == null) return;
+            EditStop a = generated.ActivityOf(w.Id);
+            double stop = StopOf(w);
+            bool can = app.CanEdit(generated);
+            actTitle.text = w.Id + " · planned work at this station";
+            actStop.text = "STOP " + HlJson.F(stop, 0) + "\u00a0MIN";
+            for (int i = 0; i < tagButtons.Count; i++)
+            {
+                bool on = a != null && a.Tags != null && System.Array.IndexOf(a.Tags, EditStop.KnownTags[i]) >= 0;
+                tagMarks[i].enabled = on;
+                tagLabels[i].color = on ? MenuTokens.Sand : MenuTokens.SandDim;
+                tagButtons[i].interactable = can;
+            }
+            if (!noteField.isFocused) noteField.SetTextWithoutNotify(a != null ? a.Note : "");
+            noteField.interactable = can;
+            stopMinus.SetInteractable(can && stop > 0.5);
+            stopPlus.SetInteractable(can && stop < MaxStopMin - 0.5);
+        }
+
+        /// <summary>
+        /// Sets the work planned at a station: the stop time (the plan is re-computed with it), the activity labels
+        /// and the note. Returns false, with the reason on screen, when the plan cannot be changed.
+        /// </summary>
+        public bool SetActivity(string stationId, double stopMin, string[] tags, string text)
+        {
+            if (generated == null) return false;
+            string problem;
+            MissionPlan edited = app.SetStationActivity(generated, stationId, System.Math.Min(MaxStopMin, stopMin), tags, text, out problem);
+            note = edited == null ? "Not changed: " + problem : null;
+            if (edited != null) generated = edited;
+            RefreshState();
+            return edited != null;
+        }
+
+        void ToggleTag(string tag)
+        {
+            Waypoint w = SelectedStation();
+            if (w == null) return;
+            EditStop a = generated.ActivityOf(w.Id);
+            var on = new List<string>(a != null && a.Tags != null ? a.Tags : new string[0]);
+            if (!on.Remove(tag)) on.Add(tag);
+            var ordered = new List<string>();
+            foreach (string known in EditStop.KnownTags) if (on.Contains(known)) ordered.Add(known);
+            SetActivity(w.Id, StopOf(w), ordered.ToArray(), a != null ? a.Note : "");
+        }
+
+        void StepStop(double deltaMin)
+        {
+            Waypoint w = SelectedStation();
+            if (w == null) return;
+            EditStop a = generated.ActivityOf(w.Id);
+            double stop = System.Math.Round((StopOf(w) + deltaMin) / StopStepMin) * StopStepMin;
+            stop = System.Math.Max(0, System.Math.Min(MaxStopMin, stop));
+            SetActivity(w.Id, stop, a != null ? a.Tags : new string[0], a != null ? a.Note : "");
+        }
+
+        void NoteEdited(string text)
+        {
+            Waypoint w = SelectedStation();
+            if (w == null) return;
+            EditStop a = generated.ActivityOf(w.Id);
+            string before = a != null ? a.Note : "";
+            text = (text ?? "").Trim();
+            if (text == before) return;
+            SetActivity(w.Id, StopOf(w), a != null ? a.Tags : new string[0], text);
+        }
+
         int DefaultIndex()
         {
             if (showSaved) return 0;
@@ -373,6 +548,8 @@ namespace NasaSpaceApp.Homeline.Ui
             }
             if (!ready)
             {
+                if (activityRoot != null) activityRoot.SetActive(false);
+                table.enabled = true;
                 table.text = items.Count == 0
                         ? (showSaved ? "No saved routes yet.\nOpen PLANNER PLANS, generate a plan, drag a station on the map,\nthen press SAVE ROUTE." : "")
                     : generateFailed ? (showSaved ? "This saved route could not be re-built." : "This plan could not be read.\nCheck that the HomelineData folder next to the app is complete,\nthen try again or pick another plan.")
@@ -383,6 +560,7 @@ namespace NasaSpaceApp.Homeline.Ui
             }
 
             table.text = TableText(generated);
+            RefreshActivityEditor();
             var sb = new StringBuilder(420);
             sb.Append(generated.Waypoints.CountText());
             if (generated.Edited) sb.Append(". ").Append(PlanEditor.LabelRerouted);

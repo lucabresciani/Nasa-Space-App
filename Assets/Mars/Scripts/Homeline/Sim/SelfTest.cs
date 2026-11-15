@@ -20,7 +20,7 @@ namespace NasaSpaceApp.Homeline.Sim
     /// </summary>
     public sealed class SelfTest : MonoBehaviour
     {
-        const float WatchdogSeconds = 330f;
+        const float WatchdogSeconds = 360f;
 
         public static bool Requested
         {
@@ -28,6 +28,7 @@ namespace NasaSpaceApp.Homeline.Sim
         }
 
         string dir;
+        MissionPlan brokenPlan; // a plan that breaks the limits, for the alarm check
         bool expectMenu = true; // false once the first EVA has started: from then on an open menu is a lost focus
         readonly StringBuilder log = new StringBuilder();
         readonly StringBuilder trace = new StringBuilder();
@@ -89,6 +90,7 @@ namespace NasaSpaceApp.Homeline.Sim
             Check(app.Cards.Count >= 4 && cardS7 != null && cardS7.Contains("sulfate") && cardS7.Contains("Latest departure"),
                   "station cards read from the planner (" + app.Cards.Count + "); S7: " + (cardS7 != null ? cardS7.Split('\n')[0] : "none"));
             if (app.Panel != null) app.Panel.SelectStation("S7");
+            Check(app.Panel == null || app.Panel.MapHasSatellite, "satellite image of the play area (HiRISE) on the plan map");
 
             // Move a station by hand (what dragging its mark on the map does): the simulator re-routes the plan,
             // the panel shows it, an impossible move is refused, RESET brings the planner's plan back.
@@ -138,6 +140,19 @@ namespace NasaSpaceApp.Homeline.Sim
                     else Check(false, "the scene reports its high-definition terrain");
                     Check(app.Panel.Generated == editedPlan, "a refused move leaves the plan as it was");
 
+                    // Work at a station: labels, a note and a longer stop. Only the stop time changes the plan.
+                    double before = editedPlan.EndMin;
+                    app.Panel.SelectStation("S6");
+                    bool act = app.Panel.SetActivity("S6", 45, new[] { "Sample", "Photo" }, "core sample at the ridge");
+                    Check(act && Math.Abs(app.Panel.Generated.EndMin - (before + 15.0)) < 0.2,
+                          "15 min more work at S6 makes the plan 15 min longer (" + F(before) + " -> " + F(app.Panel.Generated.EndMin) + " min)");
+                    editedPlan = app.Panel.Generated;
+                    string cardS6 = app.StationCardText(editedPlan, "S6", 3);
+                    Check(cardS6 != null && cardS6.Contains("Sample, Photo") && cardS6.Contains("core sample at the ridge") && cardS6.Contains("Moved 90"),
+                          "the card of S6 shows its planned work, its note and that it was moved");
+                    yield return new WaitForSecondsRealtime(0.4f);
+                    yield return Shot("planning_activity");
+
                     // Limits: the edited plan respects them, so START and SAVE are offered; it is saved.
                     Check(app.Panel.StartAllowed, "START is offered for an edited plan that respects the limits");
                     Check(editedPlan.EditData.OxygenOk, "oxygen margin of the edited plan stays positive (" + F(editedPlan.EditData.MinO2MarginMin) + " min at " + editedPlan.EditData.MinO2MarginWhere + ")");
@@ -151,6 +166,7 @@ namespace NasaSpaceApp.Homeline.Sim
                     foreach (EditStop st in longStops) st.DwellMin += 30;
                     string whyLong;
                     MissionPlan tooLong = app.BuildEdited(editedPlan, longStops, out whyLong);
+                    brokenPlan = tooLong;
                     if (tooLong != null) app.Panel.ShowEdited(tooLong);
                     if (tooLong != null && !app.Panel.Generated.EditData.Feasible)
                     {
@@ -175,6 +191,9 @@ namespace NasaSpaceApp.Homeline.Sim
                     MissionPlan reloaded = app.Panel.Generated;
                     Check(reloaded != null && reloaded.Edited && Math.Abs(reloaded.EndMin - editedPlan.EndMin) < 0.01,
                           "the saved route re-builds to the same plan (" + (reloaded != null ? F(reloaded.EndMin) : "null") + " min)");
+                    EditStop kept = reloaded != null ? reloaded.ActivityOf("S6") : null;
+                    Check(kept != null && kept.Tags.Length == 2 && kept.Note == "core sample at the ridge" && Math.Abs(kept.DwellMin - 45) < 0.01,
+                          "the saved route keeps the work planned at S6 (labels, note, stop time)");
                     yield return new WaitForSecondsRealtime(0.4f);
                     yield return Shot("planning_my_routes");
                     app.Panel.ShowSavedRoutes(false);
@@ -205,7 +224,8 @@ namespace NasaSpaceApp.Homeline.Sim
             trace.Append("t_min,world_x,world_y,world_z,local_x,local_y,plan_o2_L,plan_margin_min,binding,hud_o2_L,hud_met_min,hud_home_m,detailed_terrain\n");
             double nextSample = 0;
             bool shotS7 = false, shotMid = false;
-            float hrWalk = 0f, hrStation = 0f;
+            float hrWalk = 0f, hrStation = 0f, radPeak = 0f;
+            bool alarmOnOfficial = false;
             waitUntil = Time.realtimeSinceStartup + 110f;
             while (!app.Driver.ReplayFinished && Time.realtimeSinceStartup < waitUntil)
             {
@@ -220,6 +240,12 @@ namespace NasaSpaceApp.Homeline.Sim
                 {
                     SuitTelemetry th = Telemetry();
                     if (th != null) hrWalk = th.HeartRate;
+                }
+                alarmOnOfficial |= app.Driver.Alarm.Active;
+                if (radPeak == 0f && t >= 66)
+                {
+                    SuitTelemetry th = Telemetry();
+                    if (th != null) radPeak = th.DoseRateMsvH;
                 }
                 if (hrStation == 0f && t >= 72)
                 {
@@ -240,6 +266,8 @@ namespace NasaSpaceApp.Homeline.Sim
             }
             Check(app.Driver.ReplayFinished, "replay reached the planned return (t = " + F(app.Driver.TMin) + " min)");
             Note("heart rate in the replay: " + F(hrWalk) + " bpm walking to S7, " + F(hrStation) + " bpm working at S7 (rest " + F(SuitTelemetry.HeartRateRest) + ")");
+            Check(radPeak > 1.0f, "helmet RAD follows the planner's storm (" + F(radPeak) + " mSv/h near its peak; quiet level " + F(SuitTelemetry.DoseRateGaleMsvH) + ")");
+            Check(!alarmOnOfficial, "no planner alarm fires on the official plan");
             Check(hrWalk > 100f && hrWalk < 150f, "heart rate follows the planned walk in the replay (" + F(hrWalk) + " bpm on the way to S7)");
             Check(hrStation > 82f && hrStation < hrWalk - 8f, "heart rate comes down while working at a station (" + F(hrStation) + " bpm)");
             yield return null;
@@ -368,6 +396,20 @@ namespace NasaSpaceApp.Homeline.Sim
                           (telE != null ? F(telE.O2LeftL) : "?") + " L)");
                     yield return Shot("eva_edited_plan_S6");
                 }
+            }
+
+            // A plan that breaks the limits (it cannot be started from the planning screen): the planner's alarm.
+            if (brokenPlan != null)
+            {
+                app.Begin(brokenPlan, EvaMode.Replay);
+                yield return new WaitForSecondsRealtime(1.0f);
+                app.Driver.SetSpeed(1);
+                app.Driver.Seek(brokenPlan.EndMin - 20.0);
+                yield return new WaitForSecondsRealtime(1.5f);
+                HudAlarm al = app.Driver.Alarm;
+                Check(al.Active && al.Rule == 1 && al.Text == "TURN BACK NOW", "planner alarm TURN BACK NOW while the margin is below zero (" + (al.Text ?? "none") + ")");
+                Check(SuitTelemetry.MissionStressBpm >= 18f, "mission stress is high with a broken limit (+" + F(SuitTelemetry.MissionStressBpm) + " bpm)");
+                yield return Shot("eva_alarm_turn_back");
             }
 
             // RESTART SIMULATION from the pause menu reloads the scene: the title must come back with no mission

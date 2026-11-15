@@ -94,10 +94,17 @@ namespace NasaSpaceApp.Homeline
         /// official, unedited plan (contingency from this point, latest departure). <paramref name="movedM"/>: how
         /// far the station was moved by hand from the planner's point (0 = not moved).
         /// </summary>
-        public static string Text(StationCard c, bool planSpecific, double movedM, int maxLandmarks)
+        public static string Text(StationCard c, bool planSpecific, double movedM, int maxLandmarks, EditStop activity = null)
         {
             var sb = new System.Text.StringBuilder(320);
             sb.Append(c.Id).Append(": ").Append(string.IsNullOrEmpty(c.Name) ? "science station" : c.Name);
+            if (activity != null && activity.HasActivity)
+            {
+                sb.Append("\nPlanned here");
+                if (activity.Tags != null && activity.Tags.Length > 0) sb.Append(": ").Append(string.Join(", ", activity.Tags));
+                sb.Append(" (stop ").Append(HlJson.F(activity.DwellMin, 0)).Append("\u00a0min).");
+                if (!string.IsNullOrEmpty(activity.Note)) sb.Append(" Note: ").Append(activity.Note);
+            }
             if (movedM >= 1.0)
                 sb.Append("\nMoved ").Append(HlJson.F(movedM, 0)).Append(" m by hand: the science target stays at the planner's point.");
             if (c.Landmarks.Count > 0)

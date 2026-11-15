@@ -66,7 +66,7 @@ namespace NasaSpaceApp.Homeline.Flow
             foreach (Waypoint w in plan.BasePlan.Waypoints.Main) if (w.Kind == WaypointKind.Station && w.Id == stationId) planned = w;
             if (now != null && planned != null) moved = Math.Sqrt((now.X - planned.X) * (now.X - planned.X) + (now.Y - planned.Y) * (now.Y - planned.Y));
             bool official = plan.BasePlan.Entry.Origin == PlanOrigin.Official && !plan.Edited;
-            return StationCards.Text(c, official, moved, maxLandmarks);
+            return StationCards.Text(c, official, moved, maxLandmarks, plan.ActivityOf(stationId));
         }
         /// <summary>The real instant the planned EVA starts (plan.json eva_start.utc: 09:00 local mean solar time); null if unknown.</summary>
         public DateTime? EvaStartUtc { get; private set; }
@@ -399,6 +399,36 @@ namespace NasaSpaceApp.Homeline.Flow
             return BuildEdited(plan, stops, out problem);
         }
 
+        /// <summary>
+        /// The plan with the work at one station changed: the stop time (which changes times, O2 and margin), the
+        /// activity labels and the note (which change no number). Null, with the reason, when it cannot be built.
+        /// </summary>
+        public MissionPlan SetStationActivity(MissionPlan plan, string stationId, double stopMin, string[] tags, string note, out string problem)
+        {
+            problem = null;
+            if (!CanEdit(plan))
+            {
+                problem = "this plan has no way-home map yet.";
+                return null;
+            }
+            List<EditStop> stops = plan.StopsOf();
+            bool found = false;
+            foreach (EditStop s in stops)
+            {
+                if (s.Id != stationId) continue;
+                s.DwellMin = Math.Max(0, stopMin);
+                s.Tags = tags ?? new string[0];
+                s.Note = note ?? "";
+                found = true;
+            }
+            if (!found)
+            {
+                problem = "the plan has no station " + stationId + ".";
+                return null;
+            }
+            return BuildEdited(plan, stops, out problem);
+        }
+
         /// <summary>The plan re-routed through the given stations (the pad, the frame and the way-home map are the plan's).</summary>
         public MissionPlan BuildEdited(MissionPlan plan, List<EditStop> stops, out string problem)
         {
@@ -564,7 +594,7 @@ namespace NasaSpaceApp.Homeline.Flow
             }
             HomeMapNow(root);
             var stops = new List<EditStop>();
-            foreach (EditStop s in route.Stops) stops.Add(new EditStop { Id = s.Id, X = s.X, Y = s.Y, DwellMin = s.DwellMin });
+            foreach (EditStop s in route.Stops) stops.Add(s.Copy()); // with the work planned at each stop
             MissionPlan plan = BuildEdited(root, stops, out problem);
             if (plan != null) plan.Entry.Title = route.Name;
             return plan;

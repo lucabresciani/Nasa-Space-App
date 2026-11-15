@@ -49,7 +49,18 @@ namespace NasaSpaceApp.Homeline
                     JArray stops = j["stops"] as JArray;
                     if (stops == null || string.IsNullOrEmpty(r.BasePlanId)) continue;
                     foreach (JToken s in stops)
-                        r.Stops.Add(new EditStop { Id = HlJson.Str(s, "id"), X = HlJson.Num(s, "x_m"), Y = HlJson.Num(s, "y_m"), DwellMin = HlJson.Num(s, "dwell_min") });
+                    {
+                        var stop = new EditStop { Id = HlJson.Str(s, "id"), X = HlJson.Num(s, "x_m"), Y = HlJson.Num(s, "y_m"), DwellMin = HlJson.Num(s, "dwell_min") };
+                        JArray tags = s["tags"] as JArray;
+                        if (tags != null)
+                        {
+                            var names = new List<string>();
+                            foreach (JToken t in tags) names.Add((string)t);
+                            stop.Tags = names.ToArray();
+                        }
+                        stop.Note = HlJson.Str(s, "note") ?? "";
+                        r.Stops.Add(stop);
+                    }
                     if (r.Stops.Count > 0) list.Add(r);
                 }
                 catch (Exception)
@@ -75,12 +86,14 @@ namespace NasaSpaceApp.Homeline
             var arr = new JArray();
             foreach (EditStop s in stops)
             {
-                r.Stops.Add(new EditStop { Id = s.Id, X = s.X, Y = s.Y, DwellMin = s.DwellMin });
+                r.Stops.Add(s.Copy());
                 var o = new JObject();
                 o["id"] = s.Id;
                 o["x_m"] = s.X;
                 o["y_m"] = s.Y;
                 o["dwell_min"] = s.DwellMin;
+                o["tags"] = new JArray(s.Tags ?? new string[0]);
+                o["note"] = s.Note ?? "";
                 arr.Add(o);
             }
             var doc = new JObject();

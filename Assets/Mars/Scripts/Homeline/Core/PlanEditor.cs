@@ -10,6 +10,20 @@ namespace NasaSpaceApp.Homeline
         public string Id;
         public double X, Y;
         public double DwellMin;
+        /// <summary>What the crew plans to do here, as labels (the web Mission page's list, see <see cref="KnownTags"/>). They change no number.</summary>
+        public string[] Tags = new string[0];
+        /// <summary>Free text of the planner (the person).</summary>
+        public string Note = "";
+
+        /// <summary>The activity labels of the web Mission page (web/src/mission/plan.ts WAYPOINT_TAGS), in its order.</summary>
+        public static readonly string[] KnownTags = { "Sample", "Drill", "Photo", "Survey", "Install", "Inspect", "Repair", "Rest" };
+
+        public bool HasActivity { get { return (Tags != null && Tags.Length > 0) || !string.IsNullOrEmpty(Note); } }
+
+        public EditStop Copy()
+        {
+            return new EditStop { Id = Id, X = X, Y = Y, DwellMin = DwellMin, Tags = Tags != null ? (string[])Tags.Clone() : new string[0], Note = Note ?? "" };
+        }
     }
 
     /// <summary>What the editor needs besides the stops: the router, the planner's numbers and its way-home maps.</summary>
@@ -35,6 +49,8 @@ namespace NasaSpaceApp.Homeline
     {
         public JObject RouteGeoJson;
         public JArray TimelineRows;
+        /// <summary>The stops the plan was built from, with their activities.</summary>
+        public List<EditStop> Stops = new List<EditStop>();
         public StormTrack Storm;
         public double EndMin, O2AtReturnL;
         /// <summary>The smallest margin of the timeline, where it occurs and which limit binds there.</summary>
@@ -110,6 +126,7 @@ namespace NasaSpaceApp.Homeline
             StormTrack storm = ctx.Storm != null && worstHome >= 0 ? ctx.Storm.Retimed(tStar) : ctx.Storm;
 
             var data = new EditedPlanData { Storm = storm, MinMarginMin = double.PositiveInfinity };
+            foreach (EditStop s0 in stops) data.Stops.Add(s0.Copy());
             var rows = new JArray();
             var features = new JArray();
             double used = 0;                       // litres of O2 used so far

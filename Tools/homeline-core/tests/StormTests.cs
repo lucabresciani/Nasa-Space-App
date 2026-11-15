@@ -25,6 +25,15 @@ namespace NasaSpaceApp.Homeline.Tests
                 // Held at the ends, like numpy.interp.
                 T.Near(storm.RateMGyH(-1e6), storm.RateMGyH(-1748.86), 1e-12, "rate before the series");
                 T.True(storm.RateMGyH(1e6) > 0, "rate after the series");
+                T.Near(storm.RateOverBaseline(67.14), 8377.9 / 152.3, 1.0, "storm peak as a multiple of the quiet rate");
+                T.True(!storm.TripwireFired(44.0) && storm.TripwireFired(44.5), "tripwire fires at its minute");
+
+                // The planner's HUD alarm rules (web/src/hud/alarms.ts).
+                T.Eq(HudAlarms.Evaluate(-1, false, 10, 100).Text, "TURN BACK NOW", "rule 1: margin below zero");
+                T.Eq(HudAlarms.Evaluate(50, true, 45, 40).Text, "RADIATION: HEAD HOME", "rule 2: tripwire fired and the way home longer than the dose leash");
+                T.True(!HudAlarms.Evaluate(50, false, 45, 40).Active, "rule 2 needs the tripwire");
+                T.Eq(HudAlarms.Evaluate(7.9, false, 10, 100).Text, "TURN-BACK IN 7 MIN", "rule 4: amber below 10 min, minutes rounded down");
+                T.True(!HudAlarms.Evaluate(10, false, 10, 100).Active && !HudAlarms.Evaluate(null, true, null, 40).Active, "no alarm at the threshold or with unknown inputs");
 
                 Timeline timeline = Timeline.FromBundle(bundle);
                 int doseRows = 0, otherRows = 0;

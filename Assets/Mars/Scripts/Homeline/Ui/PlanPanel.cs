@@ -21,8 +21,8 @@ namespace NasaSpaceApp.Homeline.Ui
     /// </summary>
     public sealed class PlanPanel : MonoBehaviour
     {
-        // Height: up to 12 body lines (free walk at a station on coarse terrain) above a 3-line footer.
-        const float Width = 460f, Height = 376f, Left = 28f, TopFromMiddle = 250f;
+        // Height: up to 13 body lines (free walk at a station on coarse terrain) above a 3-line footer.
+        const float Width = 460f, Height = 398f, Left = 28f, TopFromMiddle = 250f;
         const float RefreshSeconds = 0.2f;
         const float CardHeight = 206f;
 
@@ -101,6 +101,11 @@ namespace NasaSpaceApp.Homeline.Ui
             title.text = MissionPlan.LabelSimulated.ToUpperInvariant();
 
             sb.Length = 0;
+            // The planner's HUD alarm, first: the words carry the level, the title colour only repeats it.
+            HudAlarm alarm = d.Alarm;
+            if (alarm.Active) sb.Append(alarm.Level == AlarmLevel.Red ? "WARNING " : "CAUTION ").Append(alarm.Text).Append('\n');
+            title.color = alarm.Level == AlarmLevel.Red ? new Color(1f, 0.47f, 0.38f, 1f)
+                        : alarm.Level == AlarmLevel.Amber ? new Color(1f, 0.74f, 0.22f, 1f) : new Color(0.92f, 0.85f, 0.75f, 1f);
             sb.Append("PLAN    ").Append(plan.Entry.Title).Append('\n');
             sb.Append("        ").Append(plan.Entry.Origin == PlanOrigin.Official ? PlanCatalog.LabelOfficial : ShortOrigin(plan.Entry)).Append('\n');
             if (d.Mode == EvaMode.Replay)
@@ -135,7 +140,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 if (d.THomeMin.HasValue) sb.Append("HOME    ").Append(HlJson.F(d.THomeMin.Value, 0)).Append(" min walk").Append('\n');
                 footer.text = (plan.Edited ? "O2, margin: simulator re-route, planner model."
                                            : "O2: planner timeline. Margin: timeline, interpolated.") +
-                              "\nSuit vitals, weather and dose rate: SIM.\n[ ] speed  T pause  V walk freely  R track";
+                              "\nSuit vitals, weather: SIM. RAD: planner's storm.\n[ ] speed  T pause  V walk freely  R track";
             }
             else if (d.Live != null)
             {
@@ -159,7 +164,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 else
                 {
                     sb.Append("MARGIN  n/a (no return field ").Append(plan.HasReturnFields ? "here" : "for this pad").Append(")\n");
-                    footer.text = "O2: planner model on your walk + SIM weather, stress.\nSuit vitals, weather and dose rate: SIM.\nV back to replay   R track on/off";
+                    footer.text = "O2: planner model on your walk + SIM weather, stress.\nSuit vitals, weather: SIM. RAD: planner's storm.\nV back to replay   R track on/off";
                 }
             }
             else

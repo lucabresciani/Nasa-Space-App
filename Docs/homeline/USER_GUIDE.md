@@ -70,6 +70,35 @@ goes down and the latest departure. The same card appears at the top left of the
 station. The texts are the planner's own; a station moved by hand says so, because the science target stays at
 the planner's point.
 
+## Work planned at each station
+
+Clicking a station also opens its work panel in place of the waypoint table (click empty ground on the map to get
+the table back):
+
+- **Labels**: Sample, Drill, Photo, Survey, Install, Inspect, Repair, Rest (the list of the web planner's Mission
+  page). They describe the work and change no number.
+- **Note**: free text; click the field, type, press Enter.
+- **Stop time**: `-5 MIN` / `+5 MIN`, from 0 to 120 minutes. This is the only value that changes the plan: the
+  oxygen for the stop is charged at the planner's work rate, every later time shifts, and the limits check runs
+  again (a stop that is too long turns START off).
+
+A plan with work set on it is an edited plan: it is re-computed by the simulator and can be saved to MY ROUTES
+with its labels, notes and stop times. The station card, in the planning screen and in the EVA, shows the work.
+
+## Satellite view
+
+The plan map shows the HiRISE image of the play area (NASA/JPL/University of Arizona, about 1 m per pixel), the
+same image as the EVA map's Satellite layer. The **RELIEF** button at the top left of the map switches to the
+shaded relief of the simulator's terrain and back. Ground where a station cannot stand is veiled dark in both.
+
+## Planner alarms
+
+The plan panel shows the planner's HUD alarms as its first line: **WARNING TURN BACK NOW** when the margin is
+below zero, **WARNING RADIATION: HEAD HOME** when the storm tripwire has fired and the way home is longer than
+the dose leash, **CAUTION TURN-BACK IN N MIN** when the margin is under 10 minutes. The planner's two other rules
+(position uncertainty, partner-haul range) are not evaluated. The helmet's RAD read-out follows the planner's
+storm on the EVA clock: the helmet's quiet-time value multiplied by the storm's rate over its quiet rate.
+
 ## Missions from the web planner
 
 The build also contains the Mission link (see `Assets/Mars/Scripts/Mission/README.md` in the repository): a
@@ -136,8 +165,9 @@ The planner's own review of this simulator lists these; they are still true in t
 - In a replay the margin between two timeline rows is interpolated (the planner's own web HUD does the same); the
   free walk uses the planner's formula, so the two can differ by some minutes at the hand-over (at station S7,
   two minutes after arrival: 66 min interpolated, 61 min by the formula, both limited by the dose).
-- The radiation read-out on the helmet is a constant background value, while the planner's margin uses the solar
-  storm of 20 May 2024 replayed on the EVA clock.
+- The radiation read-out on the helmet is a dose equivalent scaled with the planner's storm (the solar storm of
+  20 May 2024 replayed on the EVA clock), while the planner works in absorbed dose: only the ratio to the quiet
+  level is carried over.
 - Station arrival within 5 m, the resting rate when standing still, and the 10 m distance over which the slope is
   measured are assumptions of this simulator, chosen so that walking the planned route reproduces the planner's
   oxygen within 1 %.

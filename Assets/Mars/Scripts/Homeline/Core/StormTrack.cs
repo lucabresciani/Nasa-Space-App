@@ -22,6 +22,20 @@ namespace NasaSpaceApp.Homeline
         /// <summary>EVA minute at which the storm tripwire fires; null if the file does not say.</summary>
         public readonly double? TStarMin;
         public int SampleCount { get { return evaMin.Length; } }
+        /// <summary>Quiet-time dose rate of the series, mGy/h (storm.json baseline_uGy_day); null if the file does not say.</summary>
+        public double? BaselineMGyH { get; private set; }
+
+        /// <summary>The dose rate at an EVA minute as a multiple of the quiet-time rate (1 = quiet); 1 when the baseline is unknown.</summary>
+        public double RateOverBaseline(double tMin)
+        {
+            return BaselineMGyH.HasValue && BaselineMGyH.Value > 0 ? RateMGyH(tMin) / BaselineMGyH.Value : 1.0;
+        }
+
+        /// <summary>True from the EVA minute at which the storm tripwire fires.</summary>
+        public bool TripwireFired(double tMin)
+        {
+            return TStarMin.HasValue && tMin >= TStarMin.Value;
+        }
 
         StormTrack(double[] evaMin, double[] rateMGyH, double dAllowMGy, double? tStarMin)
         {
@@ -68,7 +82,10 @@ namespace NasaSpaceApp.Homeline
             if (t.Count == 0) throw new FormatException("storm.json has no valid sample");
             double? allow = HlJson.NumOrNull(storm, "d_allow_mgy");
             if (!allow.HasValue || allow.Value <= 0) throw new FormatException("storm.json has no d_allow_mgy");
-            return new StormTrack(t.ToArray(), r.ToArray(), allow.Value, HlJson.NumOrNull(storm, "t_star_min"));
+            var track = new StormTrack(t.ToArray(), r.ToArray(), allow.Value, HlJson.NumOrNull(storm, "t_star_min"));
+            double? baseline = HlJson.NumOrNull(storm, "baseline_uGy_day");
+            if (baseline.HasValue) track.BaselineMGyH = baseline.Value / 24000.0; // uGy/day to mGy/h
+            return track;
         }
 
         /// <summary>
@@ -82,7 +99,7 @@ namespace NasaSpaceApp.Homeline
             double shift = tStarMin - TStarMin.Value;
             var t = new double[evaMin.Length];
             for (int i = 0; i < t.Length; i++) t[i] = evaMin[i] + shift;
-            return new StormTrack(t, rateMGyH, DAllowMGy, tStarMin);
+            return new StormTrack(t, rateMGyH, DAllowMGy, tStarMin) { BaselineMGyH = BaselineMGyH };
         }
 
         /// <summary>Dose rate at an EVA minute, mGy/h.</summary>
