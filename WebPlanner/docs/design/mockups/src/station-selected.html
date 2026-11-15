@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Station selected</title>
+<link rel="stylesheet" href="shell.css">
+</head><body>
+<div class="app" id="app">
+  <aside class="rail" id="rail"></aside>
+  <main class="map" id="map"><canvas></canvas><svg class="ov"></svg>
+    <div class="scalebar" id="scale"></div>
+    <div class="readout" id="readout"></div>
+  </main>
+  <aside class="side" id="side"></aside>
+  <footer class="dock" id="dock"></footer>
+</div>
+<script src="hl.js"></script><script src="shell.js"></script><script src="map-common.js"></script>
+<script>
+(async () => {
+  await HL.load({ variants: true });
+  const SEL = 'S7';
+  const m = HL.m, f = HL.fmt, c = `card.${SEL}`;
+  const s = HL.D.stations.find((x) => x.id === SEL);
+  const card = await (await fetch('../../../../web/public/data/cards/S7.json')).json();
+  const app = document.getElementById('app');
+  app.insertAdjacentHTML('afterbegin', HL.top('Plan'));
+  app.insertAdjacentHTML('beforeend', HL.stamp());
+  document.getElementById('rail').innerHTML = HL.rail({ selected: SEL });
+  const mapEl = document.getElementById('map');
+  mapEl.insertAdjacentHTML('beforeend', HL.mapctl());
+  const view = HL.fitView(mapEl, 1.1);
+  HL.paint(mapEl.querySelector('canvas'), view, { mode: 'bands', dim: 0.6 });
+  const svg = mapEl.querySelector('svg');
+  HL.drawRoute(svg, view, { focus: [1, 2] });
+  HL.drawStations(svg, view, { selected: SEL, dim: true });
+  HL.pad(svg, view, HL.D.pad.pad.lon, HL.D.pad.pad.lat);
+  // selected label expands (U13): code + name + time home + chip
+  const [x, y] = view.px(s.lon, s.lat);
+  const tip = document.createElement('div');
+  tip.className = 'tip'; tip.style.left = `${x - 20}px`; tip.style.top = `${y + 22}px`;
+  tip.innerHTML = `<span class="code">${SEL}</span> dense ridge network · sulfate · home ${f(m(c + '.t_home_min'), 0)} min ${HL.chip('modelled')}`;
+  mapEl.appendChild(tip);
+  document.getElementById('readout').innerHTML = `<span><b>SELECTED</b>${SEL}</span><span><b>LON</b>${s.lon.toFixed(4)}°</span><span><b>LAT</b>${s.lat.toFixed(4)}°</span><span><b>SLOPE</b>${f(HL.sample('slope', s.lon, s.lat))}°</span>`;
+  HL.scalebar(document.getElementById('scale'), view);
+
+  const lm = (k) => `${f(m(`landmark.${SEL}.${k}.dist_km`))} km · ${f(m(`landmark.${SEL}.${k}.bearing_deg`), 0)}°`;
+  document.getElementById('side').innerHTML = `
+  <div class="card sel">
+    <div class="card-title"><span class="code">${SEL}</span>
+      <div style="flex:1;min-width:0"><div class="h-sm">Dense ridge network + high SINDEX2 sulfate signal</div>
+      <div class="label">South-west, farther · scored site · on route, stop 1 of 4</div></div>${HL.chip('modelled')}
+      <span class="btn ghost" style="height:24px;padding:0 4px">${HL.icon('x', 'sm')}</span></div>
+    <div class="ros">
+      <div class="ro"><div class="l">${HL.icon('thread-home', 'sm')} Time home ${HL.chip('modelled')}</div><div class="v">${f(m(c + '.t_home_min'), 0)}<small>min</small></div><div class="s">nominal · conservative —</div></div>
+      <div class="ro safe"><div class="l">${HL.icon('gauge', 'sm')} Margin ${HL.chip('modelled')}</div><div class="v">${f(m(c + '.margin_min'), 0)}<small>min</small></div><div class="s">bound by ${m(c + '.margin_binding')}</div></div>
+      <div class="ro"><div class="l">${HL.icon('clock', 'sm')} Arrive ${HL.chip('modelled')}</div><div class="v">${HL.hhmm(m(c + '.timeline.arrive'))}</div><div class="s">dwell ${s.dwell_min} min · leave ${HL.hhmm(m(c + '.timeline.leave'))}</div></div>
+      <div class="ro"><div class="l">${HL.icon('turn-back', 'sm')} Turn-back ${HL.chip('modelled')}</div><div class="v">${HL.hhmm(m(c + '.timeline.turn_back'))}</div><div class="s">bound by ${m(c + '.turn_back_binding')}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="label" style="margin-bottom:4px">Details</div>
+    <div class="kv"><span class="k">Objective</span><span class="v">—</span></div>
+    <div class="kv"><span class="k">Tasks</span><span class="v">—</span></div>
+    <div class="kv"><span class="k">O₂ home</span><span class="v">${f(m(c + '.o2_home_L'))} L ${HL.chip('modelled')}</span></div>
+    <div class="kv"><span class="k">Access cell offset</span><span class="v">${f(m(c + '.access.dist_m'))} m ${HL.chip('modelled')}</span></div>
+    <div class="kv"><span class="k">Science value</span><span class="v">${f(m('stations.S7.value'), 2)} ${HL.chip('modelled')}</span></div>
+    <div class="kv"><span class="k">60-min partner line</span><span class="v">${m('in_partner_line.S7') ? 'inside' : 'outside'} ${HL.chip('modelled')}</span></div>
+    <div class="kv"><span class="k"><span class="code">GDV</span> Gediz Vallis</span><span class="v">${lm('Gediz_Vallis')} ${HL.chip('real')}</span></div>
+    <p class="label" style="margin-top:6px;color:var(--color-text-muted)">${HL.icon('triangle-alert', 'sm')} ${card.contingency}</p>
+  </div>
+  <div class="card">
+    <div class="label" style="margin-bottom:6px">Navcam · sol ${m('navcam_sol.S7')} ${HL.chip('real')}</div>
+    <div style="height:64px;border:1px dashed var(--color-card-border);border-radius:var(--radius-input);display:flex;align-items:center;justify-content:center;text-align:center" class="faint label">Navcam frame + predicted skyline<br>(NASA/JPL-Caltech photo, not reproduced in the mockup)</div>
+    <div class="kv" style="margin-top:6px"><span class="k">Skyline error · near / mid / far</span><span class="v">— / — / ${f(m('skyline_error_deg.S7.far'), 3)}° ${HL.chip('modelled')}</span></div>
+    <div class="label faint">far class not validated (D7)</div>
+  </div>
+  <div style="display:flex;gap:var(--space-2);margin-top:auto">
+    <button class="btn primary">${HL.icon('rotate-3d', 'sm')} Open in 3D</button>
+    <button class="btn">${HL.icon('locate-fixed', 'sm')} Focus</button>
+    <button class="btn ghost" style="margin-left:auto">${HL.icon('chevron-left', 'sm')}${HL.icon('chevron-right', 'sm')}</button>
+  </div>`;
+  HL.dock(document.getElementById('dock'), { t: m(c + '.timeline.arrive') });
+  HL.ready();
+})();
+</script>
+</body></html>

@@ -1,0 +1,678 @@
+{
+  "status": "draft",
+  "provisional": "D73 — awaiting D's review",
+  "version": 1,
+
+  "modes": {
+    "plan": { "label": "Plan", "question": "Where can we go and still get home?" },
+    "fly": { "label": "Fly", "question": "What will it be like, minute by minute?" },
+    "report": { "label": "Report", "question": "Is this plan safe, and what does it cost?" },
+    "evidence": { "label": "Evidence", "question": "Why believe it?" }
+  },
+
+  "nav": {
+    "wordmark": "HOMELINE",
+    "modesMenu": "Modes",
+    "share": "Share",
+    "liveIndicator": "Live",
+    "liveIndicatorOff": "Live planning offline",
+    "planIdentity": "Plan {plan_name}",
+    "officialPlan": "Official plan",
+    "search": "Search",
+    "shortcuts": "Keyboard shortcuts",
+    "legacyView": "Old view",
+    "skipToMap": "Skip to the map",
+    "mainContent": "Main content",
+    "sidebar": {
+      "label": "Details panel",
+      "open": "Show the details panel",
+      "close": "Hide the details panel"
+    },
+    "dock": {
+      "label": "Mission timeline",
+      "collapse": "Hide the mission timeline",
+      "expand": "Show the mission timeline"
+    },
+    "rail": {
+      "summary": "Plan summary",
+      "crewBudgets": "Crew and budgets",
+      "stationsRoute": "Stations and route",
+      "layers": "Layers",
+      "collapse": "Collapse panel",
+      "expand": "Expand panel"
+    },
+    "views": {
+      "trade": "Trade table",
+      "mission": "Mission Planer",
+      "conditions": "Conditions",
+      "cuff": "Cuff card",
+      "hud": "HUD",
+      "scorecard": "Scorecard",
+      "about": "About",
+      "styleguide": "Style guide"
+    }
+  },
+
+  "buttons": {
+    "play": "Play",
+    "pause": "Pause",
+    "speed": "Speed {factor}×",
+    "flythrough": "Flythrough",
+    "flatVsReal": "Flat vs real",
+    "toggle2d3d": "2D / 3D",
+    "view2d": "2D",
+    "view3d": "3D",
+    "resetNorth": "Reset north",
+    "exaggeration": "Exaggeration",
+    "focusMode": "Focus mode",
+    "exitFocusMode": "Exit focus mode",
+    "showOnlyThis": "Show only this",
+    "showAll": "Show all",
+    "focus": "Focus",
+    "openIn3d": "Open in 3D",
+    "keep": "Keep",
+    "discard": "Discard",
+    "undo": "Undo",
+    "redo": "Redo",
+    "back": "Back",
+    "forward": "Forward",
+    "close": "Close",
+    "cancel": "Cancel",
+    "clear": "Clear",
+    "retry": "Try again",
+    "print": "Print",
+    "copyLink": "Copy link",
+    "exportJson": "Export JSON",
+    "saveView": "Save view",
+    "skipIntro": "Skip intro",
+    "replayIntro": "Replay intro",
+    "dismiss": "Got it",
+    "next": "Next",
+    "computeFullPlan": "Compute full plan",
+    "stormReplayOn": "Storm replay: on",
+    "stormReplayOff": "Storm replay: off",
+    "driftOn": "Drift: on",
+    "driftOff": "Drift: off",
+    "takeFix": "Take fix",
+    "backToPlayback": "Back to playback",
+    "more": "More",
+    "less": "Less",
+    "moveRover": "Move the rover",
+    "compareAlternatives": "Compare with alternatives",
+    "setAsPad": "Set as rover pad (computed live)",
+    "showWayAround": "Show the nearest way around"
+  },
+
+  "cards": {
+    "common": {
+      "keyNumbers": "Key numbers",
+      "details": "Details",
+      "actions": "Actions",
+      "provenance": "Where this comes from"
+    },
+    "pad": {
+      "title": "Rover pad",
+      "officialTitle": "Official rover pad",
+      "alternativeTitle": "Parking option",
+      "expanded": "Rover pad · {feasible_evas} feasible EVAs",
+      "feasibleEvas": "Feasible EVAs",
+      "reachable": "Reachable area",
+      "elevation": "Elevation",
+      "slope": "Slope",
+      "inUse": "Pad in use: {pad_name}",
+      "validSpot": "Valid rover pad spot",
+      "invalidSpot": "Not a valid rover pad spot: {reason}",
+      "invalidSteep": "too steep for the rover",
+      "invalidUnknown": "no assessed terrain here",
+      "invalidOutside": "the flat walkback disc leaves the terrain grid",
+      "reachableStations": "Reachable stations"
+    },
+    "station": {
+      "title": "Science target",
+      "objective": "Objective",
+      "tasks": "Tasks",
+      "dwell": "Dwell",
+      "arrival": "Arrival",
+      "turnBack": "Turn-back",
+      "timeHome": "Time home",
+      "bindingLimit": "Binding limit",
+      "navcam": "Navcam photo with predicted skyline",
+      "skylineError": "Skyline error",
+      "onRoute": "On the route",
+      "reachable": "Reachable on foot",
+      "notReachable": "Not reachable on foot",
+      "accessCell": "Access cell",
+      "walkIn": "Straight walk-in from the access cell (not modelled)",
+      "next": "Next station",
+      "dwellPlanned": "Planned dwell"
+    },
+    "scoredSite": {
+      "title": "Scored site",
+      "expanded": "Scored site {site}: {signal}",
+      "signal": "Signal",
+      "score": "Science score",
+      "notOnRoute": "Not on the planned route"
+    },
+    "route": {
+      "title": "Route leg",
+      "titleFromTo": "Leg {from} → {to}",
+      "distance": "Distance",
+      "climb": "Climb",
+      "descent": "Descent",
+      "time": "Time",
+      "oxygen": "O₂",
+      "lowestMargin": "Lowest margin",
+      "bindingLimit": "Binding limit",
+      "slopeProfile": "Slope profile"
+    },
+    "cell": {
+      "title": "Terrain spot",
+      "timeHomeNominal": "Time home (nominal)",
+      "timeHomeConservative": "Time home (conservative)",
+      "oxygenHome": "O₂ to get home",
+      "marginNow": "Margin now",
+      "slope": "Slope",
+      "elevation": "Elevation",
+      "cellState": "Cell state",
+      "dataSource": "Data source",
+      "assessed": "Assessed",
+      "blocked": "Blocked",
+      "unknown": "Unknown"
+    },
+    "ridge": {
+      "title": "Ridge",
+      "kind": "Boxwork ridge (ridge index)",
+      "relief": "Relief height",
+      "length": "Length"
+    },
+    "mineral": {
+      "title": "Mineral hint",
+      "hintType": "Hint type",
+      "strength": "Strength",
+      "sulfate": "Sulfate hint",
+      "clay": "Clay hint",
+      "note": "Orbital hint, not an identification",
+      "resolution": "Coarse orbital data: one pixel is {resolution_m} m across"
+    },
+    "blocked": {
+      "title": "Blocked area",
+      "why": "Why blocked",
+      "slopeClass": "Too steep (slope class)",
+      "stepGuard": "Step too high (step guard)",
+      "area": "Area"
+    },
+    "homelineEdge": {
+      "title": "Homeline edge",
+      "cause": "Cause",
+      "physiology": "Physiology: oxygen, daylight, dose or EVA duration runs out",
+      "slope": "Slope: the ground beyond is too steep to walk",
+      "data": "Data: no metre-scale terrain beyond this edge",
+      "whatWouldMoveIt": "What would move it",
+      "moveIt": {
+        "physiology": "More of the binding budget: O₂, a later end of daylight, a larger dose allowance or a longer EVA",
+        "slope": "Nothing in the plan: the ground itself is too steep; look for the nearest way around",
+        "data": "Metre-scale terrain beyond the edge; until it exists the area stays unknown"
+      }
+    },
+    "landmark": {
+      "title": "Landmark",
+      "official": "Official name",
+      "informal": "Informal name",
+      "bearing": "Bearing from the rover pad",
+      "distance": "Distance from the rover pad",
+      "belowSkyline": "below skyline"
+    },
+    "routeSummary": {
+      "title": "Planned route",
+      "stationsInOrder": "Stations in order",
+      "totals": "Totals",
+      "feasibility": "Feasibility",
+      "budgets": "Budgets",
+      "noRoute": "No planned route for this scenario: no station is reachable on foot"
+    }
+  },
+
+  "chips": {
+    "real": {
+      "label": "Real",
+      "explanation": "Measured data: terrain, imagery, orbital spectra, radiation series, Navcam photos and rover positions."
+    },
+    "modelled": {
+      "label": "Modelled",
+      "explanation": "Computed from real data by the planner's model, shown with its range."
+    },
+    "simulated": {
+      "label": "Simulated",
+      "explanation": "Hypothetical: the crew, the EVA, the storm timing and position drift are scenarios, not observations."
+    },
+    "live": {
+      "label": "Live",
+      "explanation": "Computed live on request by the same engine; not part of the validated scorecard."
+    },
+    "visual": {
+      "label": "Visual",
+      "explanation": "Artistic only: sky colour, haze, figures and particles carry no data."
+    },
+    "popover": {
+      "title": "Where this number comes from",
+      "value": "Value",
+      "units": "Units",
+      "sourceFile": "Source file",
+      "script": "Script",
+      "commit": "Commit",
+      "time": "Computed at (UTC)",
+      "missing": "No provenance entry for this number"
+    }
+  },
+
+  "tags": {
+    "assumed": {
+      "label": "assumed",
+      "explanation": "Assumed value, not measured; see the assumptions table on the scorecard."
+    },
+    "precomputed": {
+      "label": "Precomputed · official plan",
+      "explanation": "Computed ahead of time by the validated pipeline and listed on the scorecard."
+    },
+    "live": {
+      "label": "Computed live · not part of the validated scorecard",
+      "explanation": "Computed on request by the same engine as the official plan, but not checked against the scorecard."
+    },
+    "hypotheticalTiming": {
+      "label": "hypothetical timing",
+      "explanation": "Hypothetical storm timing: the tripwire is placed where time home is largest."
+    },
+    "preliminary": {
+      "label": "preliminary",
+      "explanation": "The highlight threshold is not yet confirmed by the science lead; outlines may change."
+    },
+    "estimate": {
+      "label": "estimate",
+      "explanation": "Instant preview with no manifest entry; compute the full plan for checked numbers."
+    },
+    "dummy": {
+      "label": "Dummy data",
+      "explanation": "Dummy data: synthetic world, not Mars results. Never capture.",
+      "banner": "Dummy data · synthetic world, not Mars results · never capture"
+    }
+  },
+
+  "glossary": {
+    "homeline": "Homeline",
+    "homelineHint": "Where the crew can go and still walk back to the rover within the {budget_min}-minute walkback budget",
+    "margin": "Margin",
+    "marginHint": "Minutes left before a limit binds",
+    "timeHome": "Time home",
+    "timeHomeHint": "Walking time back to the rover",
+    "turnBack": "Turn-back",
+    "turnBackHint": "The latest time to start home",
+    "roverPad": "Rover pad",
+    "roverPadHint": "Where the rover parks",
+    "station": "Science target",
+    "computedLive": "Computed live",
+    "walkback": "Walkback budget"
+  },
+
+  "binding": {
+    "oxygen": "O₂",
+    "daylight": "daylight",
+    "dose": "dose",
+    "evaDuration": "EVA duration"
+  },
+
+  "variants": {
+    "optimistic": "Optimistic",
+    "nominal": "Nominal",
+    "conservative": "Conservative"
+  },
+
+  "margin": {
+    "comfortable": "Comfortable margin",
+    "caution": "Margin under {amber_min} min",
+    "limit": "Margin below zero",
+    "unknown": "Unknown: no metre-scale terrain here",
+    "value": "Margin {margin} min ({binding})",
+    "edgeLabel": "{binding} limit"
+  },
+
+  "alarms": {
+    "turnBack": "Turn back now",
+    "radiation": "Radiation: head home",
+    "radiationLeash": "Radiation: head home within {leash_min} min",
+    "positionUncertain": "Position uncertain: head toward the rover",
+    "turnBackSoon": "Turn-back in {min} min",
+    "partner": "Beyond partner-haul range",
+    "tripwire": "Tripwire fired at {time} · head home within {leash_min} min",
+    "tripwireArmed": "Tripwire armed · fires at {time}",
+    "dark": "Dark",
+    "darkIn": "Dark in {min} min",
+    "turnBackNow": "Now"
+  },
+
+  "tooltips": {
+    "thread": "Home in {t_home} min · margin {margin} min ({binding})",
+    "threadUnknown": "No way home known from here",
+    "cursor": {
+      "longitude": "Longitude",
+      "latitude": "Latitude",
+      "elevation": "Elevation",
+      "slope": "Slope",
+      "timeHome": "Time home"
+    },
+    "chip": "Where does this number come from?",
+    "exaggeration": "Vertical exaggeration {factor}× (true shape at one times)",
+    "view3d": "3D view (T)",
+    "budgetSlider": "Walkback budget",
+    "dwellSlider": "Dwell at this station",
+    "fieldLegendDaylight": "Daylight end is taken at the rover pad; horizon shading per cell is not modelled",
+    "compass": "North arrow and sun direction",
+    "scaleBar": "Mars scale",
+    "dragHint": "Click or drag the map: time home and way home from any spot",
+    "dragHintNoThread": "Click or drag the map: time home from any spot",
+    "dragRover": "Drag the rover: the spot is checked as you move",
+    "storm": "Replay the {storm_date} storm during this EVA; its tripwire fires at {time}",
+    "stormUnavailable": "Storm replay unavailable: no tripwire, dose limit or route time home known",
+    "drift": "Dead reckoning: the circle grows with distance since the last fix; fixes at the rover pad and surveyed stations",
+    "layerCap": "At most {max} thematic overlays at once · turned off {layer}",
+    "threadNoMargin": "Home in {t_home} min",
+    "elevationNone": "Not in the field data: no elevation layer on this map yet",
+    "compassNorth": "North",
+    "compassSun": "Sun",
+    "compassSunAt": "Sun at azimuth {azimuth}° · elevation {elevation}°",
+    "compassSunNone": "Sun direction unknown at this minute",
+    "fieldLookup": "Field lookup: {file} (nearest pixel)"
+  },
+
+  "layers": {
+    "groups": {
+      "terrain": "Terrain",
+      "science": "Science",
+      "evidence": "Evidence",
+      "planning": "Planning"
+    },
+    "relief": { "name": "Relief shading", "what": "Shaded relief from the elevation model, lit from the sun's direction" },
+    "contours": { "name": "Contours", "what": "Elevation contours; index lines labelled" },
+    "slopeClass": { "name": "Slope classes", "what": "Walking slope classes; the steepest class is blocked" },
+    "rough": { "name": "Rough footing", "what": "Where the steepest metre-scale slope makes footing rough" },
+    "ridges": { "name": "Ridges (boxwork)", "what": "Connected boxwork ridges from the ridge index" },
+    "mineral": { "name": "Mineral hints", "what": "Orbital hint, not an identification" },
+    "dataQuality": { "name": "Data quality", "what": "Assessed, blocked and unknown cells" },
+    "siting": { "name": "Siting heatmap", "what": "Where a rover pad scores best for science within reach" },
+    "partner": { "name": "Partner line", "what": "How far one crewmember could haul the other back on the cart" },
+    "parking": { "name": "Rover parking options", "what": "Alternative rover pads and their homelines" },
+    "edgeCauses": { "name": "Homeline edge causes", "what": "What sets each part of the edge: physiology, slope or data" },
+    "flatCircle": { "name": "Flat circle", "what": "NASA's walkback on flat ground at walking pace, in every direction (dashed)" }
+  },
+
+  "timeline": {
+    "evaTime": "EVA time",
+    "turnBack": "Turn-back",
+    "daylightEnd": "Daylight ends",
+    "stormWindow": "Storm window",
+    "tripwire": "Tripwire",
+    "oxygenCheckpoint": "O₂ check",
+    "marginCurve": "Margin over time",
+    "elevationProfile": "Elevation profile",
+    "expand": "Show elevation profile",
+    "collapse": "Hide elevation profile",
+    "title": "Mission timeline",
+    "notReady": "The mission timeline is not available yet"
+  },
+
+  "gauges": {
+    "oxygen": "O₂",
+    "oxygenUsed": "Used",
+    "oxygenNeeded": "Needed to get home",
+    "oxygenReserve": "Reserve",
+    "oxygenSpare": "Spare",
+    "timeHomeNominal": "Time home (nominal)",
+    "timeHomeConservative": "Time home (conservative)",
+    "doseLeft": "Dose budget left",
+    "daylightLeft": "Daylight left",
+    "metabolicRate": "Metabolic rate",
+    "metabolicDesign": "Design average {value} BTU/h",
+    "unknown": "Unknown"
+  },
+
+  "camera": {
+    "overhead": "Overhead",
+    "isometric": "Isometric",
+    "low": "Low altitude",
+    "focusSelection": "Focus on selection",
+    "followCrew": "Follow the crew",
+    "chase": "Chase",
+    "firstPerson": "First person",
+    "bookmarks": "Saved views",
+    "bookmarkName": "View name",
+    "minimap": "Minimap"
+  },
+
+  "search": {
+    "placeholder": "Search stations, landmarks, coordinates, layers or commands",
+    "noResults": "No matches for “{query}”",
+    "groups": {
+      "stations": "Stations",
+      "sites": "Scored sites",
+      "landmarks": "Landmarks",
+      "coordinates": "Coordinates",
+      "layers": "Layers",
+      "commands": "Commands"
+    },
+    "distanceFromPad": "{distance} from the rover pad"
+  },
+
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "search": "Search and commands",
+    "cameraPresets": "Camera presets",
+    "focusMode": "Focus mode",
+    "playPause": "Play / pause",
+    "scrub": "Scrub one minute (Shift for ten)",
+    "escape": "Clear selection, cancel ghost, exit focus mode",
+    "undoRedo": "Undo / redo",
+    "history": "Previous / next selection",
+    "modes": "Plan, Fly, Report, Evidence",
+    "toggle3d": "2D / 3D",
+    "help": "Shortcut help",
+    "mouseSelect": "Map: select (drag the rover to move it)",
+    "mousePan": "Map: move",
+    "mouseRotate": "Map: rotate and tilt (3D)",
+    "mouseZoom": "Map: zoom",
+    "touch": "Touch: one finger moves, two fingers rotate, tilt and zoom"
+  },
+
+  "edit": {
+    "computing": "computing…",
+    "ghost": "Ghost: not yet computed",
+    "deltaTitle": "What this change costs",
+    "keepOrDiscard": "Enter to keep, Escape to discard",
+    "snapStatic": "Live planning is offline: the rover snaps between the precomputed parking options",
+    "previewNote": "Instant preview: an estimate until the full plan is computed",
+    "undoEmpty": "Nothing to undo",
+    "redoEmpty": "Nothing to redo",
+    "previewEstimates": "Feasible EVAs and reachable stations are estimates until the full plan is computed",
+    "reasons": {
+      "customPad": "A rover pad spot of your own needs live planning",
+      "dwell": "A changed dwell needs live planning",
+      "parkingSuit": "Parking options are precomputed for the default suit only",
+      "padSuit": "Rover pads other than the official one are computed for the default suit only",
+      "budget": "No precomputed homeline for a {budget_min}-minute walkback budget at this rover pad"
+    }
+  },
+
+  "stepper": {
+    "title": "Computing the plan",
+    "stages": {
+      "nominal": "Nominal band",
+      "variants": "Variants",
+      "hudFields": "HUD fields",
+      "partner": "Partner line",
+      "horizon": "Horizon"
+    },
+    "states": {
+      "waiting": "Waiting",
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed"
+    },
+    "failed": "Stage {stage} failed; earlier stages stay on the map"
+  },
+
+  "states": {
+    "empty": {
+      "noSelection": "Nothing selected. Click a station, ridge, mineral patch or any spot on the map.",
+      "noRoute": "No planned route for this scenario: no station is reachable on foot",
+      "noLayers": "No overlays on. Turn one on to see why the homeline has its shape.",
+      "noBookmarks": "No saved views yet",
+      "noStorm": "No storm in this plan"
+    },
+    "loading": {
+      "generic": "Loading {what}…",
+      "map": "Loading the map…",
+      "fields": "Loading the homeline fields…",
+      "terrain3d": "Loading 3D terrain…",
+      "preview": "Loading the instant preview…",
+      "checkingPad": "Checking the pad…"
+    },
+    "error": {
+      "generic": "{what} could not be loaded.",
+      "stillWorks": "Everything else still works.",
+      "notAvailable": "{what}: not available yet.",
+      "cannotShow": "{what}: cannot be shown.",
+      "webgl": "3D is not available on this device · showing the flat map with relief shading",
+      "slow3d": "3D is too slow on this device · showing the flat map with relief shading",
+      "planFailed": "The plan could not be computed: {reason}"
+    },
+    "offline": {
+      "banner": "Live planning is offline · showing precomputed plans",
+      "warming": "Live planning is warming up · showing precomputed plans",
+      "checking": "Checking live planning…",
+      "unavailableHere": "Needs live planning, which is offline. The precomputed plan is shown."
+    },
+    "stale": {
+      "label": "Stale",
+      "explanation": "Computed for earlier inputs; it updates when the new result arrives",
+      "note": "Computed for earlier inputs at {time}"
+    }
+  },
+
+  "onboarding": {
+    "budget": "Move the walkback budget and watch the homeline change.",
+    "station": "Click a station to see its card: time home, margin and what limits it.",
+    "planYourOwn": "Plan your own: drag the rover and the plan is computed live.",
+    "dismiss": "Got it, don't show again"
+  },
+
+  "intro": {
+    "gale": "Gale crater · Mars",
+    "walkback": "NASA is considering a {walkback_min}-minute walkback",
+    "notFlat": "Mars isn't flat",
+    "skipHint": "Press any key or click to skip"
+  },
+
+  "collapse": {
+    "flat": "Flat walk: {walkback_min} minutes at walking pace, in every direction",
+    "real": "Real homeline: the same walk over the real terrain",
+    "headline": "Reachable within the walkback budget",
+    "toggleToFlat": "Flat vs real: show the flat circle",
+    "toggleToReal": "Flat vs real: collapse to the real homeline",
+    "flatWorld": "Flat world: the {budget_min}-min walk circle on flat ground",
+    "reachableInData": "reachable on foot within {budget_min} min (part of the circle inside the terrain data)",
+    "reachableAssessed": "reachable on foot within {budget_min} min of the assessed flat circle",
+    "ariaInData": "{value} reachable on foot, of the part of the {budget_min}-min flat circle inside the terrain data",
+    "ariaAssessed": "{value} reachable on foot, of the assessed flat {budget_min}-min circle"
+  },
+
+  "terrain": {
+    "notPublished": "3D terrain is not published in this data tree",
+    "trustNote": "Measured elevation: {sources}; heights ×{factor} in the tiles for the Earth-sized map, so one times is true shape",
+    "retryHint": "Choose 3D again to retry",
+    "lightNote": "Relief lit from the sun at the plan time; follows the clock in whole simulated minutes"
+  },
+
+  "mapLabels": {
+    "status": {
+      "official": "official",
+      "informal": "informal"
+    },
+    "expanded": "{name} · {status}",
+    "expandedFull": "{name} · {distance} from the rover pad · home in {t_home} min",
+    "offscreen": "{name} · bearing {bearing}° from the rover pad"
+  },
+
+  "simulator": {
+    "label": "Simulated EVA · real terrain and data",
+    "sendSlot": "Send to simulator",
+    "sendSlotHint": "Files this plan lists for the simulator; the format is still being agreed",
+    "noFiles": "This plan lists no file for the simulator",
+    "back": "Back to MARVIS",
+    "backHint": "Close the planner and return to the MARVIS menu"
+  },
+
+  "storm": {
+    "title": "Storm replay",
+    "doseRate": "Dose rate",
+    "doseRing": "Home within the dose budget",
+    "note": "Hypothetical storm timing (tripwire placed where time home is largest)",
+    "spaceWeather": "Space weather: context only, not a trigger"
+  },
+
+  "report": {
+    "title": "Mission report",
+    "verdictFeasible": "Feasible · tightest margin {margin} min at {station} · bound by {binding}",
+    "verdictNotFeasible": "Not feasible · margin below zero at {station} · bound by {binding}",
+    "sections": {
+      "verdict": "Verdict",
+      "map": "Map",
+      "timeline": "Timeline and elevation profile",
+      "oxygen": "O₂ budget",
+      "legs": "Legs",
+      "stations": "Stations",
+      "partner": "Partner line",
+      "assumptions": "Assumptions in force",
+      "runRecord": "Run record",
+      "permalink": "Permalink"
+    },
+    "legColumns": {
+      "leg": "Leg",
+      "distance": "Distance",
+      "climb": "Climb",
+      "time": "Time",
+      "oxygen": "O₂",
+      "lowestMargin": "Lowest margin",
+      "binding": "Binding limit"
+    },
+    "stationColumns": {
+      "station": "Station",
+      "objective": "Objective",
+      "tasks": "Tasks",
+      "dwell": "Dwell",
+      "arrival": "Arrival",
+      "turnBack": "Turn-back"
+    },
+    "permalinkHint": "Scan to open this plan",
+    "printFooter": "HOMELINE · Space Apps project · simulated EVA over real terrain and data"
+  },
+
+  "evidence": {
+    "scorecard": "Scorecard",
+    "validation": "Validation",
+    "footing": "Footing: terrain slope vs rover tilt",
+    "view": "View: predicted vs observed skyline",
+    "radChecks": "Radiation checks",
+    "trustSplit": "Real, modelled, simulated",
+    "assumptions": "Assumptions",
+    "provenance": "Provenance manifest",
+    "data": "Data and licences",
+    "licences": "Licences",
+    "about": "About",
+    "privacy": "Privacy",
+    "addOns": "Optional add-ons",
+    "independence": "Independent team project for the Space Apps Challenge; not affiliated with any space agency."
+  },
+
+  "a11y": {
+    "mapSummary": "Map: the homeline covers {reachable} of the {budget_min}-minute flat circle around the rover pad",
+    "mapSummaryStations": "{reachable_count} of {station_count} science targets are reachable on foot"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/coreg.schema.json",
+  "title": "validation/coreg.json",
+  "description": "Co-registration of the DEM to Curiosity drive ends (F1): best shift (dx, dy), residual median and MAD, per-drive-end residuals. Beyond SPEC §6: file named in brief WS1 and read by the WS5 scorecard.",
+  "x-contract-version": "1.0.0",
+  "x-source": "briefs/WS1.md; config/site.yaml coreg",
+  "type": "object",
+  "properties": {
+    "dx_m": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "dy_m": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "residual_median_m": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "residual_mad_m": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "residuals": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "per drive end"
+    }
+  },
+  "required": [
+    "dx_m",
+    "dy_m",
+    "residual_median_m",
+    "residual_mad_m",
+    "residuals"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+ "contract_version": "1.2.0",
+ "title": "Stations and my own stops",
+ "pad": {
+  "lon": 137.393301,
+  "lat": -4.776468
+ },
+ "route": {
+  "mode": "ordered",
+  "stops": [
+   {
+    "station": "S2"
+   },
+   {
+    "lon": 137.3962,
+    "lat": -4.7781,
+    "label": "Dark sand edge"
+   },
+   {
+    "station": "S8"
+   },
+   {
+    "lon": 137.3921,
+    "lat": -4.7752
+   }
+  ]
+ }
+}

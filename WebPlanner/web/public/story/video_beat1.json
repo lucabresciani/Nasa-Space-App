@@ -1,0 +1,19 @@
+{
+  "id": "video_beat1",
+  "version": "1",
+  "title": "Video beat 1, 0-15 s (DESIGN §10, R15): the descent ends on the pad, the dashed flat circle, the collapse, unknown hatch, edge labels, the counted headline",
+  "size": [1920, 1080],
+  "fps": 60,
+  "steps": [
+    {"t": 0, "ui": "hide", "caption": "intro.gale",
+     "layers": {"relief_low": true, "terrain": true, "homeline": false, "unknown": false, "edges": false, "stations": true},
+     "camera": {"target": "MSH", "alt_m": 60000, "bearing": -20, "pitch": 30}},
+    {"t": 5, "caption": null,
+     "layers": {"homeline": true, "unknown": true, "edges": true},
+     "field": {"mode": "bands", "variant": "nom", "collapse": 0, "duration_s": 0},
+     "camera": {"target": "PAD", "alt_m": 9000, "bearing": 0, "pitch": 20}},
+    {"t": 6, "caption": "intro.walkback"},
+    {"t": 8.5, "caption": "intro.notFlat", "field": {"collapse": 1, "duration_s": 3}},
+    {"t": 15}
+  ]
+}

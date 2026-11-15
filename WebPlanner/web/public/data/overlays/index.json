@@ -1,0 +1,190 @@
+{
+ "version": "1",
+ "contours": "overlays/contours.geojson",
+ "slope_class": {
+  "format": "png",
+  "scheme": "xyz",
+  "tile_px": 256,
+  "tiles": [
+   "overlays/slope_class/{z}/{x}/{y}.png"
+  ],
+  "minzoom": 10,
+  "maxzoom": 15,
+  "bounds": [
+   137.319359,
+   -4.868422,
+   137.444641,
+   -4.743578
+  ],
+  "tile_count": {
+   "10": 1,
+   "11": 1,
+   "12": 4,
+   "13": 12,
+   "14": 42,
+   "15": 144
+  },
+  "total_bytes": 1911262,
+  "breaks_deg": [
+   0,
+   10,
+   17,
+   20
+  ],
+  "legend": [
+   {
+    "class": 0,
+    "range_deg": [
+     0.0,
+     10.0
+    ],
+    "token": null
+   },
+   {
+    "class": 1,
+    "range_deg": [
+     10.0,
+     17.0
+    ],
+    "token": "safe"
+   },
+   {
+    "class": 2,
+    "range_deg": [
+     17.0,
+     20.0
+    ],
+    "token": "caution"
+   },
+   {
+    "class": 3,
+    "range_deg": [
+     20.0,
+     null
+    ],
+    "token": "limit"
+   }
+  ],
+  "rule": "class = number of breaks above 0 the 3 m plane-fit slope exceeds (D22; exactly 20 deg is 17-20: a cell is blocked iff slope > no-go)",
+  "source": "data/interim/terrain/slope_3m.tif",
+  "source_hash": "fac59b399341175999129749d51182c12a32e682163ffaa7dbeec5cfb6a7fb4b"
+ },
+ "rough": {
+  "format": "png",
+  "scheme": "xyz",
+  "tile_px": 256,
+  "tiles": [
+   "overlays/rough/{z}/{x}/{y}.png"
+  ],
+  "minzoom": 10,
+  "maxzoom": 15,
+  "bounds": [
+   137.319359,
+   -4.868422,
+   137.444641,
+   -4.743578
+  ],
+  "tile_count": {
+   "10": 1,
+   "11": 1,
+   "12": 4,
+   "13": 12,
+   "14": 42,
+   "15": 144
+  },
+  "total_bytes": 746520,
+  "min_deg": 20.0,
+  "variant": "nominal",
+  "legend": [
+   {
+    "class": 1,
+    "label": "rough footing",
+    "token": "caution"
+   }
+  ],
+  "rule": "max 1 m Horn slope inside the 3 m cell > site.yaml slope.nogo_deg[nominal] (D22 rough-footing overlay)",
+  "source": "data/interim/terrain/maxslope_3m.tif",
+  "source_hash": "7268c665db6bc651844a3e751d081d92f37788b5120075036c970b6762bb5cdf"
+ },
+ "mineral_sulfate": {
+  "image": "overlays/mineral_sulfate.png",
+  "index": "SINDEX2",
+  "type": "sulfate",
+  "res_m": 18,
+  "width": 434,
+  "height": 434,
+  "coordinates": [
+   [
+    137.3158715,
+    -4.7401034
+   ],
+   [
+    137.4481285,
+    -4.7401034
+   ],
+   [
+    137.4481285,
+    -4.8718966
+   ],
+   [
+    137.3158715,
+    -4.8718966
+   ]
+  ],
+  "norm_range": [
+   0.001326,
+   0.015804
+  ],
+  "norm_percentiles": [
+   2,
+   98
+  ],
+  "encoding": "RGBA; colour = token science; alpha = 255 * clip((index - lo) / (hi - lo), 0, 1); no data = alpha 0",
+  "token": "science",
+  "caption": "Orbital hint, not an identification",
+  "source": "data/interim/terrain/crism_sindex2_18m.tif",
+  "source_hash": "9a5b463b9eeef9398abfb4e0c8041a808f7444cf60a45dd71dcd58dd3f050e2a",
+  "bytes": 201388
+ },
+ "mineral_clay": {
+  "image": "overlays/mineral_clay.png",
+  "index": "D2300",
+  "type": "clay",
+  "res_m": 18,
+  "width": 434,
+  "height": 434,
+  "coordinates": [
+   [
+    137.3158715,
+    -4.7401034
+   ],
+   [
+    137.4481285,
+    -4.7401034
+   ],
+   [
+    137.4481285,
+    -4.8718966
+   ],
+   [
+    137.3158715,
+    -4.8718966
+   ]
+  ],
+  "norm_range": [
+   -0.011396,
+   0.001843
+  ],
+  "norm_percentiles": [
+   2,
+   98
+  ],
+  "encoding": "RGBA; colour = token science; alpha = 255 * clip((index - lo) / (hi - lo), 0, 1); no data = alpha 0",
+  "token": "science",
+  "caption": "Orbital hint, not an identification",
+  "source": "data/interim/terrain/crism_d2300_18m.tif",
+  "source_hash": "d88865cf364f41ac651b982bfd87033cbfb421a479f9c161a128f4ce926ff24e",
+  "bytes": 206071
+ },
+ "total_bytes": 3065241
+}

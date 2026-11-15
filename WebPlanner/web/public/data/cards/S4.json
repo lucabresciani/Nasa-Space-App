@@ -1,0 +1,150 @@
+{
+ "station": "S4",
+ "scenario": "nom_104",
+ "on_route": true,
+ "timeline": {
+  "arrive": 284.59,
+  "leave": 314.59,
+  "turn_back": 378.64
+ },
+ "margin_binding": "O2",
+ "margin_min": 62.5,
+ "turn_back_binding": "EVA duration",
+ "contingency": "Partner down: haul home by cart from the access cell, 22 min (casualty 179 kg; haul parameters assumed); inside the 60-min partner line.",
+ "drag_note": "One astronaut cannot drag a suited crewmate on Mars without a cart or sled: the pull needed exceeds boot grip even on flat ground.",
+ "t_home_min": 11.36,
+ "o2_home_L": 11.76,
+ "science": {
+  "lon": 137.408931,
+  "lat": -4.785832
+ },
+ "access": {
+  "lon": 137.408931,
+  "lat": -4.785832,
+  "dist_m": 0.0,
+  "t_home_min": 11.36,
+  "o2_home_L": 11.76,
+  "reason": null,
+  "walk_in": {
+   "dist_m": 0.0,
+   "modelled": false,
+   "rise_m": 0.0,
+   "mean_slope_deg": null,
+   "max_slope_deg": null,
+   "max_terrain_slope_deg": null
+  },
+  "radius_m": 50.0,
+  "rule": "nearest cell with cell state assessed and a walk home in the scenario, within access_radius_m of the science point; walk-in leg not modelled"
+ },
+ "provisional": false,
+ "observer": {
+  "id": "S4",
+  "name": "Gediz Vallis sulfur field",
+  "science_lon": 137.408931,
+  "science_lat": -4.785832,
+  "lon": 137.408931,
+  "lat": -4.785832,
+  "position": "access_cell",
+  "provisional": false,
+  "access": {
+   "radius_m": 50.0,
+   "dist_m": 0.0,
+   "reason": null
+  }
+ },
+ "navcam": {
+  "sol": 4164,
+  "image_id": "NLB_767161116EDR_F1062950NCAM00263M_",
+  "url_local": "cards/S4/navcam.png",
+  "overlay_png": "cards/S4/overlay.png",
+  "stop_id": "v106_2950",
+  "dist_to_observer_m": 138.2,
+  "credit": "NASA/JPL-Caltech (Curiosity Navcam)"
+ },
+ "skyline_error_deg": {
+  "near": null,
+  "mid": null,
+  "far": 6.498
+ },
+ "skyline_error_scope": "median |detected - predicted| skyline elevation per distance class on this card's Navcam frame (automatic sky detector, no manual review, D7; far class not validated: the far rim is hidden by haze in north-facing frames)",
+ "panorama_png": "cards/S4/panorama.png",
+ "landmarks": [
+  {
+   "name": "Gediz Vallis",
+   "bearing_deg": 158.18,
+   "dist_km": 4.33,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Yellowknife",
+   "bearing_deg": 8.56,
+   "dist_km": 12.34,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Aeolis Palus",
+   "bearing_deg": 2.24,
+   "dist_km": 19.02,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Sakarya Vallis",
+   "bearing_deg": 194.05,
+   "dist_km": 19.2,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Aeolis Mons",
+   "bearing_deg": 124.41,
+   "dist_km": 31.23,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Peace Vallis",
+   "bearing_deg": 342.66,
+   "dist_km": 36.02,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Gale",
+   "bearing_deg": 145.46,
+   "dist_km": 41.85,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Dulce Vallis",
+   "bearing_deg": 267.8,
+   "dist_km": 51.39,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  }
+ ],
+ "landmarks_note": "0 landmark(s) rise above the computed skyline (fewer than 3); 8 below skyline are listed as bearing-only ticks (D33)",
+ "parts": {
+  "merged_by": "tools/make_web.py",
+  "WS3": {
+   "source": "data/interim/horizon/public/cards/S4.json",
+   "producer": "WS3 pipeline/horizon/cards.py",
+   "built_utc": "2026-11-14T18:14:26Z"
+  },
+  "WS2": {
+   "source": "data/interim/engine/public/cards/S4.timeline.json",
+   "producer": "WS2 pipeline/engine/cards.py"
+  }
+ }
+}

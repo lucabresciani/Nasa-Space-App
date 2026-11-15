@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/route.schema.json",
+  "title": "route_{scenario}.geojson",
+  "description": "Traverse route legs (F9). SPEC §6 says 'legs' and fixes no properties; properties are free until WS2 proposes them to C. v1.1.0: leg properties proposed by WS2 (pipeline/engine/traverse.py); all optional. v1.1.1: optional to_access_dist_m.",
+  "x-contract-version": "1.1.1",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "Feature"
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "LineString",
+                  "MultiLineString",
+                  "Point"
+                ]
+              },
+              "coordinates": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "leg": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "leg number, 1-based, in walking order"
+              },
+              "from": {
+                "type": "string",
+                "description": "station id or \"pad\""
+              },
+              "to": {
+                "type": "string",
+                "description": "station id or \"pad\""
+              },
+              "t_min": {
+                "type": "number",
+                "minimum": 0,
+                "description": "walking time of the leg, min"
+              },
+              "o2_L": {
+                "type": "number",
+                "minimum": 0,
+                "description": "O2 used on the leg, L"
+              },
+              "length_m": {
+                "type": "number",
+                "minimum": 0,
+                "description": "path length, m"
+              },
+              "t_start_min": {
+                "type": "number",
+                "minimum": 0,
+                "description": "EVA time at the leg start, min"
+              },
+              "t_end_min": {
+                "type": "number",
+                "minimum": 0,
+                "description": "EVA time at the leg end, min"
+              },
+              "times_min": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "description": "EVA time at every geometry vertex, min (same length as the coordinates)"
+              },
+              "to_access_dist_m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "walk-in from the arrival access cell to the science point, m (not modelled) (v1.1.1)"
+              }
+            },
+            "required": []
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ]
+      }
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ]
+}

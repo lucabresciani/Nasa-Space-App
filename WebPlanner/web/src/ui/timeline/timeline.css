@@ -1,0 +1,74 @@
+/* Timeline dock (DESIGN U5; WS15 task 7, A7). Tokens only (lint:tokens). Lanes top to bottom:
+   labels | plot (dwell bands, storm window, margin curve, markers, scrub head) | binding | axis. */
+.hl-tl {
+  display: flex; align-items: stretch; gap: var(--space-3); width: 100%; height: 100%; min-height: 0;
+  font-size: var(--font-size-small); line-height: var(--line-height-small); color: var(--color-text-muted);
+}
+.hl-tl__controls { display: flex; flex-direction: column; justify-content: center; gap: var(--space-1); flex: none; }
+.hl-tl__transport { display: flex; align-items: center; gap: var(--space-1); }
+.hl-tl__controls .hl-seg__item { padding: 0 var(--space-1); font-size: var(--font-size-label); }
+.hl-tl__clock { display: flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+.hl-tl__clocklabel { font-size: var(--font-size-label); }
+.hl-tl__clockvalue { display: inline-flex; gap: var(--space-1); font-family: var(--font-mono); color: var(--color-text); font-variant-numeric: tabular-nums; }
+.hl-tl__clockvalue .num { color: var(--color-text-muted); }
+
+.hl-tl__track {
+  position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: ew-resize;
+  touch-action: none; user-select: none; border-radius: var(--radius-input);
+}
+.hl-tl__track:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); outline-offset: var(--space-1); }
+.hl-tl__labels, .hl-tl__binding, .hl-tl__axis { position: relative; flex: none; height: var(--line-height-label); font-size: var(--font-size-label); line-height: var(--line-height-label); }
+.hl-tl__plot { position: relative; flex: 1; min-height: var(--space-6); border-bottom: 1px solid var(--color-card-border); }
+
+.hl-tl__labels > span, .hl-tl__tick, .hl-tl__bindingrun { position: absolute; top: 0; white-space: nowrap; }
+.hl-tl__dwelllabel { transform: translateX(-50%); color: var(--color-text-muted); }
+.hl-tl__dwelllabel.is-current { color: var(--color-text); }
+.hl-tl__turnbacklabel { display: inline-flex; align-items: center; gap: 1px; transform: translateX(-50%); color: var(--color-text); }
+.hl-tl__turnbacklabel .icon { width: var(--line-height-label); height: var(--line-height-label); }
+
+.hl-tl__dwell { position: absolute; top: 0; bottom: 0; background: var(--color-card); border-left: 1px solid var(--color-card-border); border-right: 1px solid var(--color-card-border); }
+.hl-tl__dwell.is-current { border-color: var(--color-text-faint); }
+/* storm window: neutral hatch (no colour meaning fits a hypothetical storm; the label carries it) */
+.hl-tl__storm {
+  position: absolute; top: 0; bottom: 0;
+  background: repeating-linear-gradient(135deg, transparent 0 var(--space-1), var(--color-shadow) var(--space-1) var(--space-2));
+}
+.hl-tl__chart { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hl-tl__area { stroke: none; opacity: var(--overlay-opacity-min); }
+.hl-tl__area--safe { fill: var(--color-safe); }
+.hl-tl__area--caution { fill: var(--color-caution); }
+.hl-tl__area--limit { fill: var(--color-limit); }
+.hl-tl__line { fill: none; stroke-width: var(--line-thread); }
+.hl-tl__line--safe { stroke: var(--color-safe); }
+.hl-tl__line--caution { stroke: var(--color-caution); }
+.hl-tl__line--limit { stroke: var(--color-limit); }
+.hl-tl__zero { stroke: var(--color-limit); stroke-width: 1; }
+/* published rows: the only places the curve carries a number */
+.hl-tl__vertex { position: absolute; width: var(--space-1); height: var(--space-1); margin: calc(var(--space-1) / -2) 0 0 calc(var(--space-1) / -2); border-radius: var(--radius-chip); background: var(--color-text); }
+.hl-tl__checkpoint { position: absolute; bottom: 0; height: var(--space-1); border-left: 1px solid var(--color-text-faint); }
+.hl-tl__turnback, .hl-tl__daylight { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--color-text); }
+.hl-tl__daylight { border-left-style: dotted; }
+.hl-tl__tripwire { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--color-text-muted); }
+.hl-tl__tripwire .icon { position: absolute; top: 0; left: 0; width: var(--line-height-label); height: var(--line-height-label); transform: translateX(-50%); color: var(--color-text); background: var(--color-sidebar); border-radius: var(--radius-chip); }
+.hl-tl__head { position: absolute; top: calc(-1 * var(--line-height-label)); bottom: calc(-2 * var(--line-height-label)); border-left: var(--line-focus-ring) solid var(--color-text); pointer-events: none; }
+
+.hl-tl__bindingrun { overflow: hidden; text-overflow: ellipsis; border-top: 1px solid var(--color-text-faint); color: var(--color-text-muted); min-width: 1px; }
+.hl-tl__tick { transform: translateX(-50%); font-family: var(--font-mono); color: var(--color-text-muted); }
+.hl-tl__tick::before { content: ""; position: absolute; top: 0; left: 50%; height: var(--space-1); border-left: 1px solid var(--color-card-border); }
+
+.hl-tl__side { display: flex; flex-direction: column; justify-content: center; gap: var(--space-1); flex: none; min-width: 0; }
+.hl-tl__events { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.hl-tl__event { display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; font-size: var(--font-size-label); }
+.hl-tl__readouts { display: flex; gap: var(--space-2); }
+.hl-tl__readouts .hl-readout { padding: 0 var(--space-2); gap: 0; }
+.hl-tl__readouts .hl-readout__value { font-size: var(--font-size-body); line-height: var(--line-height-body); }
+.hl-tl__status { margin: 0; color: var(--color-text-muted); }
+
+/* tablet dock (96 px): drop the side column */
+.hl-shell[data-bp=tablet] .hl-tl__side { display: none; }
+
+/* Keyboard focus on manifest number links inside the dock (U12 a11y-perf: ring ≥ line.focusRingPx). */
+.hl-tl a:focus-visible {
+  outline: var(--line-focus-ring) solid var(--color-select);
+  outline-offset: var(--line-focus-ring);
+}

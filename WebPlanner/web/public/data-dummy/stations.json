@@ -1,0 +1,62 @@
+[
+  {
+    "id": "S1",
+    "name": "[DUMMY] Boxwork ridge-hollow transect",
+    "lon": 137.382,
+    "lat": -4.795878,
+    "value": 0.96,
+    "objective": "DUMMY objective (synthetic world, not Mars data)",
+    "tasks": [
+      "DUMMY task A",
+      "DUMMY task B"
+    ],
+    "dwell_min": 30,
+    "t_home_min": {
+      "nom_104": 11.1,
+      "opt_104": 10.0,
+      "con_104": 12.5
+    },
+    "in_partner_line": true,
+    "card": "cards/S1.json"
+  },
+  {
+    "id": "S2",
+    "name": "[DUMMY] Fracture-network survey",
+    "lon": 137.397237,
+    "lat": -4.806,
+    "value": 0.42,
+    "objective": "DUMMY objective (synthetic world, not Mars data)",
+    "tasks": [
+      "DUMMY task A",
+      "DUMMY task B"
+    ],
+    "dwell_min": 30,
+    "t_home_min": {
+      "nom_104": 16.7,
+      "opt_104": 15.0,
+      "con_104": 18.8
+    },
+    "in_partner_line": true,
+    "card": "cards/S2.json"
+  },
+  {
+    "id": "S3",
+    "name": "[DUMMY] Nodule census",
+    "lon": 137.382,
+    "lat": -4.829619,
+    "value": 0.58,
+    "objective": "DUMMY objective (synthetic world, not Mars data)",
+    "tasks": [
+      "DUMMY task A",
+      "DUMMY task B"
+    ],
+    "dwell_min": 30,
+    "t_home_min": {
+      "nom_104": 25.9,
+      "opt_104": 23.3,
+      "con_104": 29.2
+    },
+    "in_partner_line": false,
+    "card": "cards/S3.json"
+  }
+]

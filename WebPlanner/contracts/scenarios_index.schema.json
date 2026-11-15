@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/scenarios_index.schema.json",
+  "title": "scenarios/index.json",
+  "description": "Scenario index (F6). Index file: requires \"dummy\". v1.1.5: optional headline_60 per scenario (D43 of set A / WS2 session 8).",
+  "x-contract-version": "1.1.5",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "true only in web/public/data-dummy/; must be false in web/public/data/"
+    },
+    "default": {
+      "type": "string",
+      "pattern": "^[a-z]+_[0-9]+$",
+      "description": "scenario id, e.g. nom_104"
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z]+_[0-9]+$",
+            "description": "scenario id, e.g. nom_104"
+          },
+          "variant": {
+            "enum": [
+              "optimistic",
+              "nominal",
+              "conservative"
+            ],
+            "description": "config/variants.yaml"
+          },
+          "suit_kg": {
+            "type": "number",
+            "description": "suit mass, kg"
+          },
+          "files": {
+            "type": "object",
+            "properties": {
+              "isochrones": {
+                "type": "string"
+              },
+              "bands": {
+                "type": "string"
+              },
+              "edges": {
+                "type": "string"
+              },
+              "partner": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "isochrones",
+              "bands",
+              "edges",
+              "partner"
+            ]
+          },
+          "headline": {
+            "type": "object",
+            "properties": {
+              "budget_min": {
+                "type": "number",
+                "description": "walkback budget, min"
+              },
+              "reachable_pct": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "percent"
+              },
+              "range_pct": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "[low, high] percent"
+              }
+            },
+            "required": [
+              "budget_min",
+              "reachable_pct",
+              "range_pct"
+            ]
+          },
+          "headline_60": {
+            "type": "object",
+            "description": "v1.1.5, optional: the 60-min walkback headline. D43 (set A, user 17:16-17:28): the share is taken over the part of the 60-min circle that lies inside the terrain data (basis 'in_data'), labelled with that part's size (in_data_pct, label). Extra keys allowed.",
+            "properties": {
+              "budget_min": {
+                "type": "number",
+                "description": "walkback budget, min (60)"
+              },
+              "reachable_pct": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "reachable % of the in-data part of the flat 60-min disc; null = not computed"
+              },
+              "range_pct": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "[conservative, optimistic] percent"
+              },
+              "basis": {
+                "type": "string",
+                "description": "what the percentage is over, e.g. 'in_data'"
+              },
+              "in_data_pct": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "% of the 60-min circle that lies inside the terrain data"
+              },
+              "label": {
+                "type": "string",
+                "description": "the text shown with the number, e.g. '75.8 % of the circle lies inside the terrain data'"
+              }
+            },
+            "required": [
+              "reachable_pct",
+              "range_pct"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "variant",
+          "suit_kg",
+          "files",
+          "headline"
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "dummy",
+    "default",
+    "scenarios"
+  ]
+}

@@ -1,0 +1,80 @@
+rad:
+  dataset: MSL_RAD_OBS-L2
+  dose_variable: DOSIMETRY_TOTAL_f   # docs/discovery.md §4.1/§7: quality-filtered dose rates, uGy/day, fill -1e31
+  dose_component: TOTAL_DOSE_E       # D34 (user 16:20): decided, unverified
+  dose_component_label: "dose in plastic (E)"   # D34: on-screen label of TOTAL_DOSE_E
+  dose_component_status: "accepted because it reproduces the published storm peak and excess; dataset notes not yet read (G to check)"   # D34
+  time_tag: start                    # D35 (user 16:20): EPOCH = observation start, an unverified assumption (discovery.md §4.1); series/peak/onset at sample midpoints
+  time_tag_status: "observation start: unverified assumption (D35)"
+  source_api: "https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets"  # discovery.md §4.1: RAD L2 is not on HAPI; CDAS REST
+  latest_window_days: 30             # brief WS4 task 1: "last 30 days"
+  sample_duration: "gap to the next record, capped at the median spacing; the last record repeats the one before"  # WS4 (assumed): cadence 17 min, ~8 min in storms (discovery.md §4.1)
+  storm_window_utc: ["2024-05-19T00:00:00Z", "2024-05-23T00:00:00Z"]
+  baseline: "median of the 7 days before the storm window"
+  tripwire: {factor: 3.0, consecutive_samples: 2, fires_at: "end of the last qualifying sample"}  # fires_at: WS4 (assumed)
+  tripwire_time_halfwidth: "half the median sample duration"   # D35: the '±' on tripwire times = shift if the tag were the sample centre; derived (17.1 min -> 8.55 min), never typed
+  tripwire_time_halfwidth_display: "whole minutes, rounded half up"   # WS4 (assumed): label '± N min'
+  q_sep: 1.0                       # never 3 for the SEP
+  interpolation: "linear between sample midpoints"
+  event_bounds: "baseline crossings either side of the peak; the storm-window end if still above baseline"  # WS4 (assumed): limits of the excess integral; D36 keeps the window fixed
+  excess_bound: "lower bound if the event is still above baseline at the storm-window end"   # D36 (user 16:20)
+  end_of_window_rate: "last valid sample in the storm window, vs baseline"   # D36: reported with the lower-bound excess
+  expected: {peak_mgy_day: [8.1, 8.4], excess_mgy: [1.7, 1.9]}
+  assumed: [sample_duration, tripwire.fires_at, event_bounds, tripwire_time_halfwidth_display]   # added by WS4; G to confirm
+  unverified: [dose_component, time_tag]   # D34/D35: decided by the user, not yet checked against the dataset notes (G)
+leash:
+  d_allow_mgy: 0.5                 # decided (D9), slider 0.25-1.0
+  d_allow_range_mgy: [0.25, 1.0]   # D9 slider range (the note above)
+  d_allow_step_mgy: 0.05           # WS4 (assumed): slider step; rad.json leash.table has one row per step
+  formula: "tau_dose_min = 60 * D_allow / Ddot_mGy_per_h"
+  assumed: [d_allow_step_mgy]      # added by WS4
+rems:
+  ls_window_deg: [10, 35]
+  variables: [air_temperature, pressure]   # D37 (user 16:20): "Dropped. Air temperature and pressure only."
+  dropped: {ground_temperature: "D37: sampled PDS GTS minimum 17 degC colder than the feed; confidence flags not interpreted", uv: "D37: air temperature and pressure only (UV A+B+C and the feed UV index not shown)"}
+  feed_stale_since: "2026-08-25"   # D0 confirmed: latest feed sol 4995 = 2026-08-25 (discovery.md §4.2)
+  feed_url: "https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json"   # discovery.md §4.2
+  pds_base_url: "https://atmos.nmsu.edu/PDS/data/mslrem_1001/DATA"                    # discovery.md §4.2 (RMD = MODRDR)
+  pds_rmd_record_bytes: 372        # discovery.md §4.2 (LABEL/MODRDR6.FMT RECORD_BYTES)
+  pds_mars_years: [36, 37, 38]     # WS4 (assumed): the three latest MYs whose Ls 10-35 window is in PDS (PDS ends at sol 4843)
+  pds_rows_per_sol: 200            # WS4 (assumed): evenly spaced MODRDR rows read per sol (one multi-range request), keeps the cache < 50 MB
+  pds_min_lmst_coverage_h: 18      # WS4 (assumed): a sol's min/max counts only if its valid rows cover >= 18 distinct LMST hours
+  assumed: [pds_mars_years, pds_rows_per_sol, pds_min_lmst_coverage_h]   # added by WS4; G to confirm
+donki:
+  base_url: "https://api.nasa.gov/DONKI"   # discovery.md §4.3; key from NASA_API_KEY, never stored
+  endpoints: {CME: "CME", WSAEnlilSimulations: "WSAEnlilSimulations", notifications: "notifications?type=all", SEP: "SEP", IPS: "IPS"}
+  window_utc: ["2024-05-12T00:00:00Z", "2024-05-23T00:00:00Z"]   # WS4 (assumed): RAD baseline week + storm window
+  label: "context only, not a trigger"
+  assumed: [window_utc]            # added by WS4
+horizons:
+  api_url: "https://ssd.jpl.nasa.gov/api/horizons.api"   # discovery.md §4.4; quantity 21 = one-way down-leg light time
+  window_utc: ["2026-11-14T00:00:00Z", "2026-11-16T00:00:00Z"]   # event weekend (discovery.md §4.4)
+  step: "1 h"                      # WS4 (assumed): table spacing; linear in between
+  assumed: [step]                  # added by WS4
+clock:
+  algorithm: "Mars24 (Allison and McEwen 2000)"
+  gale_lon_east_deg: 137.4085      # WS4: docs/discovery.md §4.5/§7, MSL label LMST = Mars24 at 137.4085 E (137.39 gave a +4.4 s bias); G to review
+  site: "data/interim/engine/public/pad.json pad"   # D21: lat/lon of the official pad (WS2) for the sun, sunrise, sunset, t_dark (stations use their own)
+  site_fallback: "config/site.yaml pad_default"     # WS4: used only if pad.json is missing; clock.json site.pad_fallback says so
+  sun_horizon_elevation_deg: 0.0   # WS4 (assumed): flat-horizon sunrise/sunset = sun centre at 0 deg; station daylight uses the F12 horizon
+  mars_year_epoch_utc: "1955-04-11T00:00:00Z"  # MY 1 starts at Ls 0 on 1955-04-11 (Clancy et al. 2000)
+  msl_landing_utc: "2012-08-06T05:17:57Z"   # Curiosity touchdown, spacecraft event time (NASA/JPL); mission sol 0, for msl_sol()
+  eva_start_lmst_h: 9.0           # D31 (user 16:20): simulated EVA starts 09:00 LMST (confirmed)
+  eva_sol_ref_utc: "2026-11-14T08:00:00Z"   # WS4 (assumed): the EVA sol is the local Gale sol containing H0 (event.yaml h0_utc)
+  sun_series_step_min: 5           # WS4 (assumed): clock.json EVA sun-series spacing
+  assumed: [sun_horizon_elevation_deg, eva_sol_ref_utc, sun_series_step_min]   # added by WS4 (eva_start_lmst_h decided, D31)
+event_weekend: {ls_deg: 22, mars_year: 39}
+# D39 (user 2026-11-14 16:20): ONE shared storm-timing key, read by WS2 (margins) and WS7 (HUD storm replay).
+# Semantics: the 20 May 2024 RAD storm series (rad.json storm_2024.series) is shifted onto the EVA clock
+# so that its tripwire (rad.json storm_2024.tripwire_utc) fires at the EVA minute t* where the route's
+# T_home is largest. T_home(t) = minutes to walk home from the position at EVA minute t (engine output).
+# t* = argmax over the route's samples of T_home (first sample on a tie), in minutes since EVA start
+# (EVA start = clock.eva_start_lmst_h, D31). Mapping, both sides in minutes:
+#   storm_utc(eva_min) = tripwire_utc + (eva_min - t*)  ->  storm onset at EVA minute t* - (tripwire_utc - onset_utc)
+# Helper: pipeline/conditions/storm_replay.py (storm_offset_utc, tripwire_target_min, storm_utc_at, eva_min_of).
+storm_replay:
+  tripwire_at: "route_max_t_home"  # D39: the anchor rule above (only value implemented)
+  anchor_event: "tripwire"         # D39: the storm-series instant aligned to t* (rad.json storm_2024.tripwire_utc)
+  eva_clock_units: "min"           # t*, eva_min and T_home are minutes since EVA start (D31: 09:00 LMST)
+  tie_break: "first"               # WS4 (assumed): earliest sample if T_home has several equal maxima
+  assumed: [tie_break]             # added by WS4

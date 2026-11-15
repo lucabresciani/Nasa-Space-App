@@ -1,0 +1,467 @@
+{
+ "drives": [
+  {
+   "sol": 5073,
+   "drive": 2490,
+   "site": 125,
+   "prev_site_drive": "125_2274",
+   "end_site_drive": "125_2490",
+   "stereo_pairs": 37,
+   "median_spacing_m": 0.946,
+   "has_camera_model": true,
+   "has_attitude": true,
+   "frames_during": {
+    "left": 74,
+    "right": 74
+   },
+   "by_resolution": {
+    "downsampled": {
+     "pairs": 35,
+     "poses": 35,
+     "pairs_with_camera_model": 35,
+     "pairs_with_attitude": 35,
+     "frame_px": [
+      256,
+      256
+     ],
+     "median_spacing_m": 0.946,
+     "max_spacing_m": 1.132,
+     "longest_run_pairs": 35,
+     "meets_run": true
+    },
+    "full": {
+     "pairs": 2,
+     "poses": 1,
+     "pairs_with_camera_model": 2,
+     "pairs_with_attitude": 2,
+     "frame_px": [
+      1024,
+      1024
+     ],
+     "median_spacing_m": null,
+     "max_spacing_m": null,
+     "longest_run_pairs": 1,
+     "meets_run": false
+    },
+    "thumbnail": {
+     "pairs": 37,
+     "poses": 35,
+     "pairs_with_camera_model": 37,
+     "pairs_with_attitude": 37,
+     "frame_px": [
+      64,
+      64
+     ],
+     "median_spacing_m": 0.946,
+     "max_spacing_m": 1.132,
+     "longest_run_pairs": 35,
+     "meets_run": true
+    }
+   },
+   "meets_go_rule": true,
+   "meets_go_rule_at": [
+    "downsampled"
+   ],
+   "mmgis_dist_m": 27.91,
+   "sols_queried": [
+    5073
+   ],
+   "prev_sol": 5070,
+   "note": "previous drive end is on an earlier sol; only the end sol was queried",
+   "frame_check": {
+    "resolution": "downsampled",
+    "pairs_downloaded": 10,
+    "first_left_imageid": "NLB_847849643EDR_D1252280TRAV01530M_",
+    "jpeg_px": {
+     "256x256": 20
+    },
+    "decode_failures": 0,
+    "min_pixel_std_dn": 62.0,
+    "orb_keypoints_left_median": 440,
+    "left_right_fundamental_inliers_median": 217,
+    "left_right_fundamental_inliers_min": 188,
+    "frame_to_frame_fundamental_inliers_median": 89,
+    "frame_to_frame_fundamental_inliers_min": 46,
+    "method": "OpenCV ORB_create() defaults, BFMatcher Hamming crossCheck, findFundamentalMat FM_RANSAC defaults; indicative only, not a VO result"
+   }
+  },
+  {
+   "sol": 5070,
+   "drive": 2274,
+   "site": 125,
+   "prev_site_drive": "125_2082",
+   "end_site_drive": "125_2274",
+   "stereo_pairs": 33,
+   "median_spacing_m": 0.945,
+   "has_camera_model": true,
+   "has_attitude": true,
+   "frames_during": {
+    "left": 66,
+    "right": 66
+   },
+   "by_resolution": {
+    "downsampled": {
+     "pairs": 31,
+     "poses": 31,
+     "pairs_with_camera_model": 31,
+     "pairs_with_attitude": 31,
+     "frame_px": [
+      256,
+      256
+     ],
+     "median_spacing_m": 0.945,
+     "max_spacing_m": 1.015,
+     "longest_run_pairs": 31,
+     "meets_run": true
+    },
+    "full": {
+     "pairs": 2,
+     "poses": 1,
+     "pairs_with_camera_model": 2,
+     "pairs_with_attitude": 2,
+     "frame_px": [
+      1024,
+      1024
+     ],
+     "median_spacing_m": null,
+     "max_spacing_m": null,
+     "longest_run_pairs": 1,
+     "meets_run": false
+    },
+    "thumbnail": {
+     "pairs": 33,
+     "poses": 31,
+     "pairs_with_camera_model": 33,
+     "pairs_with_attitude": 33,
+     "frame_px": [
+      64,
+      64
+     ],
+     "median_spacing_m": 0.945,
+     "max_spacing_m": 1.015,
+     "longest_run_pairs": 31,
+     "meets_run": true
+    }
+   },
+   "meets_go_rule": true,
+   "meets_go_rule_at": [
+    "downsampled"
+   ],
+   "mmgis_dist_m": 28.7,
+   "sols_queried": [
+    5070
+   ],
+   "prev_sol": 5069,
+   "note": "previous drive end is on an earlier sol; only the end sol was queried",
+   "frame_check": {
+    "resolution": "downsampled",
+    "pairs_downloaded": 10,
+    "first_left_imageid": "NLB_847590630EDR_D1252088TRAV01529M_",
+    "jpeg_px": {
+     "256x256": 20
+    },
+    "decode_failures": 0,
+    "min_pixel_std_dn": 61.5,
+    "orb_keypoints_left_median": 445,
+    "left_right_fundamental_inliers_median": 234,
+    "left_right_fundamental_inliers_min": 202,
+    "frame_to_frame_fundamental_inliers_median": 112,
+    "frame_to_frame_fundamental_inliers_min": 84,
+    "method": "OpenCV ORB_create() defaults, BFMatcher Hamming crossCheck, findFundamentalMat FM_RANSAC defaults; indicative only, not a VO result"
+   }
+  },
+  {
+   "sol": 5069,
+   "drive": 2082,
+   "site": 125,
+   "prev_site_drive": "125_1326",
+   "end_site_drive": "125_2082",
+   "stereo_pairs": 126,
+   "median_spacing_m": 0.953,
+   "has_camera_model": true,
+   "has_attitude": true,
+   "frames_during": {
+    "left": 252,
+    "right": 252
+   },
+   "by_resolution": {
+    "downsampled": {
+     "pairs": 124,
+     "poses": 124,
+     "pairs_with_camera_model": 124,
+     "pairs_with_attitude": 124,
+     "frame_px": [
+      256,
+      256
+     ],
+     "median_spacing_m": 0.953,
+     "max_spacing_m": 1.199,
+     "longest_run_pairs": 124,
+     "meets_run": true
+    },
+    "full": {
+     "pairs": 2,
+     "poses": 1,
+     "pairs_with_camera_model": 2,
+     "pairs_with_attitude": 2,
+     "frame_px": [
+      1024,
+      1024
+     ],
+     "median_spacing_m": null,
+     "max_spacing_m": null,
+     "longest_run_pairs": 1,
+     "meets_run": false
+    },
+    "thumbnail": {
+     "pairs": 126,
+     "poses": 124,
+     "pairs_with_camera_model": 126,
+     "pairs_with_attitude": 126,
+     "frame_px": [
+      64,
+      64
+     ],
+     "median_spacing_m": 0.953,
+     "max_spacing_m": 1.199,
+     "longest_run_pairs": 124,
+     "meets_run": true
+    }
+   },
+   "meets_go_rule": true,
+   "meets_go_rule_at": [
+    "downsampled"
+   ],
+   "mmgis_dist_m": 101.25,
+   "sols_queried": [
+    5069
+   ],
+   "prev_sol": 5045,
+   "note": "previous drive end is on an earlier sol; only the end sol was queried",
+   "frame_check": {
+    "resolution": "downsampled",
+    "pairs_downloaded": 10,
+    "first_left_imageid": "NLB_847487434EDR_D1251332TRAV01528M_",
+    "jpeg_px": {
+     "256x256": 20
+    },
+    "decode_failures": 0,
+    "min_pixel_std_dn": 53.0,
+    "orb_keypoints_left_median": 443,
+    "left_right_fundamental_inliers_median": 200,
+    "left_right_fundamental_inliers_min": 159,
+    "frame_to_frame_fundamental_inliers_median": 55,
+    "frame_to_frame_fundamental_inliers_min": 23,
+    "method": "OpenCV ORB_create() defaults, BFMatcher Hamming crossCheck, findFundamentalMat FM_RANSAC defaults; indicative only, not a VO result"
+   }
+  },
+  {
+   "sol": 5045,
+   "drive": 1326,
+   "site": 125,
+   "prev_site_drive": "125_1194",
+   "end_site_drive": "125_1326",
+   "stereo_pairs": 25,
+   "median_spacing_m": 0.933,
+   "has_camera_model": true,
+   "has_attitude": true,
+   "frames_during": {
+    "left": 50,
+    "right": 50
+   },
+   "by_resolution": {
+    "downsampled": {
+     "pairs": 21,
+     "poses": 21,
+     "pairs_with_camera_model": 21,
+     "pairs_with_attitude": 21,
+     "frame_px": [
+      256,
+      256
+     ],
+     "median_spacing_m": 0.933,
+     "max_spacing_m": 1.19,
+     "longest_run_pairs": 21,
+     "meets_run": true
+    },
+    "full": {
+     "pairs": 4,
+     "poses": 2,
+     "pairs_with_camera_model": 4,
+     "pairs_with_attitude": 4,
+     "frame_px": [
+      1024,
+      1024
+     ],
+     "median_spacing_m": 4.959,
+     "max_spacing_m": 4.959,
+     "longest_run_pairs": 1,
+     "meets_run": false
+    },
+    "thumbnail": {
+     "pairs": 25,
+     "poses": 21,
+     "pairs_with_camera_model": 25,
+     "pairs_with_attitude": 25,
+     "frame_px": [
+      64,
+      64
+     ],
+     "median_spacing_m": 0.933,
+     "max_spacing_m": 1.19,
+     "longest_run_pairs": 21,
+     "meets_run": true
+    }
+   },
+   "meets_go_rule": true,
+   "meets_go_rule_at": [
+    "downsampled"
+   ],
+   "mmgis_dist_m": 12.64,
+   "sols_queried": [
+    5045
+   ],
+   "prev_sol": 5041,
+   "note": "previous drive end is on an earlier sol; only the end sol was queried",
+   "frame_check": {
+    "resolution": "downsampled",
+    "pairs_downloaded": 10,
+    "first_left_imageid": "NLB_845362923EDR_D1251200TRAV01527M_",
+    "jpeg_px": {
+     "256x256": 20
+    },
+    "decode_failures": 0,
+    "min_pixel_std_dn": 50.7,
+    "orb_keypoints_left_median": 425,
+    "left_right_fundamental_inliers_median": 151,
+    "left_right_fundamental_inliers_min": 132,
+    "frame_to_frame_fundamental_inliers_median": 34,
+    "frame_to_frame_fundamental_inliers_min": 21,
+    "method": "OpenCV ORB_create() defaults, BFMatcher Hamming crossCheck, findFundamentalMat FM_RANSAC defaults; indicative only, not a VO result"
+   }
+  },
+  {
+   "sol": 5041,
+   "drive": 1194,
+   "site": 125,
+   "prev_site_drive": "125_558",
+   "end_site_drive": "125_1194",
+   "stereo_pairs": 108,
+   "median_spacing_m": 0.985,
+   "has_camera_model": true,
+   "has_attitude": true,
+   "frames_during": {
+    "left": 216,
+    "right": 216
+   },
+   "by_resolution": {
+    "downsampled": {
+     "pairs": 106,
+     "poses": 103,
+     "pairs_with_camera_model": 106,
+     "pairs_with_attitude": 106,
+     "frame_px": [
+      256,
+      256
+     ],
+     "median_spacing_m": 0.985,
+     "max_spacing_m": 1.293,
+     "longest_run_pairs": 103,
+     "meets_run": true
+    },
+    "full": {
+     "pairs": 2,
+     "poses": 1,
+     "pairs_with_camera_model": 2,
+     "pairs_with_attitude": 2,
+     "frame_px": [
+      1024,
+      1024
+     ],
+     "median_spacing_m": null,
+     "max_spacing_m": null,
+     "longest_run_pairs": 1,
+     "meets_run": false
+    },
+    "thumbnail": {
+     "pairs": 108,
+     "poses": 103,
+     "pairs_with_camera_model": 108,
+     "pairs_with_attitude": 108,
+     "frame_px": [
+      64,
+      64
+     ],
+     "median_spacing_m": 0.985,
+     "max_spacing_m": 1.293,
+     "longest_run_pairs": 103,
+     "meets_run": true
+    }
+   },
+   "meets_go_rule": true,
+   "meets_go_rule_at": [
+    "downsampled"
+   ],
+   "mmgis_dist_m": 83.85,
+   "sols_queried": [
+    5041
+   ],
+   "prev_sol": 5021,
+   "note": "previous drive end is on an earlier sol; only the end sol was queried",
+   "frame_check": {
+    "resolution": "downsampled",
+    "pairs_downloaded": 10,
+    "first_left_imageid": "NLB_845007956EDR_D1250564TRAV01526M_",
+    "jpeg_px": {
+     "256x256": 20
+    },
+    "decode_failures": 0,
+    "min_pixel_std_dn": 54.9,
+    "orb_keypoints_left_median": 446,
+    "left_right_fundamental_inliers_median": 210,
+    "left_right_fundamental_inliers_min": 171,
+    "frame_to_frame_fundamental_inliers_median": 48,
+    "frame_to_frame_fundamental_inliers_min": 19,
+    "method": "OpenCV ORB_create() defaults, BFMatcher Hamming crossCheck, findFundamentalMat FM_RANSAC defaults; indicative only, not a VO result"
+   }
+  }
+ ],
+ "decision": "go",
+ "decision_is": "mechanical result of nav.yaml vo_probe.go_rule; D16 is N's decision",
+ "go_rule": ">= 2 drives with >= 10 consecutive stereo pairs at <= 2 m spacing, with camera models",
+ "go_rule_parsed": {
+  "min_drives": 2,
+  "min_run_pairs": 10,
+  "max_spacing_m": 2.0,
+  "need_camera_model": true
+ },
+ "drives_meeting_rule": 5,
+ "by_resolution": {
+  "downsampled": {
+   "drives_meeting": 5,
+   "result": "go"
+  },
+  "full": {
+   "drives_meeting": 0,
+   "result": "no-go"
+  },
+  "thumbnail": {
+   "drives_meeting": 5,
+   "result": "go"
+  }
+ },
+ "selection": "the 5 most recent MMGIS drive ends (nav.yaml vo_probe.drives) and their previous drive end",
+ "focus_check": {
+  "selection": "the 2 most recent MMGIS drive ends inside site.yaml aoi_focus; context only, not part of the decision",
+  "drives": [],
+  "drives_meeting_rule": 0
+ },
+ "sources": {
+  "mmgis": "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json",
+  "raw_image_api": "https://mars.nasa.gov/api/v1/raw_image_items/"
+ },
+ "generated_utc": "2026-11-14T10:14:48Z",
+ "downloaded_mb_this_run": 0.0,
+ "raw_cache_mb": 8.27,
+ "script": "pipeline/navigation/vo_probe.py"
+}

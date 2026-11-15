@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/donki.schema.json",
+  "title": "conditions/donki.json",
+  "description": "DONKI space-weather records (F14), labelled \"context only, not a trigger\". Beyond SPEC §6: file named in SPEC §2 F14 (conditions/*.json) and brief WS4.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §2 F14; briefs/WS4.md",
+  "type": "object",
+  "properties": {
+    "label": {
+      "const": "context only, not a trigger"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "label",
+    "records"
+  ]
+}

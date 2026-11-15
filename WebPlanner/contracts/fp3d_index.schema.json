@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/fp3d_index.schema.json",
+  "title": "fp3d/index.json",
+  "description": "3D first-person index (F20): chunk grid, bounds, height scale. SPEC gives the content but not the key names; key names here are B0's placeholders and WS8 may refine them by PR to C. Index file: requires \"dummy\".",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.1",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "true only in web/public/data-dummy/; must be false in web/public/data/"
+    },
+    "bounds": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "[w, s, e, n]"
+    },
+    "chunk_grid": {
+      "type": "object",
+      "description": "near-chunk grid layout (fp3d/near/{i}_{j}.f32.gz)"
+    },
+    "height_scale": {
+      "type": "number",
+      "description": "height units per stored unit"
+    }
+  },
+  "required": [
+    "dummy",
+    "bounds",
+    "chunk_grid",
+    "height_scale"
+  ]
+}

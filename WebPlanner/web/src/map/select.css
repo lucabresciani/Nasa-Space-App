@@ -1,0 +1,33 @@
+/* WS16 task 9 (M9): selection highlight on the planning map (DESIGN U14) and isolation (U16). Tokens only. */
+
+/* the selected terrain cell: a yellow crosshair (DESIGN U14 "Any terrain cell: yellow crosshair") */
+.hl-select-cross {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+}
+.hl-select-cross::before,
+.hl-select-cross::after {
+  content: '';
+  position: absolute;
+  background: var(--color-select);
+  box-shadow: 0 0 0 1px var(--color-bg);
+}
+.hl-select-cross::before {
+  left: 0;
+  right: 0;
+  top: calc(50% - 1px);
+  height: 2px;
+}
+.hl-select-cross::after {
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+}
+
+/* isolation: the DOM objects over the map dim with the map layers; the selected pill and the crosshair stay */
+.hl-map-isolated .maplibregl-marker:not(.is-selected):not(.hl-select-cross) {
+  opacity: var(--hl-isolation-opacity);
+}

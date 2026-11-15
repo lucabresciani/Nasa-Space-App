@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/montecarlo.schema.json",
+  "title": "nav/montecarlo_{set}.json",
+  "description": "Dead-reckoning Monte Carlo summary (F21) for one parameter set.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.2",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "set": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "nav parameter set (config/nav.yaml sets)"
+    },
+    "params": {
+      "type": "object",
+      "description": "the set's parameters from config/nav.yaml"
+    },
+    "runs": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "per_minute": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "t_eva_min": {
+            "type": "number"
+          },
+          "dist_since_fix_m": {
+            "type": "number"
+          },
+          "ellipse": {
+            "type": "object",
+            "properties": {
+              "a_m": {
+                "type": "number"
+              },
+              "b_m": {
+                "type": "number"
+              },
+              "theta_deg": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "a_m",
+              "b_m",
+              "theta_deg"
+            ]
+          },
+          "r95_m": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "t_eva_min",
+          "dist_since_fix_m",
+          "ellipse",
+          "r95_m"
+        ]
+      }
+    },
+    "r95_fit": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ],
+      "description": "r95(D) = a*D + b*D^2 (config/nav.yaml r95_fit)"
+    }
+  },
+  "required": [
+    "set",
+    "params",
+    "runs",
+    "per_minute",
+    "r95_fit"
+  ]
+}

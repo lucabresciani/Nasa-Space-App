@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/manifest.schema.json",
+  "title": "manifest.json",
+  "description": "Provenance manifest (F16): key -> {value, units, file, script, commit, utc}. Every number shown in the app has an entry. Optional top-level \"dummy\" boolean (it is a map, not an index).",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "description": "the displayed value (number, string, bool, array or null)"
+      },
+      "units": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "file": {
+        "type": "string"
+      },
+      "script": {
+        "type": "string"
+      },
+      "commit": {
+        "type": "string"
+      },
+      "utc": {
+        "type": "string",
+        "description": "UTC time, ISO 8601 with Z"
+      }
+    },
+    "required": [
+      "value",
+      "units",
+      "file",
+      "script",
+      "commit",
+      "utc"
+    ]
+  }
+}

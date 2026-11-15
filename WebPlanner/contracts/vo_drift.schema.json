@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/vo_drift.schema.json",
+  "title": "vo/drift.json",
+  "description": "Visual-odometry drift per drive (X8).",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.2",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sol": {
+        "type": "integer"
+      },
+      "drive": {
+        "type": "integer"
+      },
+      "length_m": {
+        "type": "number"
+      },
+      "endpoint_error_m": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "drift_pct": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "heading_drift_deg": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "sol",
+      "drive",
+      "length_m",
+      "endpoint_error_m",
+      "drift_pct",
+      "heading_drift_deg"
+    ]
+  }
+}

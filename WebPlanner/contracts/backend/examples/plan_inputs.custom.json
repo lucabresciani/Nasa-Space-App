@@ -1,0 +1,14 @@
+{
+ "contract_version": "1.0.0",
+ "title": "Custom pad · heavy suit · fixed order",
+ "pad": {"lon": 137.395, "lat": -4.79},
+ "crew": {"body_mass_kg": 60, "suit_kg": 95, "tools_kg": 10, "vo2max_ml_kg_min": 40, "effort_cap_frac": 0.5},
+ "eva": {"duration_h": 6, "reserve_min": 30, "start_lmst_h": 9, "walkback_budgets_min": [30, 60]},
+ "stations": {
+  "mode": "order",
+  "ids": ["S1", "U1"],
+  "dwell_min": {"S1": 45, "U1": 20},
+  "custom": [{"id": "U1", "name": "bright vein", "lon": 137.39, "lat": -4.795}]
+ },
+ "conditions": {"storm": "2024-05-20", "tripwire_at": "route_max_t_home", "d_allow_mgy": 0.5}
+}

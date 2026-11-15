@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/pad_summary.schema.json",
+  "title": "scenarios/pads/{id}/summary.json",
+  "description": "D21 parking option (picker pad) summary (C file layout 2026-11-14 16:17): the pad, its D21 rank and score (feasible-EVA count), tiebreak values, the headline at the 30- and 60-min walkback budgets (reachable % of the assessed flat disc, range [conservative, optimistic]) and the route summary, all for the nominal scenario of scenarios/pads/index.json. The 60-min reachable % may be null (60-min disc leaves the grid); a range end may be null. id equals the folder name, and each headline key equals its budget_min when given (checked by tools/validate_contracts.py). Producer WS2 (pipeline/engine/padpick.py); manifest keys pads.{id}.*. Added in v1.1.4; extra keys allowed. v1.1.5: optional feasible block (D45).",
+  "x-contract-version": "1.1.5",
+  "x-source": "SPEC §11 D21; STATUS Decision log 2026-11-14 16:17",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^(?!\\.\\.?$)[A-Za-z0-9_.-]+$",
+      "description": "pad id = folder name under scenarios/pads/"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "scenario": {
+      "type": "string",
+      "description": "scenario of every number here and of the pad's route/timeline files, e.g. nom_104"
+    },
+    "pad": {
+      "type": "object",
+      "properties": {
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 360,
+          "description": "longitude, deg east (Mars 2000 planetocentric)"
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "description": "latitude, deg (Mars 2000 planetocentric)"
+        },
+        "elev_m": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "lon",
+        "lat",
+        "elev_m"
+      ]
+    },
+    "rank": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "D21 rank (as in scenarios/pads/index.json)"
+    },
+    "official": {
+      "type": "boolean"
+    },
+    "score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "D21 score: feasible-EVA count"
+    },
+    "score_kind": {
+      "type": "string"
+    },
+    "tiebreak": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "headline": {
+      "type": "object",
+      "description": "per walkback budget (key = budget in min as text, \"30\", \"60\")",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "budget_min": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "the budget, min (WS2 writes it; when present it must equal the key)"
+          },
+          "reachable_pct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "reachable % of the assessed flat disc at this budget (nominal); null = not computed (e.g. the 60-min disc leaves the grid)"
+          },
+          "range_pct": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "[conservative, optimistic] reachable %, from the pad's con/opt return fields"
+          }
+        },
+        "required": [
+          "reachable_pct",
+          "range_pct"
+        ]
+      },
+      "required": [
+        "30",
+        "60"
+      ]
+    },
+    "route": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "route summary of the pad's best feasible EVA; null = no route",
+      "properties": {
+        "stops": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "total_min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "n_feasible_subsets": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lowest_margin_min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "lowest_margin_binding": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "stops",
+        "total_min"
+      ]
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "data paths of the pad's files (bands, edges, partner, route, timeline)"
+    },
+    "note": {
+      "type": "string"
+    },
+    "feasible": {
+      "type": "object",
+      "description": "v1.1.5, optional (D45 of set A): how many station combinations the planning rule keeps. screen_count = screening count (walk + dwell within the EVA budget, no margin check); full_run_count = exact DP count with margin >= 0 on every leg (the D21 score); excluded_by_effort_cap_rule = screen_count - full_run_count. Extra keys allowed.",
+      "properties": {
+        "screen_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "full_run_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "excluded_by_effort_cap_rule": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "screen_count",
+        "full_run_count",
+        "excluded_by_effort_cap_rule"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "pad",
+    "rank",
+    "score",
+    "headline",
+    "route"
+  ]
+}

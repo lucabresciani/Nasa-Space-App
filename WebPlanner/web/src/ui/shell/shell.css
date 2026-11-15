@@ -1,0 +1,199 @@
+/* App shell (DESIGN §4.3 layout, §3 tokens; WS15 task 4, package A4). Tokens only (tokens.css).
+   Region sizes: --hl-rail-w / --hl-side-w / --hl-dock-h are set by Shell.tsx from the UI store
+   (state/ui.ts ui.panels, defaults from tokens.json layout). Breakpoints (tokens.json layout.breakpoints)
+   arrive as [data-bp=desktop|tablet|phone] because custom properties do not work in @media.
+   Only shell chrome gets the new fonts and colours (.hl-ui); main.outlet keeps today's views unchanged. */
+
+/* The legacy frame (?legacy=…) is a wrapper with no box: #app's old flex column applies as before. */
+.hl-frame-legacy { display: contents; }
+
+.hl-shell { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; background: var(--color-bg); }
+.hl-shell > [hidden], .hl-shell__body > [hidden], .hl-shell .hl-ui[hidden], .hl-shell .hl-ui [hidden] { display: none !important; }
+
+/* ---------- skip link (first focusable element) ---------- */
+.hl-skip {
+  position: absolute; left: var(--space-2); top: var(--space-2); z-index: 40;
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-input);
+  background: var(--color-card); color: var(--color-text); border: 1px solid var(--color-card-border);
+  transform: translateY(calc(-1 * var(--layout-top-bar) - var(--space-4)));
+}
+.hl-skip:focus { transform: none; outline: var(--line-focus-ring) solid var(--color-select); outline-offset: var(--line-focus-ring); }
+
+/* ---------- top bar (48 px) ---------- */
+.hl-shell .hl-topbar {
+  height: var(--layout-top-bar); flex: none; display: flex; align-items: stretch; flex-wrap: nowrap; gap: var(--space-5);
+  padding: 0 var(--space-4); background: var(--color-bg); border-bottom: 1px solid var(--color-card-border);
+}
+.hl-topbar__inner { display: contents; }
+.hl-wordmark {
+  align-self: center; color: var(--color-text); text-decoration: none;
+  font-weight: var(--font-weight-heading); font-size: var(--font-size-body); letter-spacing: 0.12em;
+}
+.hl-topbar__modes { display: flex; align-items: stretch; }
+.hl-modes { display: flex; align-items: stretch; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.hl-modes li { display: flex; }
+.hl-modes__tab {
+  display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3);
+  color: var(--color-text-muted); text-decoration: none; text-transform: uppercase;
+  font-size: var(--font-size-small); line-height: var(--line-height-small); font-weight: var(--font-weight-heading); letter-spacing: 0.06em;
+  border-bottom: var(--line-focus-ring) solid transparent;
+  transition: color var(--motion-hover-min) linear, border-color var(--motion-hover-min) linear;
+}
+.hl-modes__tab:hover { color: var(--color-text); }
+.hl-modes__tab.is-active { color: var(--color-text); border-bottom-color: var(--color-text); }
+.hl-modes__key { font-family: var(--font-mono); font-size: var(--font-size-label); font-weight: var(--font-weight-body); color: var(--color-text-muted); }
+.hl-topbar__plan { flex: 1; min-width: 0; display: flex; align-items: center; }
+.hl-topbar__end { display: flex; align-items: center; gap: var(--space-2); }
+.hl-topbar .prov-badge { align-self: center; }
+/* MARVIS build: the way back to the simulator's menu (Shell.tsx MarvisBack; shown only when the game serves the page) */
+.hl-marvis-back { white-space: nowrap; }
+
+/* shared focus ring for shell links (components bring their own) */
+.hl-wordmark:focus-visible, .hl-modes__tab:focus-visible, .hl-rail__view:focus-visible {
+  outline: var(--line-focus-ring) solid var(--color-select); outline-offset: calc(-1 * var(--line-focus-ring));
+}
+.hl-main:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); outline-offset: calc(-1 * var(--line-focus-ring)); }
+.hl-main:focus:not(:focus-visible) { outline: none; }
+
+/* phone: modes in a menu */
+.hl-modemenu { position: relative; display: flex; align-items: center; }
+.hl-modemenu__list {
+  position: absolute; top: 100%; left: 0; z-index: 30; padding: var(--space-2);
+  background: var(--color-card); border: 1px solid var(--color-card-border); border-radius: var(--radius-card);
+}
+.hl-modemenu__list .hl-modes { flex-direction: column; }
+.hl-modemenu__list .hl-modes__tab { padding: var(--space-2) var(--space-3); border-bottom: 0; }
+
+/* ---------- body grid: rail | main | sidebar, dock under main ---------- */
+.hl-shell__body {
+  flex: 1; min-height: 0; position: relative; display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas: "rail main side" "rail dock side";
+}
+.hl-shell__body > .outlet, .hl-shell__body > .live-plan { grid-area: main; min-width: 0; min-height: 0; overflow: auto; position: relative; }
+
+/* ---------- left rail (320, collapsed 56) ---------- */
+.hl-rail {
+  grid-area: rail; width: var(--hl-rail-w); min-height: 0; overflow-y: auto; overflow-x: hidden;
+  background: var(--color-sidebar); border-right: 1px solid var(--color-card-border);
+  padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3);
+  transition: width var(--motion-panel-min) ease-out;
+}
+.hl-rail__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: var(--space-6); }
+.hl-rail__title, .hl-rail__sectiontitle, .hl-dock__title {
+  margin: 0; color: var(--color-text-muted); text-transform: uppercase;
+  font-size: var(--font-size-small); line-height: var(--line-height-small); font-weight: var(--font-weight-label); letter-spacing: 0.02em;
+}
+.hl-rail__sectiontitle { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.hl-rail__views { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); }
+.hl-rail__view {
+  display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-2);
+  color: var(--color-text-muted); text-decoration: none; border-radius: var(--radius-input);
+  transition: background-color var(--motion-hover-min) linear, color var(--motion-hover-min) linear;
+}
+.hl-rail__view:hover { color: var(--color-text); background: var(--color-card); }
+.hl-rail__view.is-active { color: var(--color-text); background: var(--color-card); }
+.hl-rail__section { border-top: 1px solid var(--color-card-border); padding-top: var(--space-3); margin-top: var(--space-3); }
+.hl-shell:not([data-bp=phone])[data-rail=collapsed] .hl-rail { padding: var(--space-3) var(--space-2); align-items: center; }
+.hl-shell:not([data-bp=phone])[data-rail=collapsed] .hl-rail__head { justify-content: center; }
+.hl-shell:not([data-bp=phone])[data-rail=collapsed] .hl-rail__view { justify-content: center; }
+
+/* ---------- right sidebar (360, opens on selection) ---------- */
+.hl-sidebar {
+  grid-area: side; width: var(--hl-side-w); min-height: 0; overflow-y: auto;
+  background: var(--color-sidebar); border-left: 1px solid var(--color-card-border); padding: var(--space-3);
+}
+.hl-shell[data-sidebar=closed] .hl-sidebar { display: none; }
+.hl-sidebar__head { display: flex; justify-content: flex-end; }
+.hl-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-6) var(--space-4); color: var(--color-text-muted); text-align: center; }
+.hl-empty p { margin: 0; }
+.hl-ui .hl-empty .icon { width: 24px; height: 24px; }
+
+/* ---------- timeline dock (120, collapsed 40) ---------- */
+.hl-dock {
+  grid-area: dock; height: var(--hl-dock-h); min-width: 0; overflow: hidden;
+  background: var(--color-sidebar); border-top: 1px solid var(--color-card-border);
+  display: flex; flex-direction: column; padding: var(--space-1) var(--space-3);
+  transition: height var(--motion-panel-min) ease-out;
+}
+.hl-shell[data-dock=none] .hl-dock { display: none; }
+/* The descent intro (story/story.css, M10) hides the chrome (opacity 0, pointer-events none) while it
+   plays, and any input skips it. The dock keeps taking the pointer, so a click on Play both skips the
+   intro (story's window listener) and plays; with pointer-events none the click was swallowed by the
+   shell body and Play needed a second click (headless: Playwright waited until the intro ended, A7b). */
+html[data-story-chrome='hide'] .hl-shell .hl-dock, html[data-story-chrome='hide'] .hl-shell .hl-dock .hl-ui { pointer-events: auto; }
+.hl-dock__head { display: flex; align-items: center; gap: var(--space-2); flex: none; }
+.hl-dock__body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.hl-dock__placeholder { margin: 0; color: var(--color-text-muted); }
+
+/* ---------- focus mode (F): the map only ---------- */
+.hl-shell[data-focus=on] .hl-rail, .hl-shell[data-focus=on] .hl-sidebar, .hl-shell[data-focus=on] .hl-dock { display: none; }
+.hl-focusexit { position: absolute; top: calc(var(--layout-top-bar) + var(--space-2)); right: var(--space-3); z-index: 30; }
+
+/* ---------- tablet (768–1279): the map stays the main surface (A7b) ----------
+   Rail: a 56 px icon column; its toggle opens the full rail as a sheet over the map (left, full body
+   height). Sidebar: an overlay on the right of the map (it shares the main grid cell, so it never covers
+   the rail or the dock); portrait tablets get the §4.3 half-height bottom sheet instead. Dock 96. */
+.hl-shell[data-bp=tablet] .hl-shell__body {
+  grid-template-columns: var(--layout-left-rail-collapsed) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas: "rail main" "rail dock";
+}
+.hl-shell[data-bp=tablet] .hl-rail { width: var(--layout-left-rail-collapsed); }
+.hl-shell[data-bp=tablet][data-rail=open] .hl-rail {
+  position: absolute; top: 0; bottom: 0; left: 0; z-index: 20; width: var(--layout-left-rail);
+  box-shadow: 0 0 24px var(--color-bg);
+}
+.hl-shell[data-bp=tablet][data-dock=open] .hl-dock { height: calc(var(--layout-timeline) - var(--space-5)); }
+.hl-shell[data-bp=tablet] .hl-sidebar {
+  grid-area: main; justify-self: end; position: relative; z-index: 20; width: min(var(--layout-sidebar), 100%);
+  box-shadow: 0 0 24px var(--color-bg);
+}
+@media (orientation: portrait) {
+  .hl-shell[data-bp=tablet] .hl-sidebar {
+    justify-self: stretch; align-self: end; width: auto; height: 50%;
+    border-left: 0; border-top: 1px solid var(--color-card-border);
+  }
+}
+.hl-shell[data-bp=phone] .hl-sidebar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 50%; width: auto; z-index: 20;
+  border-left: 0; border-top: 1px solid var(--color-card-border);
+}
+
+/* ---------- phone (< 768): top bar 44, modes in a menu, rails and dock hidden ---------- */
+.hl-shell[data-bp=phone] .hl-topbar { height: calc(var(--layout-top-bar) - var(--space-1)); gap: var(--space-3); padding: 0 var(--space-3); }
+.hl-shell[data-bp=phone] .hl-shell__body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "main"; }
+.hl-shell[data-bp=phone] .hl-rail, .hl-shell[data-bp=phone] .hl-dock { display: none; }
+.hl-shell[data-bp=phone] .hl-sidebar { top: 0; height: auto; }
+
+/* ---------- shortcut help (modal dialog, one overlay elevation) ---------- */
+.hl-help {
+  width: min(calc(100vw - var(--space-6)), calc(var(--layout-sidebar) + var(--space-7) * 2));
+  padding: var(--space-5); color: var(--color-text); background: var(--color-card);
+  border: 1px solid var(--color-card-border); border-radius: var(--radius-card); box-shadow: 0 0 24px var(--color-bg);
+}
+.hl-help::backdrop { background: var(--color-label-pill); }
+.hl-help__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
+.hl-help__head h2 { margin: 0; font-size: var(--font-size-heading); line-height: var(--line-height-heading); font-weight: var(--font-weight-heading); }
+.hl-help__list { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.hl-help__row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: var(--space-3); align-items: baseline; }
+.hl-help__row dt { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hl-help__row dd { margin: 0; }
+.hl-help__row.is-pending dd { color: var(--color-text-muted); }
+.hl-ui kbd {
+  font-family: var(--font-mono); font-size: var(--font-size-small); line-height: var(--line-height-small);
+  padding: 0 var(--space-1); border: 1px solid var(--color-card-border); border-radius: var(--radius-pill); background: var(--color-bg);
+}
+
+@media print {
+  .hl-shell { display: block; }
+  .hl-shell__body { display: block; }
+  .hl-skip, .hl-rail, .hl-sidebar, .hl-dock, .hl-shell__overlay { display: none !important; }
+}
+
+/* Legacy top bar inside the shell's legacy frame (e.g. /styleguide): token focus ring (U12 a11y-perf). */
+.hl-frame-legacy .topbar a:focus-visible {
+  outline: var(--line-focus-ring) solid var(--color-select);
+  outline-offset: var(--line-focus-ring);
+}

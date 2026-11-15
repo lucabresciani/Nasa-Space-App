@@ -1,0 +1,923 @@
+{
+ "dummy": false,
+ "bounds": [
+  137.319359,
+  -4.868421,
+  137.444641,
+  -4.743579
+ ],
+ "width": 1480,
+ "height": 1480,
+ "res_m": 5.0,
+ "fields": {
+  "con_104/o2_home": {
+   "file": "fields/con_104/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "con_104"
+  },
+  "con_104/pointer": {
+   "file": "fields/con_104/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "con_104",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "con_104/t_home": {
+   "file": "fields/con_104/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "con_104"
+  },
+  "con_120/o2_home": {
+   "file": "fields/con_120/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "con_120"
+  },
+  "con_120/pointer": {
+   "file": "fields/con_120/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "con_120",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "con_120/t_home": {
+   "file": "fields/con_120/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "con_120"
+  },
+  "con_80/o2_home": {
+   "file": "fields/con_80/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "con_80"
+  },
+  "con_80/pointer": {
+   "file": "fields/con_80/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "con_80",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "con_80/t_home": {
+   "file": "fields/con_80/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "con_80"
+  },
+  "fix_interval_high": {
+   "file": "fields/fix_interval_high.png",
+   "scale": 1,
+   "units": "m",
+   "scenario": "nom_104"
+  },
+  "fix_interval_low": {
+   "file": "fields/fix_interval_low.png",
+   "scale": 1,
+   "units": "m",
+   "scenario": "nom_104"
+  },
+  "fix_interval_medium": {
+   "file": "fields/fix_interval_medium.png",
+   "scale": 1,
+   "units": "m",
+   "scenario": "nom_104"
+  },
+  "nom_104/home_bearing": {
+   "file": "fields/nom_104/home_bearing.png",
+   "scale": 0.01,
+   "units": "deg",
+   "scenario": "nom_104"
+  },
+  "nom_104/o2_home": {
+   "file": "fields/nom_104/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "nom_104"
+  },
+  "nom_104/o2_home_worst_10": {
+   "file": "fields/nom_104/o2_home_worst_10.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "nom_104",
+   "radius_m_effective": 12.0
+  },
+  "nom_104/o2_home_worst_100": {
+   "file": "fields/nom_104/o2_home_worst_100.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "nom_104",
+   "radius_m_effective": 102.0
+  },
+  "nom_104/o2_home_worst_50": {
+   "file": "fields/nom_104/o2_home_worst_50.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "nom_104",
+   "radius_m_effective": 51.0
+  },
+  "nom_104/pointer": {
+   "file": "fields/nom_104/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "nom_104",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "nom_104/t_home": {
+   "file": "fields/nom_104/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "nom_104"
+  },
+  "nom_104/t_home_worst_10": {
+   "file": "fields/nom_104/t_home_worst_10.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "nom_104",
+   "radius_m_effective": 12.0
+  },
+  "nom_104/t_home_worst_100": {
+   "file": "fields/nom_104/t_home_worst_100.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "nom_104",
+   "radius_m_effective": 102.0
+  },
+  "nom_104/t_home_worst_50": {
+   "file": "fields/nom_104/t_home_worst_50.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "nom_104",
+   "radius_m_effective": 51.0
+  },
+  "nom_120/o2_home": {
+   "file": "fields/nom_120/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "nom_120"
+  },
+  "nom_120/pointer": {
+   "file": "fields/nom_120/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "nom_120",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "nom_120/t_home": {
+   "file": "fields/nom_120/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "nom_120"
+  },
+  "nom_80/o2_home": {
+   "file": "fields/nom_80/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "nom_80"
+  },
+  "nom_80/pointer": {
+   "file": "fields/nom_80/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "nom_80",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "nom_80/t_home": {
+   "file": "fields/nom_80/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "nom_80"
+  },
+  "opt_104/o2_home": {
+   "file": "fields/opt_104/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "opt_104"
+  },
+  "opt_104/pointer": {
+   "file": "fields/opt_104/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "opt_104",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "opt_104/t_home": {
+   "file": "fields/opt_104/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "opt_104"
+  },
+  "opt_120/o2_home": {
+   "file": "fields/opt_120/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "opt_120"
+  },
+  "opt_120/pointer": {
+   "file": "fields/opt_120/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "opt_120",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "opt_120/t_home": {
+   "file": "fields/opt_120/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "opt_120"
+  },
+  "opt_80/o2_home": {
+   "file": "fields/opt_80/o2_home.png",
+   "scale": 0.01,
+   "units": "L",
+   "scenario": "opt_80"
+  },
+  "opt_80/pointer": {
+   "file": "fields/opt_80/pointer.png",
+   "scale": 1,
+   "units": "move",
+   "scenario": "opt_80",
+   "bounds": [
+    137.319325,
+    -4.868455,
+    137.444675,
+    -4.743545
+   ],
+   "width": 2468,
+   "height": 2468,
+   "res_m": 3.0,
+   "stencil": [
+    [
+     -1,
+     0
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     -1,
+     -1
+    ],
+    [
+     -1,
+     1
+    ],
+    [
+     1,
+     -1
+    ],
+    [
+     1,
+     1
+    ],
+    [
+     -2,
+     -1
+    ],
+    [
+     -2,
+     1
+    ],
+    [
+     2,
+     -1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     -1,
+     -2
+    ],
+    [
+     -1,
+     2
+    ],
+    [
+     1,
+     -2
+    ],
+    [
+     1,
+     2
+    ]
+   ]
+  },
+  "opt_80/t_home": {
+   "file": "fields/opt_80/t_home.png",
+   "scale": 0.1,
+   "units": "min",
+   "scenario": "opt_80"
+  },
+  "slope": {
+   "file": "fields/shared/slope.png",
+   "scale": 0.01,
+   "units": "deg",
+   "scenario": null
+  }
+ }
+}

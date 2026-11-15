@@ -1,0 +1,54 @@
+{
+  "dummy": true,
+  "id": "rank2",
+  "kind": "dummy",
+  "scenario": "nom_104",
+  "pad": {
+    "lon": 137.386789,
+    "lat": -4.810772,
+    "elev_m": 14.1
+  },
+  "rank": 2,
+  "official": false,
+  "score": 7,
+  "score_kind": "dummy_feasible_eva_count",
+  "tiebreak": {
+    "reachable_pct_30": 99.1,
+    "elev_m": 14.1
+  },
+  "headline": {
+    "30": {
+      "budget_min": 30,
+      "reachable_pct": 99.1,
+      "range_pct": [
+        99.0,
+        99.3
+      ]
+    },
+    "60": {
+      "budget_min": 60,
+      "reachable_pct": 99.7,
+      "range_pct": [
+        99.6,
+        null
+      ]
+    }
+  },
+  "route": {
+    "stops": [
+      "S1",
+      "S2",
+      "S3"
+    ],
+    "total_min": 179.4,
+    "n_feasible_subsets": 7
+  },
+  "files": {
+    "bands": "scenarios/pads/rank2/bands_104.geojson",
+    "edges": "scenarios/pads/rank2/edges.geojson",
+    "partner": "scenarios/pads/rank2/partner.geojson",
+    "route": "scenarios/pads/rank2/route_nom_104.geojson",
+    "timeline": "scenarios/pads/rank2/timeline_nom_104.json"
+  },
+  "note": "DUMMY parking option (synthetic world, not Mars data)"
+}

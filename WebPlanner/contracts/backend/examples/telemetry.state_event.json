@@ -1,0 +1,13 @@
+{
+ "t_eva_s": 61,
+ "pos": {"x_m": 13.4, "y_m": -3.1, "z_m": 0.4},
+ "t_home_min": 0.3,
+ "o2_home_L": 0.4,
+ "sim_o2_left_L": 480.08,
+ "ref_o2_left_L": 480.05,
+ "o2_diff_L": 0.03,
+ "margin_min": 300.2,
+ "binding": "O2",
+ "alarm": null,
+ "commands": [{"id": "c_01", "kind": "message", "text": "radio check", "created_utc": "2026-11-15T03:00:00Z"}]
+}

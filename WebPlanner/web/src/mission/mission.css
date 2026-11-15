@@ -1,0 +1,134 @@
+/* Mission Planer (/mission): map left, panel right (PDF "Mission Planer" layout, app colours). */
+.mission-panel { width: 380px; }
+.mp-body h2 { margin-bottom: 0.25rem; }
+.mp-card { background: var(--panel-2, #2b221e); border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem 0.8rem; margin: 0.75rem 0; }
+.mp-card h3 { margin-top: 0.1rem; }
+.mp-storm { display: block; margin-top: 0.45rem; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+.mp-storm:has(input:disabled) { opacity: 0.6; cursor: default; }
+.mp-card details + details { margin-top: 0.6rem; border-top: 1px solid var(--line); padding-top: 0.5rem; }
+.mp-card summary { cursor: pointer; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.mp-est { display: grid; gap: 0.2rem; }
+.mp-row { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.9rem; }
+.mp-row span { color: var(--muted); }
+.mp-row b { font-variant-numeric: tabular-nums; text-align: right; }
+.mp-row.mp-ok b { color: var(--ok); }
+.mp-row.mp-bad b, .mp-bad { color: var(--bad); }
+.mp-sep { border-top: 1px solid var(--line); margin: 0.3rem 0; }
+.mp-notice { border-left: 3px solid var(--warn); background: rgba(233, 185, 73, 0.08); padding: 4px 8px; font-size: 0.85rem; margin: 0.5rem 0; }
+.mp-empty { font-size: 0.85rem; margin: 0.5rem 0 0.2rem; }
+.mp-list { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
+/* min-width 0: a long one-line summary (closed editor) must not widen the list past the panel */
+.mp-list li { border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem; min-width: 0; }
+.mp-list li.mp-li-bad { border-color: var(--bad); }
+.mp-li-head { display: flex; align-items: center; gap: 0.5rem; }
+.mp-num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #1a120e; font: 700 11px system-ui, sans-serif; flex: none; }
+.mp-leg { flex: 1; min-width: 0; font-size: 0.85rem; }
+.mp-actions { display: flex; gap: 2px; }
+.mp-actions button, .mp-clear { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; cursor: pointer; font-size: 0.8rem; }
+.mp-actions button:disabled { opacity: 0.35; cursor: default; }
+.mp-actions button:not(:disabled):hover, .mp-clear:hover { border-color: var(--accent); }
+.mp-li-body { font-size: 0.82rem; color: var(--muted); margin: 0.15rem 0 0 1.9rem; font-variant-numeric: tabular-nums; }
+.mp-select select { width: 100%; margin: 0.5rem 0 0.25rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.mp-sources { margin-top: 1rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mp-wp { width: 24px; height: 24px; border-radius: 50%; background: var(--accent, #e8925a); color: #1a120e; border: 2px solid #1a120e; display: grid; place-items: center; font: 700 11px system-ui, sans-serif; cursor: grab; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6); }
+.mp-wp-bad { background: var(--bad, #e5604d); }
+@media (max-width: 760px) {
+  .mission-panel { width: auto; }
+}
+/* Maps switcher (bottom left, above the scale bar) */
+.mp-maps { position: absolute; left: 10px; bottom: 38px; z-index: 3; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 280px; font: 12px system-ui, sans-serif; }
+.mp-maps-btn { display: flex; align-items: center; gap: 8px; background: rgba(33, 26, 23, 0.94); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 5px 10px 5px 5px; cursor: pointer; text-align: left; line-height: 1.2; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+.mp-maps-btn:hover, .mp-maps-tile:hover:not(:disabled) { border-color: var(--accent); }
+.mp-maps-swatch { width: 34px; height: 34px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, 0.35); flex: none; display: inline-block; }
+.mp-maps-menu { display: flex; gap: 6px; background: rgba(33, 26, 23, 0.94); border: 1px solid var(--line); border-radius: 10px; padding: 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+.mp-maps-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; background: transparent; color: var(--ink); border: 1px solid transparent; border-radius: 8px; padding: 4px 6px; cursor: pointer; font-size: 11px; }
+.mp-maps-tile .mp-maps-swatch { width: 44px; height: 44px; }
+.mp-maps-tile.on { border-color: var(--accent); }
+.mp-maps-tile:disabled { opacity: 0.4; cursor: default; }
+.mp-maps-legend { background: rgba(33, 26, 23, 0.94); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; color: var(--ink); }
+.mp-maps-legend ul { list-style: none; margin: 4px 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; }
+.mp-maps-legend li { display: flex; align-items: center; gap: 5px; }
+.mp-swatch { width: 12px; height: 12px; border-radius: 2px; flex: none; display: inline-block; }
+.mp-maps-note { display: block; color: var(--muted); font-size: 11px; }
+/* Waypoint editor: stop time, tags, note */
+.mp-wpe { margin: 0.25rem 0 0.1rem 1.9rem; font-size: 0.82rem; min-width: 0; }
+.mp-wpe summary { display: block; cursor: pointer; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-wpe summary::before { content: '▸ '; color: var(--muted); }
+.mp-wpe[open] summary::before { content: '▾ '; }
+.mp-wpe summary::-webkit-details-marker { display: none; }
+.mp-wpe[open] summary { white-space: normal; }
+.mp-wpe-stop { display: flex; align-items: center; gap: 0.4rem; margin: 0.4rem 0; }
+.mp-wpe-stop span:first-child { color: var(--muted); }
+.mp-wpe input, .mp-wpe textarea { background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font: inherit; }
+.mp-wpe input { width: 4.5rem; font-variant-numeric: tabular-nums; }
+.mp-wpe textarea { width: 100%; box-sizing: border-box; resize: vertical; margin-top: 0.35rem; }
+.mp-wpe input:focus, .mp-wpe textarea:focus { outline: none; border-color: var(--accent); }
+.mp-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.mp-tags button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; cursor: pointer; font-size: 0.75rem; }
+.mp-tags button:hover { border-color: var(--accent); }
+.mp-tags button.on { background: var(--accent); border-color: var(--accent); color: #1a120e; }
+.mp-wp-noted { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6), 0 0 0 4px var(--accent, #e8925a); }
+.mp-share { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; font-size: 0.78rem; }
+/* Science stations on the planner map */
+.mp-station { width: 28px; height: 28px; font-size: 10px; opacity: 0.92; }
+.mp-station.in-plan { box-shadow: 0 0 0 3px var(--accent, #e8925a); }
+.mp-st-pop { display: grid; gap: 6px; font: 12px system-ui, sans-serif; color: #1a120e; }
+.mp-st-pop div { display: flex; align-items: center; gap: 10px; }
+.mp-st-pop button { background: #1a120e; color: #fff; border: 0; border-radius: 6px; padding: 3px 8px; cursor: pointer; font: inherit; }
+.mp-st-pop button:disabled { opacity: 0.5; cursor: default; }
+.mp-st-pop a { color: #8a3b12; font-weight: 600; }
+.mp-st-link { margin-left: 0.5rem; font-size: 0.78rem; white-space: nowrap; }
+/* Embedded in MARVIS (marvis/bridge.ts): start the EVA in the simulator; the EVA debrief card */
+.mp-start { display: block; width: 100%; min-height: 40px; margin-bottom: 0.5rem; padding: 0.45rem 0.9rem; background: var(--accent); color: #1a120e; border: 1px solid var(--accent); border-radius: 8px; font: inherit; font-weight: 700; cursor: pointer; }
+.mp-start:hover:not(:disabled) { background: #f0a472; border-color: #f0a472; }
+.mp-start:active:not(:disabled) { transform: translateY(1px); }
+.mp-start:disabled { opacity: 0.45; cursor: default; }
+.mp-start[aria-busy='true'] { opacity: 0.8; cursor: progress; }
+.mp-start:focus-visible, .mp-download:focus-visible, .mp-debrief .mp-clear:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mp-start-err { margin: 0 0 0.5rem; padding: 4px 8px; border: 1px solid var(--bad); border-radius: 6px; font-size: 0.85rem; overflow-wrap: anywhere; }
+.mp-download { min-height: 28px; padding: 3px 10px; }
+.mp-download:disabled { opacity: 0.45; cursor: default; }
+.mp-download + .muted { display: block; margin-top: 0.35rem; }
+.mp-debrief { border-color: var(--accent); }
+.mp-debrief-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.mp-debrief-head h3 { margin: 0.1rem 0; color: var(--ink); }
+.mp-debrief .mp-clear { min-height: 28px; padding: 2px 10px; }
+.mp-debrief-label { margin: 0.3rem 0 0.5rem; }
+.mp-debrief-origin { display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+.mp-row.mp-warn b { color: var(--warn); }
+.mp-debrief-legend { margin-top: 0.5rem; border-top: 1px solid var(--line); padding-top: 0.4rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .mp-start { transition: transform 80ms ease-out; }
+}
+
+/* ---- MARVIS build: the planner inside the new shell (ui/shell) ----
+   Layout unchanged. Inside the shell frame the old page variables read the shell's tokens
+   (ui/tokens.css), so colours, fonts and radii match the rest of the app; the legacy frame
+   (?legacy=1) keeps the old look. Colour meaning as in the shell: text colour for the user's own
+   points and the primary action, yellow only for the focus ring, safe / caution / limit for margins. */
+.hl-shell .mission {
+  --bg: var(--color-bg);
+  --panel: var(--color-sidebar);
+  --panel-2: var(--color-card);
+  --ink: var(--color-text);
+  --muted: var(--color-text-muted);
+  --line: var(--color-card-border);
+  --accent: var(--color-text);
+  --ok: var(--color-safe);
+  --warn: var(--color-caution);
+  --bad: var(--color-limit);
+  font-family: var(--font-text);
+  line-height: var(--line-height-body);
+  color: var(--color-text);
+}
+.hl-shell .mission code { font-family: var(--font-mono); }
+.hl-shell .mission .mp-card, .hl-shell .mission .mp-maps-btn, .hl-shell .mission .mp-maps-menu, .hl-shell .mission .mp-maps-legend { border-radius: var(--radius-card); }
+.hl-shell .mission .mp-maps-btn, .hl-shell .mission .mp-maps-menu, .hl-shell .mission .mp-maps-legend { background: var(--color-card); }
+.hl-shell .mission .mp-list li, .hl-shell .mission .mp-start, .hl-shell .mission .mp-start-err, .hl-shell .mission .mp-select select,
+.hl-shell .mission .mp-wpe input, .hl-shell .mission .mp-wpe textarea, .hl-shell .mission .mp-maps-tile, .hl-shell .mission .mp-maps-swatch { border-radius: var(--radius-input); }
+.hl-shell .mission .mp-notice { background: color-mix(in srgb, var(--color-caution) 10%, transparent); }
+.hl-shell .mission .mp-start:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 86%, var(--color-bg)); border-color: transparent; }
+.hl-shell .mission :focus-visible { outline: var(--line-focus-ring) solid var(--color-select); outline-offset: var(--line-focus-ring); }
+/* The timeline dock under the map shows the official plan's EVA clock, not the plan made here: hidden on this page. */
+body[data-route='mission'] .hl-shell .hl-dock { display: none; }

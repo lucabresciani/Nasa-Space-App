@@ -12,7 +12,8 @@ The Unity side and its reference (API, switches, fallback, viewer protocol) are 
 | --- | --- |
 | `viewer/` | source of `MarvisWeb.exe` (.NET Framework 4.8, WinForms + WebView2): `Program.cs`, `MarvisWeb.csproj`, `app.manifest` |
 | `viewer/dist/` | the five files that ship (`MarvisWeb.exe`, its `.config`, three WebView2 dlls). Committed; the game build copies them to `MarvisWeb/` next to `MARVIS.exe`, the editor uses them in place |
-| `Update-Web.ps1` | brings a new version of the web app into the project (below) |
+| `Build-Web.ps1` | builds the web planner kept in `WebPlanner/` and puts it where the game serves it (see "First time on another machine") |
+| `Update-Web.ps1` | merges a newer version of the web team's repository, in a separate checkout of it (below) |
 | `web-patch/marvis-embed-newdesign.patch` | the web side used now: the Mission Planer page and the MARVIS bridge on top of the web team's new design (HOMELINE repository, branch `main`, commit `2940436`); written by `Update-Web.ps1`, apply with `git apply` |
 | `web-patch/marvis-embed.patch` | the same bridge for the previous layout (on top of commit `36bc6cc`, branch `claude/unity-link-web-fixes`); kept for the branch `web-app-merge-not-final` |
 | `mock/marvis-mock.mjs` | a stand-in for the game side, so the web team can test the page without Unity: `node mock/marvis-mock.mjs --root <built web app>`. It serves the app and `/marvis/api/`; its test-only controls are under `/marvis/mock/`. Its EVA logs are synthetic |
@@ -26,32 +27,33 @@ app only when it has `index.html`, an `assets` folder and the marker file `marvi
 
 ## First time on another machine
 
-The repository does not contain the built web app (about 280 MB), so MISSION PLAN opens the built-in
-planning panel until it is put in place:
+Everything needed is in this repository. The web planner's sources and map data are in `WebPlanner/`
+at the repository root: a copy of the web team's repository (HOMELINE, branch `main`, commit `2940436`)
+with the Mission Planer page and the MARVIS bridge added. The built site is not committed (it is made
+from `WebPlanner/` in seconds), so until it is built MISSION PLAN opens the built-in planning panel.
 
-1. Get the project's planner data as for the rest of the project (`HomelineData/` in the project root:
-   see `Docs/homeline/HANDOFF.md`).
-2. Build the web app with the bridge and copy it in (`<project>` is this repository's folder):
+1. Clone the branch `web-embed` (Git LFS is needed for the Unity assets, as for the rest of the project).
+2. Build the web planner (needs Node.js), from the project root:
 
 ```
-git clone https://github.com/LuxKaiwalker/home-line.git
-cd home-line
-git checkout 2940436
-git apply <project>\Tools\marvis-web\web-patch\marvis-embed-newdesign.patch
-cd web
-npm ci
-node scripts/build-marvis.mjs
-robocopy dist <project>\HomelineData\web /MIR
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\marvis-web\Build-Web.ps1
 ```
 
-   `build-marvis.mjs` builds the site, writes MARVIS where the bundled text says HOMELINE in capitals
-   (the product name shown to the user; the lower-case contract names stay) and checks the result.
+   It installs the web packages the first time, builds `WebPlanner\web`, writes MARVIS where the product
+   name is shown (the lower-case contract names such as `homeline_mission` stay), and fills
+   `HomelineData\web` (the site the game serves) and `HomelineData\bundle` (the planner's official bundle).
 3. Open the project in Unity and press Play, or build the game (`HomelineBuild.Win64`, output
    `Builds\MARVIS`). In the editor the planner is a centred window over the editor; in the built game
    it covers the game window.
 
+To change the web planner: edit under `WebPlanner\web\src` (the Mission Planer page is
+`views\mission.tsx` and `mission\`, the bridge to the game is `marvis\bridge.ts`), run `Build-Web.ps1`
+again, and press Play. With `-Build <folder of a built game>` the script also replaces the site inside an
+already built game, so no Unity build is needed for a web-only change.
+
 No server is needed: the Mission Planer page computes the route in the browser. The web team's
-backend route editing is not switched on in this build.
+backend route editing is not switched on in this build. `HomelineData\router` (used only by the
+built-in planning panel to re-route edited plans) is not in the repository; `Tools\homeline-data\make_router_grid.py` makes it.
 
 ## Build the viewer
 
@@ -65,9 +67,11 @@ dotnet build -c Release
 A Release build rewrites `viewer\dist`. Commit `dist` with the source change; `bin` and `obj` are ignored.
 Then `test\Test-MarvisWeb.ps1` checks the new exe (it shows a small window for about half a minute).
 
-## Update the web app
+## Take a newer version from the web team
 
-When the web team publishes a new version, from the project root:
+`WebPlanner/` is a copy without the web team's git history, so merging their later work is done in a
+separate checkout of their repository that carries the same changes as a branch, and the result is
+copied back over `WebPlanner/` (that last copy is by hand for now). In that checkout, from the project root:
 
 ```
 powershell -NoProfile -ExecutionPolicy Bypass -File Tools\marvis-web\Update-Web.ps1 -Ref main

@@ -1,0 +1,54 @@
+{
+ "name": "terrain",
+ "encoding": "terrarium",
+ "format": "png",
+ "scheme": "xyz",
+ "tile_px": 256,
+ "factor": 1.878,
+ "vertical_offset_m": 7028.0,
+ "tiles": [
+  "terrain/{z}/{x}/{y}.png"
+ ],
+ "minzoom": 10,
+ "maxzoom": 16,
+ "bounds": [
+  137.319359,
+  -4.868422,
+  137.444641,
+  -4.743578
+ ],
+ "focus": {
+  "minzoom": 16,
+  "maxzoom": 16,
+  "bounds": [
+   137.37,
+   -4.82,
+   137.42,
+   -4.77
+  ]
+ },
+ "source": [
+  "data/interim/terrain/dem_1m.tif",
+  "data/interim/terrain/ctx_20m_v2.tif",
+  "data/interim/terrain/mola_hrsc_200m.tif"
+ ],
+ "source_hash": "7babbd07d042a6bc938740818aab1e97d4ca94ec7f756e564e7a4080dd4694f1",
+ "total_bytes": 24977875,
+ "budget_bytes": 26214400,
+ "tile_count": {
+  "10": 1,
+  "11": 1,
+  "12": 4,
+  "13": 12,
+  "14": 42,
+  "15": 144,
+  "16": 100
+ },
+ "precision_m": 0.015625,
+ "source_pixel_pct": {
+  "data/interim/terrain/dem_1m.tif": 95.27,
+  "data/interim/terrain/ctx_20m_v2.tif": 4.728,
+  "data/interim/terrain/mola_hrsc_200m.tif": 0.002
+ },
+ "attribution": "Elevation: USGS Astrogeology MSL Gale merged DEM 1 m v3 (HiRISE/CTX/HRSC on MOLA), USGS controlled CTX DTMs, HRSC-MOLA blended DEM 200 m v2"
+}

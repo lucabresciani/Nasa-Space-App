@@ -1,0 +1,25 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "homeline/contracts/backend/job.schema.json",
+ "title": "job status",
+ "description": "Response of POST /jobs and GET /jobs/{id} (F23): one heavy job (plan, siting, replan) in the process pool. Identical inputs attach to the running or finished job with the same hash. Queue cap, timeout and rate limits: config/backend.yaml compute.*, limits.*.",
+ "x-contract-version": "1.0.0",
+ "x-source": "Backend spec §5, F23, F24 (stages), §4.1",
+ "type": "object",
+ "properties": {
+  "id": {"type": "string"},
+  "type": {"enum": ["plan", "siting", "replan"]},
+  "hash": {"type": "string", "pattern": "^[0-9a-f]{16}$", "description": "result hash of the inputs (D57)"},
+  "status": {"enum": ["queued", "running", "done", "error", "timeout", "refused"]},
+  "stage": {"type": ["string", "null"], "description": "stage now running; null when queued or finished"},
+  "progress": {"type": "number", "minimum": 0, "maximum": 1},
+  "stages_done": {"type": "array", "items": {"type": "string"}, "description": "finished stages in order; their files are already readable under result_url"},
+  "queue_position": {"type": ["integer", "null"], "minimum": 0},
+  "result_url": {"type": ["string", "null"], "description": "results/{hash}/ base URL for the loader (dataUrl(path, mode, base)); set once the first stage is done"},
+  "attached": {"type": "boolean", "description": "true when identical inputs attached to a running or finished job"},
+  "error": {"type": ["string", "null"]},
+  "retry_after_s": {"type": ["integer", "null"], "minimum": 0}
+ },
+ "additionalProperties": false,
+ "required": ["id", "type", "hash", "status", "progress", "stages_done"]
+}

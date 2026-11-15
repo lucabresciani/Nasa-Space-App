@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/horizon.schema.json",
+  "title": "horizons/{observer_id}.json (pipeline-internal)",
+  "description": "Point horizon profile (F12): 1,440 azimuths with elevation angle, distance to the horizon point and source band. Pipeline-internal (data/interim/horizon/), shared WS3 -> WS4/WS8/WS9. Beyond SPEC §6: named in SPEC §2 F12 and brief WS3.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §2 F12; briefs/WS3.md; config/horizon.yaml",
+  "type": "object",
+  "properties": {
+    "observer_id": {
+      "type": "string"
+    },
+    "az_step_deg": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "config/horizon.yaml az_step_deg"
+    },
+    "elevation_deg": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "distance_m": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "source": {
+      "type": "array",
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "description": "source band per azimuth (dem_1m / ctx_20m / mola_hrsc_200m)"
+    }
+  },
+  "required": [
+    "observer_id",
+    "az_step_deg",
+    "elevation_deg",
+    "distance_m",
+    "source"
+  ]
+}

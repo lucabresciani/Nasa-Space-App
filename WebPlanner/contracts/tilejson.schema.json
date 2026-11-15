@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/tilejson.schema.json",
+  "title": "tiles/basemap/tilejson.json",
+  "description": "TileJSON-style index of the XYZ basemap tiles (F17; HiRISE colour ortho). Tile URLs are relative to the data root; the app prefixes its data base URL. Mars lon/lat go straight through the XYZ (Web Mercator tile) scheme (SPEC §4.2, D4). Written by make web from WS1's tiles (tools/make_web.py). Added in v1.1.0.",
+  "x-contract-version": "1.1.0",
+  "x-source": "SPEC §4, §2.2 F17; brief WS1 (basemap tiles); WS5 STATUS (BasemapSource)",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "tilejson": {
+      "const": "3.0.0"
+    },
+    "name": {
+      "type": "string"
+    },
+    "scheme": {
+      "const": "xyz"
+    },
+    "format": {
+      "enum": [
+        "webp",
+        "png",
+        "jpg"
+      ]
+    },
+    "tileSize": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "px"
+    },
+    "tiles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\{z\\}.*\\{x\\}.*\\{y\\}"
+      },
+      "minItems": 1,
+      "description": "URL templates relative to the data root, e.g. tiles/basemap/{z}/{x}/{y}.webp"
+    },
+    "minzoom": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 24
+    },
+    "maxzoom": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 24
+    },
+    "bounds": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "[w, s, e, n] lon/lat deg covered by the tiles at minzoom..maxzoom"
+    },
+    "attribution": {
+      "type": "string"
+    },
+    "zoom_bounds": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 4,
+        "maxItems": 4,
+        "description": "[w, s, e, n] lon/lat deg"
+      },
+      "description": "optional: zoom level (string) -> [w, s, e, n] actually tiled at that zoom, where it is smaller than bounds (e.g. z17-18 over the focus area only)"
+    },
+    "tile_count": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "description": "optional: zoom level (string) -> number of tiles"
+    },
+    "source": {
+      "type": "string",
+      "description": "optional: source image URL"
+    }
+  },
+  "required": [
+    "tilejson",
+    "scheme",
+    "format",
+    "tileSize",
+    "tiles",
+    "minzoom",
+    "maxzoom",
+    "bounds",
+    "attribution"
+  ]
+}

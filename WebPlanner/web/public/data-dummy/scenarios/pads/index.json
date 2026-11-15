@@ -1,0 +1,59 @@
+{
+  "dummy": true,
+  "scenario": "nom_104",
+  "score_kind": "dummy_feasible_eva_count",
+  "order": "DUMMY: feasible station subsets desc; tiebreak 1 reachable % at 30 min desc; tiebreak 2 elevation asc",
+  "official": "rank1",
+  "decision": "D21 (dummy picker, synthetic world)",
+  "ids": "rank{n} = dummy D21 rank n",
+  "pads": [
+    {
+      "id": "rank1",
+      "kind": "dummy",
+      "lon": 137.382,
+      "lat": -4.806,
+      "elev_m": 0.0,
+      "rank": 1,
+      "score": 7,
+      "official": true,
+      "picker": false,
+      "tiebreak": {
+        "reachable_pct_30": 99.4,
+        "elev_m": 0.0
+      },
+      "summary": null
+    },
+    {
+      "id": "rank2",
+      "kind": "dummy",
+      "lon": 137.386789,
+      "lat": -4.810772,
+      "elev_m": 14.1,
+      "rank": 2,
+      "score": 7,
+      "official": false,
+      "picker": true,
+      "tiebreak": {
+        "reachable_pct_30": 99.1,
+        "elev_m": 14.1
+      },
+      "summary": "scenarios/pads/rank2/summary.json"
+    },
+    {
+      "id": "rank3",
+      "kind": "dummy",
+      "lon": 137.375567,
+      "lat": -4.806,
+      "elev_m": 0.0,
+      "rank": 3,
+      "score": 7,
+      "official": false,
+      "picker": true,
+      "tiebreak": {
+        "reachable_pct_30": 96.3,
+        "elev_m": 0.0
+      },
+      "summary": "scenarios/pads/rank3/summary.json"
+    }
+  ]
+}

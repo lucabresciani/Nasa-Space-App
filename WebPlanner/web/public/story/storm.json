@@ -1,0 +1,20 @@
+{
+  "id": "storm",
+  "version": "1",
+  "title": "Storm replay (DESIGN U9): the 20 May 2024 storm on the EVA clock (hypothetical timing, D39); the tripwire fires at the route's largest time home, the dose ring tightens. ?capture=storm runs it with the storm on (notes/M12.md)",
+  "size": [1920, 1080],
+  "fps": 60,
+  "steps": [
+    {"t": 0, "ui": "hide", "caption": "storm.title",
+     "layers": {"homeline": true, "unknown": true, "edges": false, "stations": true, "route": true},
+     "field": {"mode": "margin"},
+     "clock": {"t_min": 25, "playing": false},
+     "camera": {"target": "PAD", "alt_m": 7000, "bearing": 0, "pitch": 0}},
+    {"t": 2, "clock": {"playing": true, "speed": 3}},
+    {"t": 4, "caption": null},
+    {"t": 9, "caption": "storm.doseRing"},
+    {"t": 13, "caption": null},
+    {"t": 20, "clock": {"playing": false}},
+    {"t": 22}
+  ]
+}

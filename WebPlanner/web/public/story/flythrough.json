@@ -1,0 +1,16 @@
+{
+  "id": "flythrough",
+  "version": "1",
+  "title": "Flythrough of the plan's route (DESIGN U6 item 2): follow camera on the mission clock",
+  "size": [1920, 1080],
+  "fps": 60,
+  "steps": [
+    {"t": 0, "ui": "hide",
+     "layers": {"terrain": true, "route": true, "homeline": true, "unknown": true, "stations": true},
+     "field": {"mode": "margin"},
+     "clock": {"t_min": 0, "playing": true, "speed": 4},
+     "camera": {"target": "CREW"}},
+    {"t": 82, "clock": {"playing": false}},
+    {"t": 84}
+  ]
+}

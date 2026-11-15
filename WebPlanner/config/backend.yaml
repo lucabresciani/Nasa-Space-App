@@ -1,0 +1,118 @@
+# Backend (optional live layer): F23-F36, D40, D41, D48, D50-D57. Owner WS12 (C wrote v1 at the
+# backend bootstrap, 2026-11-14). Source: Notion "Backend expansion - plan and specification"
+# (sections given per key) and "Backend implementation plan (WS11-WS14)" section 5.
+# Defaults that already live in another config file are referenced as "<file>.<key>" (`*_ref`),
+# never copied. This file is NOT part of the result hash (docs/backend.md "Result hash"): changing a
+# limit must not invalidate computed plans.
+contract_version: "1.2.0"          # contracts/backend/ family (v1.2.0: route, D97)
+
+api:
+  prefix: /api/v1
+  health_timeout_s: 2              # F23: web client gives up after this and shows the offline banner
+  cors_origins:                    # section 8; confirmed (team lead decision 6 + hosting, 2026-11-14)
+    # The ONLY CORS source: FastAPI CORSMiddleware reads this list; nginx adds no CORS headers
+    # (an origin allowed in two places breaks the browser). A Unity WebGL origin is added here.
+    - "https://luxkaiwalker.github.io"   # GitHub Pages origin of LuxKaiwalker/home-line
+    - "https://homeline.vxliu.com"       # custom Pages domain
+    - "http://localhost:5173"            # vite dev server
+  docs_path: /api/docs             # F35 OpenAPI page
+
+compute:
+  workers: 2                       # section 4.1: process pool, CPU-bound Numba search
+  queue_max_waiting: 20            # section 4.1
+  job_timeout_s: 600               # assumed: E8 measured 332 s for a custom pad (3 variants, D81); ~1.8x headroom
+  hash:                            # F23
+    algo: sha256
+    hex_chars: 16
+    # parts: canonical plan inputs + engine tree (git tree of pipeline/) + engine config hash
+    # (config/*.yaml except this file) + terrain data hash (server data manifest)
+    exclude_config: [backend.yaml, design.yaml]   # D57; design.yaml holds UI-only values
+
+cache:
+  dir: results                     # relative to HL_SERVER_DATA (env); one folder per result hash
+  max_gb: 20                       # section 4.1
+  policy: lru
+  pinned: [official, picker]       # static-shipped hashes are never evicted
+
+limits:                            # section 8
+  guest_heavy_jobs: {count: 6, window_min: 10}
+  user_heavy_jobs: {count: 30, window_min: 10}
+  telemetry_posts_per_s: 2
+  upload_max_bytes: 1048576        # plan.json import, 1 MB
+  proxy_max_body_bytes: 2097152    # assumed: true (team lead, O3): reverse-proxy request body cap,
+                                   # a backstop above upload_max_bytes; server/ops Caddy (O1) uses 2 MB
+  telemetry_max_samples: 30000     # per session (8 h at 1 Hz = 28,800)
+  ip_hash_retention_days: 7
+  title_max_chars: 120             # assumed: true (section 8 says "length-capped", no value)
+  notes_max_chars: 4000            # assumed: true
+
+ranges:                            # F26 (crew) and F25 (route); inputs outside are refused
+  body_mass_kg: {min: 50, max: 100, default_ref: crew.body_mass_kg}
+  suit_kg: {min: 60, max: 180, default_ref: crew.default_suit_kg, precomputed: [80, 104, 120]}
+  tools_kg: {min: 0, max: 30, default_ref: crew.tools_kg}
+  vo2max_ml_kg_min: {min: 30, max: 60, default_ref: crew.vo2max_ml_kg_min}
+  effort_cap_frac: {min: 0.40, max: 0.70, default_ref: crew.effort_cap_frac}
+  walkback_budget_min: {min: 10, max: 90, default: [30, 60]}
+  d_allow_mgy: {min: 0.25, max: 1.0, default: 0.5}           # D9
+  dwell_min: {min: 5, max: 120}
+  eva_duration_h: {min: 2, max: 8}
+  start_lmst_h: {min: 6, max: 14, assumed: true}             # no range in the spec; daylight bound
+  # plan_inputs eva.reserve_min: no range in the contract or spec (decision 10). The default is the
+  # engine's D24 key (decision 12): 30 min at the effort cap, the Shuttle/EMU EVA reserve (NTRS
+  # 20140009556). Range = half to double that precedent, so users can test a leaner or a more
+  # conservative reserve without leaving the scale the one sourced value sets. No source gives
+  # the bounds themselves, hence assumed.
+  reserve_min: {min: 15, max: 60, default_ref: crew.o2_margin.reserve_min_at_effort_cap, assumed: true}
+  user_points_max: 3                                         # access radius: D27 (stations.yaml), not repeated
+  anchored_flag_note: "outside the anchored range (ICES-2026-127, IST-2)"
+
+route:                             # D97 waypoint block: plan_inputs route (ordered stops); enforced by the server (422 naming the stop)
+  max_stops: 8                     # assumed: true (D97): stations + free points in one route
+  max_free_points: 4               # assumed: true (D97): each free point costs ~40 s per scenario variant (station fields)
+  min_stop_spacing_m: 50           # assumed: true (D97): = the D27 access radius; closer stops (or a stop and the pad) are refused
+
+pads:                              # F24: validity = the D21 rule
+  rule_ref: site.siting            # max_slope_deg, siting block size, flat disc inside the grid
+
+plans:                             # F27, F28
+  versions_kept: 20
+  share_code: {prefix: "HL-", chars: 6, alphabet: crockford32}   # D55/K4: "HL-" + 6 Crockford base32 = 9 chars
+  visibility: [private, link]      # no public listing
+
+sessions:                          # F31
+  telemetry_hz: 1
+  commands: [advise_turn_back, replan, message]
+  message_max_chars: 280           # assumed: true
+
+conditions_refresh:                # F34; O4 is the Local Lead's (default on, labelled)
+  enabled: true
+  every_h: 6
+
+parity:                            # F35, section 13
+  geojson_decimals: 6
+  preview_vs_full_rel: 0.01
+  replay_margin_tol_min: 0.5
+  bundle_frame_roundtrip_m: 0.01
+
+labels:
+  live: "Computed live · not part of the validated scorecard"
+  precomputed: "Precomputed · official plan"   # run_record label for origin=precomputed (team lead 22:40)
+  offline: "Live planning is offline · showing precomputed plans"
+  user_station: "user station · no science scoring"
+
+deploy:
+  no_deploy_after_ref: event.deadline_local
+  parity_blocks_deploy: true
+  kill_switch_env: HL_HEAVY_JOBS_OFF
+
+gates_local:                       # D50: backend starts Sat evening, gates shifted (option A)
+  P0: "2026-11-14T22:00:00+01:00"
+  B0: "2026-11-15T00:00:00+01:00"
+  B1: "2026-11-15T03:30:00+01:00"
+  B2: "2026-11-15T07:00:00+01:00"
+  B3: "2026-11-15T08:00:00+01:00"
+  freeze_ref: event.gates_local.freeze
+
+assumed: [limits.title_max_chars, limits.notes_max_chars, ranges.start_lmst_h, ranges.reserve_min,
+          sessions.message_max_chars, limits.proxy_max_body_bytes, compute.job_timeout_s,
+          route.max_stops, route.max_free_points, route.min_stop_spacing_m]

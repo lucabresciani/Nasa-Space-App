@@ -1,0 +1,14 @@
+rule: "per station card: 3-6 landmarks that rise above the computed skyline or are within 5 km; label = name, bearing_deg, dist_km"
+sources:
+  official: "IAU Gazetteer of Planetary Nomenclature (Mars), features within 80 km of the pad; coordinates read at H0 (discovery)"
+  informal: "rover-team names from JPL/NASA releases or MMGIS layers; labelled 'informal'"
+candidates:                        # names only; never type coordinates by hand
+  - {name: "Aeolis Mons (Mount Sharp)", kind: official}
+  - {name: "Gale crater rim", kind: official}
+  - {name: "Peace Vallis", kind: official}
+  - {name: "Aeolis Palus", kind: official}
+  - {name: "Gediz Vallis", kind: official}
+  - {name: "Boxwork unit", kind: informal}
+  - {name: "Vera Rubin Ridge", kind: informal}
+  - {name: "Greenheugh Pediment", kind: informal}
+drop_if: "no verified coordinate at H0, or not visible from the station (below the skyline and > 5 km)"

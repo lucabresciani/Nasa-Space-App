@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/fix_interval_summary.schema.json",
+  "title": "nav/fix_interval_summary.json",
+  "description": "Fix-interval map summary (F21).",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.2",
+  "type": "object",
+  "properties": {
+    "set": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "nav parameter set (config/nav.yaml sets)"
+    },
+    "median_m": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "edge_p10_m": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "class_area_pct": {
+      "type": "object",
+      "properties": {
+        "<100": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "100-300": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "300-1000": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        ">1000": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "<100",
+        "100-300",
+        "300-1000",
+        ">1000"
+      ]
+    }
+  },
+  "required": [
+    "set",
+    "median_m",
+    "edge_p10_m",
+    "class_area_pct"
+  ]
+}

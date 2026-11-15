@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/edges.schema.json",
+  "title": "scenarios/{scenario}/edges.geojson",
+  "description": "Homeline edges labelled with what sets them (F6): LineString features with properties {budget, cause}.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "Feature"
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "LineString",
+                  "MultiLineString"
+                ]
+              },
+              "coordinates": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "budget": {
+                "enum": [
+                  30,
+                  60
+                ],
+                "description": "min"
+              },
+              "cause": {
+                "enum": [
+                  "physiology",
+                  "slope",
+                  "data"
+                ]
+              }
+            },
+            "required": [
+              "budget",
+              "cause"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ]
+      }
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ]
+}

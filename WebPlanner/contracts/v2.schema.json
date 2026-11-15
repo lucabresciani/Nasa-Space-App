@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/v2.schema.json",
+  "title": "validation/v2.json",
+  "description": "V2 skyline validation (F13): per frame and column predicted vs detected angle; median and P90 by distance class; manual-check flags. Beyond SPEC §6: file named in SPEC §2 F13 and brief WS3.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §2 F13; briefs/WS3.md",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "object",
+      "description": "by distance class (near/mid/far, config/horizon.yaml distance_classes_km): median and P90, deg"
+    },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "per-frame results incl. manual-check flag"
+    }
+  },
+  "required": [
+    "summary",
+    "frames"
+  ]
+}

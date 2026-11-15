@@ -1,0 +1,104 @@
+{
+  "dummy": true,
+  "bounds": [
+    137.319317,
+    -4.868463,
+    137.444683,
+    -4.743537
+  ],
+  "width": 1481,
+  "height": 1481,
+  "res_m": 5,
+  "fields": {
+    "nom_104/t_home": {
+      "file": "fields/nom_104/t_home.png",
+      "scale": 0.1,
+      "units": "min",
+      "scenario": "nom_104"
+    },
+    "nom_104/o2_home": {
+      "file": "fields/nom_104/o2_home.png",
+      "scale": 0.01,
+      "units": "L",
+      "scenario": "nom_104"
+    },
+    "opt_104/t_home": {
+      "file": "fields/opt_104/t_home.png",
+      "scale": 0.1,
+      "units": "min",
+      "scenario": "opt_104"
+    },
+    "opt_104/o2_home": {
+      "file": "fields/opt_104/o2_home.png",
+      "scale": 0.01,
+      "units": "L",
+      "scenario": "opt_104"
+    },
+    "con_104/t_home": {
+      "file": "fields/con_104/t_home.png",
+      "scale": 0.1,
+      "units": "min",
+      "scenario": "con_104"
+    },
+    "con_104/o2_home": {
+      "file": "fields/con_104/o2_home.png",
+      "scale": 0.01,
+      "units": "L",
+      "scenario": "con_104"
+    },
+    "nom_104/home_bearing": {
+      "file": "fields/nom_104/home_bearing.png",
+      "scale": 0.01,
+      "units": "deg",
+      "scenario": "nom_104"
+    },
+    "nom_104/t_home_worst_10": {
+      "file": "fields/nom_104/t_home_worst_10.png",
+      "scale": 0.1,
+      "units": "min",
+      "scenario": "nom_104"
+    },
+    "nom_104/o2_home_worst_10": {
+      "file": "fields/nom_104/o2_home_worst_10.png",
+      "scale": 0.01,
+      "units": "L",
+      "scenario": "nom_104"
+    },
+    "nom_104/t_home_worst_50": {
+      "file": "fields/nom_104/t_home_worst_50.png",
+      "scale": 0.1,
+      "units": "min",
+      "scenario": "nom_104"
+    },
+    "nom_104/o2_home_worst_50": {
+      "file": "fields/nom_104/o2_home_worst_50.png",
+      "scale": 0.01,
+      "units": "L",
+      "scenario": "nom_104"
+    },
+    "nom_104/t_home_worst_100": {
+      "file": "fields/nom_104/t_home_worst_100.png",
+      "scale": 0.1,
+      "units": "min",
+      "scenario": "nom_104"
+    },
+    "nom_104/o2_home_worst_100": {
+      "file": "fields/nom_104/o2_home_worst_100.png",
+      "scale": 0.01,
+      "units": "L",
+      "scenario": "nom_104"
+    },
+    "slope": {
+      "file": "fields/shared/slope.png",
+      "scale": 0.01,
+      "units": "deg",
+      "scenario": null
+    },
+    "fix_interval_medium": {
+      "file": "fields/fix_interval_medium.png",
+      "scale": 1,
+      "units": "m",
+      "scenario": "nom_104"
+    }
+  }
+}

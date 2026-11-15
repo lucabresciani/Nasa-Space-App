@@ -1,0 +1,78 @@
+{
+  "about": "Licences of third-party and original assets shipped by the design system (web/src/ui/), for the /about page (kit rule 8, D73). Fonts and icons only; data sources are listed elsewhere.",
+  "assets": [
+    {
+      "id": "font-inter",
+      "name": "Inter",
+      "version": "4.1",
+      "kind": "font",
+      "licence": "SIL Open Font License 1.1",
+      "spdx": "OFL-1.1",
+      "copyright": "Copyright (c) 2016 The Inter Project Authors (https://github.com/rsms/inter)",
+      "source": "https://github.com/rsms/inter/releases/tag/v4.1",
+      "download": "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip",
+      "download_sha256": "9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e",
+      "licence_file": "web/src/ui/fonts/OFL-Inter.txt",
+      "files": [
+        "web/src/ui/fonts/Inter-Regular.latin.woff2",
+        "web/src/ui/fonts/Inter-Medium.latin.woff2",
+        "web/src/ui/fonts/Inter-SemiBold.latin.woff2"
+      ],
+      "modified": "Subset from web/Inter-{Regular,Medium,SemiBold}.woff2 of the release (no Reserved Font Name is declared, so the family name is kept)."
+    },
+    {
+      "id": "font-jetbrains-mono",
+      "name": "JetBrains Mono",
+      "version": "2.304",
+      "kind": "font",
+      "licence": "SIL Open Font License 1.1",
+      "spdx": "OFL-1.1",
+      "copyright": "Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)",
+      "source": "https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304",
+      "download": "https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip",
+      "download_sha256": "6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf",
+      "licence_file": "web/src/ui/fonts/OFL-JetBrainsMono.txt",
+      "files": [
+        "web/src/ui/fonts/JetBrainsMono-Medium.latin.woff2",
+        "web/src/ui/fonts/JetBrainsMono-SemiBold.latin.woff2"
+      ],
+      "modified": "Subset from fonts/webfonts/JetBrainsMono-{Medium,SemiBold}.woff2 of the release (no Reserved Font Name is declared, so the family name is kept)."
+    },
+    {
+      "id": "icons-lucide",
+      "name": "Lucide icons",
+      "version": "1.73.0 (npm lucide-static)",
+      "kind": "icons",
+      "licence": "ISC License; icons derived from Feather are MIT (Copyright (c) 2013-present Cole Bemis)",
+      "spdx": "ISC AND MIT",
+      "copyright": "Copyright (c) 2026 Lucide Icons and Contributors",
+      "source": "https://lucide.dev/ (https://github.com/lucide-icons/lucide), npm package lucide-static@1.73.0",
+      "licence_file": "web/src/ui/icons/LICENSE-lucide.txt",
+      "files": [
+        "web/src/ui/icons/lucide/*.svg",
+        "web/src/ui/icons/sprite.svg"
+      ],
+      "modified": "SVG files copied unchanged into lucide/; the sprite sets stroke width 1.5 (DESIGN §3.5)."
+    },
+    {
+      "id": "icons-homeline-marks",
+      "name": "HOMELINE custom marks (pad, station, scored site, user point, turn-back, tripwire, fix, thread home, rover, crew)",
+      "kind": "icons",
+      "licence": "Original drawings made for HOMELINE; Apache License 2.0 (repository LICENSE)",
+      "spdx": "Apache-2.0",
+      "copyright": "HOMELINE team, 2026",
+      "source": "web/src/ui/icons/custom/*.svg",
+      "files": [
+        "web/src/ui/icons/custom/*.svg",
+        "web/src/ui/icons/sprite.svg"
+      ],
+      "modified": "Simple geometric outlines drawn by hand; no NASA insignia, no copied or AI-generated art."
+    }
+  ],
+  "font_subset": {
+    "tool": "fonttools pyftsubset 4.55.3",
+    "options": "--flavor=woff2 --no-hinting --desubroutinize --layout-features=kern,liga,calt,tnum,case,ss01,zero",
+    "unicodes": "U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+0394,U+03BC,U+2009,U+2013-2014,U+2018-201A,U+201C-201E,U+2022,U+2026,U+202F,U+2032-2033,U+2080-2089,U+2190-2193,U+2212,U+2248,U+2264-2265",
+    "covers": "Latin, Latin-1 (incl. ° µ ± × ·), digits with tabular figures, subscripts ₀–₉ (₂), arrows ← ↑ → ↓, minus, ≈ ≤ ≥, Δ, μ, dashes, quotes, ellipsis, primes, thin spaces"
+  }
+}

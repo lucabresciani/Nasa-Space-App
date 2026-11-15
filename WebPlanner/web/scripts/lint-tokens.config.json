@@ -1,0 +1,7 @@
+{
+  "$comment": "Token lint (DESIGN §9, kit rule 2). Files under 'scope' must not contain colour, font-size, radius or duration literals; values come from src/ui/tokens.css / tokens.json (TS: src/ui/tokens.ts). 'legacy' lists files that already had literals on main when the lint was added (A1); they are skipped until they are migrated, then removed from this list. Never add a new file here.",
+  "scope": ["src/ui/", "src/map/", "src/state/", "src/edit/", "src/report/", "src/story/"],
+  "extensions": [".ts", ".tsx", ".css", ".js", ".mjs"],
+  "ignore": ["src/ui/tokens.css", "src/ui/tokens.json", "*.test.ts", "*.test.tsx"],
+  "legacy": ["src/map/consoleMap.ts"]
+}

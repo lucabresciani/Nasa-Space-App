@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/clock.schema.json",
+  "title": "conditions/clock.json",
+  "description": "Mars clock (F14): event-weekend LMST at Gale, Ls, sunrise/sunset; light time. Beyond SPEC §6: file named in SPEC §2 F14 (conditions/*.json) and brief WS4.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §2 F14; briefs/WS4.md",
+  "type": "object"
+}

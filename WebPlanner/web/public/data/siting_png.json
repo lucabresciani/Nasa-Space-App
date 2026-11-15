@@ -1,0 +1,1 @@
+{"image":"siting.png","coordinates":[[137.319325,-4.743545],[137.444675,-4.743545],[137.444675,-4.868455],[137.319325,-4.868455]],"corner_order":"top-left, top-right, bottom-right, bottom-left (MapLibre)","grey_max_score":1.4352,"rule":"site.yaml siting: sum of station values with conservative T_home <= 30 min; tiebreak lower elevation than the value-weighted station centroid"}

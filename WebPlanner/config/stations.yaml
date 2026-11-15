@@ -1,0 +1,65 @@
+scoring_weights: {crism: 0.4, ridge_density: 0.4, manual: 0.2}  # D32 (user 2026-11-14 16:20 CET): unchanged; assumed
+scoring_weights_assumed: true   # D32: the 0.4 / 0.4 / 0.2 weights are labelled assumed
+min_spacing_m: 300              # D32 (user 16:20 CET): every station >= 300 m from every other (D26 placement)
+ridge_density_radius_m: 25
+crism_indices: {sulfate: SINDEX2, clay: D2300}
+dwell_min: 30
+max_stations_siting: 8
+max_stations_dp: 12
+stations:
+  - id: S1
+    name: "Boxwork ridge-hollow transect"
+    rule: "highest (ridge_density + clay index) 25 m cell inside the focus area and inside the flat 30-min disc"
+    manual_priority: 0.5
+  - id: S2
+    name: "Fracture-network survey"
+    rule: "highest ridge_density cell at least 300 m from S1"
+    manual_priority: 0.5
+  - id: S3
+    name: "Nodule census"
+    rule: "hand pick by S on HiRISE ortho before H2; record lon/lat and the image used"
+    manual_priority: 0.5
+    status: dropped               # D26/D44 (user 17:28 CET): dropped, final (imagery behind "nodule" not checked)
+  - id: S4
+    name: "Gediz Vallis sulfur field"
+    rule: "Curiosity drive end nearest sol 4200 from MMGIS"
+    manual_priority: 1.0
+    verify_at_h0: true
+  - id: S5
+    name: "Debris-flow boulders"
+    rule: "hand pick by S on HiRISE ortho before H2"
+    manual_priority: 0.5
+    status: dropped               # D26/D44 (user 17:28 CET): dropped, final (imagery behind "boulder" not checked)
+extra_from_scoring: {max: 3, decide_by: "Sat 23:00 (D8)"}
+# D26 (user 2026-11-14 16:20 CET): placement after D22 on the D22 cell states.
+# D44 (user 17:28 CET, closes D26): the station list is final: S1, S2, S4, S6, S7, S8.
+placement:
+  order: [S4, S1, S2, extras]   # each placed station constrains the next by min_spacing_m
+  walkable: "the 3 m cell under the science point is assessed (state 0) in cellstate_3m.tif (D22, nominal 20 deg); D44: accepted, assumed"
+  s4_rule: "MMGIS drive end nearest sol 4200 (ties: earlier sol) that is walkable and in the focus area"
+  unreachable_label: "not reachable on foot"   # D26: a station nobody can reach stays on the map (WS2 decides reachability)
+extras:                         # D26: up to 3 stations from the F7 scoring rule
+  max: 3
+  ids: [S6, S7, S8]             # S3/S5 stay dropped (D44)
+  domain: "focus area (aoi_focus), walkable, >= min_spacing_m from every station"
+  crism_index: max              # larger of the normalised SINDEX2 / D2300 (as for S2)
+  manual_priority: 0            # SPEC F7: manual priority is for hand picks; none here. D44: accepted, assumed
+  name_min_norm: 0.5            # a component >= this names the station. D44: accepted, assumed
+  index_words: {D2300: clay, SINDEX2: sulfate}   # SPEC F7 "SINDEX2 for sulfates, D2300 for clays"
+  same_name_suffix:             # D44 (user 17:28 CET): stations with the same name get a compass suffix
+    pad: "data/interim/engine/public/pad.json top-level pad (rank1, official); site.yaml pad_default only if the file is missing"
+    compass: "8-point compass of the bearing from the pad to the station, e.g. '... (north-east)'"
+    tie: "same compass point too: distance from the pad, '(south-west, nearer)' / '(south-west, farther)'; 3+: nearest, 2nd nearest, ..., farthest; a distance tie falls back to the station id"   # WS1 rule (D44 asks for one); assumed
+    assumed: true
+  assumed: true                 # D44 (user 17:28 CET): walkable at 20 deg, manual priority 0, named after any part >= 0.5 accepted, labelled assumed
+# --- WS1 scoring assumptions (assumed: true; S to confirm before D8, Sat 23:00) ---
+scoring_assumptions:
+  crism_normalisation: "linear between the p2 and p98 of valid 18 m cells in the dem window, clipped to [0, 1]"
+  crism_norm_percentiles: [2, 98]
+  crism_combine: "mean of the overlapping MTRDR observations (FRT000058A3, FRT0000B6F1)"
+  ridge_density_normalisation: "fraction of ridge 1 m cells within ridge_density_radius_m, divided by its p98 over the dem window, clipped to [0, 1]"
+  station_crism_index: {S1: D2300, S2: max, S3: max, S4: SINDEX2, S5: max}   # S1 rule (clay); S4 sulfur -> sulfate; others max of both
+  pick_cell_m: 25                        # S1 rule: "25 m cell"
+  s2_min_separation_m: 300               # S2 rule text (now min_spacing_m, D32, for every station)
+  s1_s2_domain: "focus area and flat 30-min disc"   # S1 rule; S2 assumed to use the same domain
+  assumed: true

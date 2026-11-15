@@ -1,0 +1,50 @@
+crew_size: 2
+eva_h: 6.5
+reserve_min: 30
+o2_reserve_frac: 0.2              # r in SPEC F4 m(t), assumed; NOT used by the engine since 2026-11-14 (replaced by o2_margin.reserve_min_at_effort_cap, S review); kept for the web scorecard row until WS5/C drop it
+vo2max_ml_kg_min: 36
+effort_cap_frac: 0.5
+body_mass_kg: 75                  # assumed (D10)
+suit_masses_kg: [80, 104, 120]    # 80 = our sensitivity value, labelled as such
+default_suit_kg: 104
+tools_kg: 10
+g_mars: 3.71
+anchor:
+  vo2_ml_kg_min: 19.0             # ICES-2026-127, level walking, Mars offload
+  speed_ms: 0.98                  # 2.2 mph
+  carried_kg: 120
+o2_energy_j_per_ml: 21.0          # D29 (user 2026-11-14 16:20, S review docs/review/2026-11-14-ist2-and-o2-margin.md): ONE O2 energy equivalent for the uphill term k, heat (W), haul power (F10) AND every BTU/h -> O2 conversion (o2_budget, station task rate, planning rate); replaces 20.1 J/mL and the ICES MetRate path
+v_safe_ms:                        # assumed
+  - {max_deg: 10, v: 1.0}
+  - {max_deg: 17, v: 0.6}
+  - {max_deg: 25, v: 0.3}
+walkback_budgets_min: [30, 60]
+heat_reference_btu_h: {average: 1200, peak: 3000}
+o2_budget:                        # added 13 Nov (gap found by WS2); derived, see notes
+  basis: "metabolic O2 only (no leakage or venting); NASA does not publish a single Mars-suit O2 capacity"
+  primary_design_eva_h: 8          # NASA EVA-EXP-0075: surface EVAs up to 8 h (6 +/- 2)
+  primary_design_rate_btu_h: 1200  # ICES-2026-127 average metabolic design rate
+  secondary_eva_h: 1               # ICES-2026 Mars PLSS study: secondary sized 1 h for 4-8 h EVAs
+  secondary_design_rate_btu_h: 3000
+  formula: "O2_L = hours * rate_btu_h * j_per_btu / o2_energy_j_per_ml / 1000"   # D29 (user 16:20): energy -> O2 at 21.0 J/mL (replaces the ICES MetRate path of 15:40)
+  j_per_btu: 1055.056              # unit conversion: International Table BTU (ISO 80000-5) in J
+  primary_L: 482                   # derived, = 8 h x 1200 BTU/h x 1055.056 / 21.0 / 1000 = 482.31 L (481.99 L via ICES, 504 L at 20.1 J/mL); the engine computes it, KAT checks this value
+  secondary_L: 151                 # derived, = 1 h x 3000 BTU/h x 1055.056 / 21.0 / 1000 = 150.72 L
+  margin_uses: primary_L           # O2_left = primary_L - consumed; secondary is shown, never planned against
+  assumed: true
+o2_margin:                         # added by WS2 2026-11-14 per docs/review/2026-11-14-ist2-and-o2-margin.md (S review, binding)
+  formula: "margin_min = (O2_left - O2_return_route - O2_station_tasks - O2_reserve) / effort_rate_L_min"   # all terms in litres; O2_station_tasks = task O2 still to do at the current station, 0 while walking (confirmed, decision 2026-11-14 15:40)
+  label: "minutes at maximum effort"
+  effort_rate_L_min: "effort_cap_frac * vo2max_ml_kg_min * body_mass_kg / 1000"   # 1.35 L/min ~ 1,600 BTU/hr; S review: conversion at the effort cap confirmed
+  station_task_rate_btu_h: 1000    # 1,000 BTU/hr (ISS/EMU average metabolic rate); S review; replaces the resting rate V0 while at a station
+  station_task_rate_L_min: 0.84    # documentation only (rounded): the engine derives it from station_task_rate_btu_h at o2_energy_j_per_ml (D29) = 0.8373 L/min
+  station_task_rate_formula: "station_task_rate_btu_h * o2_budget.j_per_btu / 60 / o2_energy_j_per_ml / 1000"   # L/min (D29)
+  reserve_min_at_effort_cap: 30    # fixed reserve: 30 min at the effort cap (Shuttle/EMU EVA 30-min reserve; NASA EVA systems overview, NTRS 20140009556)
+  reserve_L: "reserve_min_at_effort_cap * effort_rate_L_min"   # D24 (user 16:20): derived = 30 x 1.35 = 40.5 L; the engine computes it
+  reserve_label: "30 min at the effort cap (EMU precedent)"   # D24 label
+  planning_rate_btu_h: 1200        # optional second display: O2 margin at the 1,200 BTU/hr planning rate (ICES-2026-127), converted at o2_energy_j_per_ml (D29)
+  conversion:                      # NOT used since D29 (16:20); kept for the record: ICES-2026-127 (NTRS 20260005410) MetRate kcal/min = 4.039 VO2 + 1.157 VCO2 (L/min)
+    kcal_per_L_vo2: 4.039
+    kcal_per_L_vco2: 1.157
+    rer: 0.85                      # S review
+    btu_per_kcal: 3.96567          # unit conversion (International Table calorie and BTU)

@@ -1,0 +1,150 @@
+{
+ "station": "S8",
+ "scenario": "nom_104",
+ "on_route": false,
+ "timeline": {
+  "arrive": null,
+  "leave": null,
+  "turn_back": null
+ },
+ "margin_binding": null,
+ "margin_min": null,
+ "turn_back_binding": null,
+ "contingency": "Partner down: haul home by cart from the access cell, 73 min (casualty 179 kg; haul parameters assumed); outside the 60-min partner line.",
+ "drag_note": "One astronaut cannot drag a suited crewmate on Mars without a cart or sled: the pull needed exceeds boot grip even on flat ground.",
+ "t_home_min": 47.06,
+ "o2_home_L": 62.47,
+ "science": {
+  "lon": 137.386021,
+  "lat": -4.770783
+ },
+ "access": {
+  "lon": 137.386021,
+  "lat": -4.770783,
+  "dist_m": 0.0,
+  "t_home_min": 47.06,
+  "o2_home_L": 62.47,
+  "reason": null,
+  "walk_in": {
+   "dist_m": 0.0,
+   "modelled": false,
+   "rise_m": 0.0,
+   "mean_slope_deg": null,
+   "max_slope_deg": null,
+   "max_terrain_slope_deg": null
+  },
+  "radius_m": 50.0,
+  "rule": "nearest cell with cell state assessed and a walk home in the scenario, within access_radius_m of the science point; walk-in leg not modelled"
+ },
+ "provisional": false,
+ "observer": {
+  "id": "S8",
+  "name": "dense ridge network + high D2300 clay signal",
+  "science_lon": 137.386021,
+  "science_lat": -4.770783,
+  "lon": 137.386021,
+  "lat": -4.770783,
+  "position": "access_cell",
+  "provisional": false,
+  "access": {
+   "radius_m": 50.0,
+   "dist_m": 0.0,
+   "reason": null
+  }
+ },
+ "navcam": {
+  "sol": 3898,
+  "image_id": "NLB_743544164EDR_F1022164NCAM00269M_",
+  "url_local": "cards/S8/navcam.png",
+  "overlay_png": "cards/S8/overlay.png",
+  "stop_id": "v102_2164",
+  "dist_to_observer_m": 765.6,
+  "credit": "NASA/JPL-Caltech (Curiosity Navcam)"
+ },
+ "skyline_error_deg": {
+  "near": 0.333,
+  "mid": 0.183,
+  "far": 0.134
+ },
+ "skyline_error_scope": "median |detected - predicted| skyline elevation per distance class on this card's Navcam frame (automatic sky detector, no manual review, D7; far class not validated: the far rim is hidden by haze in north-facing frames)",
+ "panorama_png": "cards/S8/panorama.png",
+ "landmarks": [
+  {
+   "name": "Gediz Vallis",
+   "bearing_deg": 148.91,
+   "dist_km": 5.74,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Yellowknife",
+   "bearing_deg": 15.75,
+   "dist_km": 11.75,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Aeolis Palus",
+   "bearing_deg": 6.6,
+   "dist_km": 18.23,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Sakarya Vallis",
+   "bearing_deg": 189.62,
+   "dist_km": 19.79,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Aeolis Mons",
+   "bearing_deg": 124.36,
+   "dist_km": 32.85,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Peace Vallis",
+   "bearing_deg": 344.35,
+   "dist_km": 34.78,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Gale",
+   "bearing_deg": 144.65,
+   "dist_km": 43.35,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  },
+  {
+   "name": "Dulce Vallis",
+   "bearing_deg": 266.73,
+   "dist_km": 50.08,
+   "kind": "official",
+   "above_skyline": false,
+   "display": "bearing_tick"
+  }
+ ],
+ "landmarks_note": "0 landmark(s) rise above the computed skyline (fewer than 3); 8 below skyline are listed as bearing-only ticks (D33)",
+ "parts": {
+  "merged_by": "tools/make_web.py",
+  "WS3": {
+   "source": "data/interim/horizon/public/cards/S8.json",
+   "producer": "WS3 pipeline/horizon/cards.py",
+   "built_utc": "2026-11-14T18:14:27Z"
+  },
+  "WS2": {
+   "source": "data/interim/engine/public/cards/S8.timeline.json",
+   "producer": "WS2 pipeline/engine/cards.py"
+  }
+ }
+}

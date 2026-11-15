@@ -1,0 +1,87 @@
+# HOMELINE local Docker stack (WS12 O1; D69: localhost only, no HTTPS deploy, no Supabase).
+#   api   - uvicorn server.app:app, ONE process (the engine job pool lives inside the app)
+#   caddy - local HTTP reverse proxy in front of it (no TLS, no CORS, no cache headers of its own)
+# Both are published on 127.0.0.1 only. Commands: server/ops/README.md.
+name: homeline
+
+services:
+  api:
+    build:
+      context: ../..                     # repo root, filtered by /.dockerignore
+      dockerfile: server/ops/Dockerfile
+      args:                              # code identity (D57); empty -> /engine/version 503
+        HL_COMMIT: ${HL_COMMIT:-}
+        HL_ENGINE_TREE: ${HL_ENGINE_TREE:-}
+    image: homeline-api:local
+    restart: unless-stopped
+    environment:
+      HL_SERVER_DATA: /srv/hl-data
+      # kill switch (config/backend.yaml deploy.kill_switch_env): non-empty = heavy jobs off
+      HL_HEAVY_JOBS_OFF: ${HL_HEAVY_JOBS_OFF:-}
+      # team token for /api/v1/admin/* (header X-HL-Team; O3). From the host environment only, never
+      # written to a file; unset/empty = admin disabled (every admin request 403 admin_disabled)
+      HL_TEAM_TOKEN: ${HL_TEAM_TOKEN:-}
+      # uvicorn --forwarded-allow-ips: X-Forwarded-For is believed only from the Caddy container
+      # (its fixed address below), so the client address (rate-limit key) is Caddy's TCP peer
+      FORWARDED_ALLOW_IPS: 172.31.212.10
+    volumes:
+      - type: bind
+        source: ${HL_SERVER_DATA:-${HOME}/hl-data/server}   # make serverdata output
+        target: /srv/hl-data
+        read_only: true
+        bind:
+          create_host_path: false          # a missing dir is an error, never a root-owned stub
+    tmpfs:
+      - /tmp                               # Numba cache; the rest of the filesystem is read-only
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    ports:
+      - "127.0.0.1:${HL_API_PORT:-8013}:8000"   # direct access, for checks; never 0.0.0.0
+    networks:
+      hl: {}
+    healthcheck:                           # also in the Dockerfile; ok and engine_warm true
+      test: ["CMD", "python", "/usr/local/lib/hl/healthcheck.py",
+             "http://127.0.0.1:8000/api/v1/health"]
+      interval: 10s
+      timeout: 6s
+      start_period: 120s
+      retries: 3
+
+  caddy:
+    image: caddy:2.11.9-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      # request body cap: up.sh exports config/backend.yaml limits.proxy_max_body_bytes (bytes);
+      # 2MB is only the fallback for runs without up.sh
+      HL_PROXY_MAX_BODY: ${HL_PROXY_MAX_BODY:-2MB}
+    volumes:
+      - type: bind
+        source: ./Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+    read_only: true
+    tmpfs:
+      - /data
+      - /config
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    ports:
+      - "127.0.0.1:${HL_PROXY_PORT:-8012}:8080"   # the stack's front door; never 0.0.0.0
+    networks:
+      hl:
+        ipv4_address: 172.31.212.10
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  hl:
+    ipam:
+      config:
+        - subnet: 172.31.212.0/28

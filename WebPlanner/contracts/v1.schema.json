@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/v1.schema.json",
+  "title": "validation/v1.json",
+  "description": "V1 tilt validation (F13): DEM slope over the rover footprint vs IMU tilt at every drive end: bias, RMSE, r, confusion matrix at 10°/20°. Beyond SPEC §6: file named in SPEC §2 F13 and brief WS6; required keys follow the brief's list.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §2 F13; briefs/WS6.md",
+  "type": "object",
+  "properties": {
+    "n": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "drive ends used"
+    },
+    "bias_deg": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "rmse_deg": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "r": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "thresholds_deg": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "confusion thresholds, deg (10, 20)"
+    },
+    "confusion": {
+      "type": [
+        "object",
+        "array"
+      ],
+      "description": "confusion matrix per threshold"
+    }
+  },
+  "required": [
+    "n",
+    "bias_deg",
+    "rmse_deg",
+    "r",
+    "thresholds_deg",
+    "confusion"
+  ]
+}

@@ -1,0 +1,66 @@
+# CI for every PR and push to main (AGENTS.md "CI"). Owned by WS6 jointly with C.
+# The H0 provenance check (pipeline/provenance/check_h0.py, WS6) runs in the python job.
+# Static site only: pages.yml deploys after this workflow succeeds, so nothing backend runs here.
+# Backend tests live in server.yml (S3b, D48: the static fallback never depends on the backend).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install Python 3.11 and deps
+        run: uv sync --locked -p 3.11
+      - name: Ruff
+        run: uv run --no-sync ruff check .
+      - name: Pytest (all known-answer tests)
+        run: uv run --no-sync pytest
+      - name: Contract validation (web/public/data, data-dummy), no-dummy-in-public
+        run: uv run --no-sync python tools/validate_contracts.py
+      - name: H0 provenance check (no manifest time or data mtime before H0; F16)
+        run: uv run --no-sync python -m pipeline.provenance.check_h0
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: vitest (web KATs)
+        run: npm test
+      - name: Vite build
+        run: npx vite build
+
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No dummy flag in web/public/data
+        run: |
+          hits=$(grep -rlE '"dummy"[[:space:]]*:[[:space:]]*true' web/public/data || true)
+          if [ -n "$hits" ]; then echo "dummy: true found in public data:"; echo "$hits"; exit 1; fi
+      - name: No tracked file over 50 MB
+        run: |
+          big=$(git ls-files -z | xargs -0 -r stat -c '%s %n' | awk '$1 > 50*1024*1024')
+          if [ -n "$big" ]; then echo "Files over 50 MB:"; echo "$big"; exit 1; fi

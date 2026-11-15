@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/highlights.schema.json",
+  "title": "highlights/{ridges,mineral,blocked}.geojson",
+  "description": "Design contracts v1 (family 'design', DESIGN §6; frozen at merge: additive change = minor bump, breaking change = human-gated). Science and evidence highlight polygons (DESIGN U7): connected boxwork ridges with relief and length (ridge index), mineral-hint patches above threshold with type and strength (CRISM SINDEX2 / D2300 at 18 m), and blocked areas with reason and area (cell states). The ridge-index and mineral thresholds are science calls not yet confirmed (R9, config/design.yaml overlays.ridge_index_threshold_m / mineral_threshold = null): until S confirms them the file says preliminary: true and the layer is labelled 'preliminary'. Written by pipeline/export/highlights.py (WS16).",
+  "x-contract-version": "1.0.0",
+  "x-source": "DESIGN §6.1, §2.2 U7; briefs/WS16.md (R9); config/design.yaml overlays",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    },
+    "kind": {
+      "enum": [
+        "ridges",
+        "mineral",
+        "blocked"
+      ],
+      "description": "= the file name"
+    },
+    "preliminary": {
+      "type": "boolean",
+      "description": "true while the threshold that made these polygons is unconfirmed (R9); the app labels the layer 'preliminary'"
+    },
+    "threshold": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "config key, e.g. overlays.ridge_index_threshold_m"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "units": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "description": "who set it (e.g. 'S, R9' or 'assumed')"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "description": "the cut-off used (null for blocked: the cell states decide)"
+    },
+    "variant": {
+      "enum": [
+        "nominal",
+        "conservative"
+      ],
+      "description": "optional, blocked only: the cell-state variant used"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "Feature"
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "Polygon",
+                  "MultiPolygon"
+                ]
+              },
+              "coordinates": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "relief_m": {
+                "type": "number",
+                "minimum": 0,
+                "description": "ridge relief above the surrounding hollows, m"
+              },
+              "length_m": {
+                "type": "number",
+                "minimum": 0,
+                "description": "connected ridge length, m"
+              },
+              "type": {
+                "enum": [
+                  "sulfate",
+                  "clay"
+                ],
+                "description": "sulfate = CRISM SINDEX2, clay = CRISM D2300 (orbital hint, not an identification)"
+              },
+              "strength": {
+                "type": "number",
+                "description": "index value of the patch (mean over the patch; the index's own units)"
+              },
+              "strength_max": {
+                "type": "number",
+                "description": "optional: maximum index value in the patch"
+              },
+              "reason": {
+                "enum": [
+                  "slope_class",
+                  "step_guard",
+                  "mixed"
+                ],
+                "description": "why the cells are blocked: slope above the variant's no-go (slope class, D22), the 30° step guard, or both within one area"
+              },
+              "area_m2": {
+                "type": "number",
+                "minimum": 0,
+                "description": "area, m²"
+              }
+            }
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ]
+      }
+    }
+  },
+  "required": [
+    "type",
+    "kind",
+    "preliminary",
+    "features"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "ridges"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "features": {
+            "items": {
+              "properties": {
+                "properties": {
+                  "properties": {
+                    "relief_m": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "ridge relief above the surrounding hollows, m"
+                    },
+                    "length_m": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "connected ridge length, m"
+                    }
+                  },
+                  "required": [
+                    "relief_m",
+                    "length_m"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "mineral"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "features": {
+            "items": {
+              "properties": {
+                "properties": {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "sulfate",
+                        "clay"
+                      ],
+                      "description": "sulfate = CRISM SINDEX2, clay = CRISM D2300 (orbital hint, not an identification)"
+                    },
+                    "strength": {
+                      "type": "number",
+                      "description": "index value of the patch (mean over the patch; the index's own units)"
+                    },
+                    "strength_max": {
+                      "type": "number",
+                      "description": "optional: maximum index value in the patch"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "strength"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "blocked"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "features": {
+            "items": {
+              "properties": {
+                "properties": {
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "slope_class",
+                        "step_guard",
+                        "mixed"
+                      ],
+                      "description": "why the cells are blocked: slope above the variant's no-go (slope class, D22), the 30° step guard, or both within one area"
+                    },
+                    "area_m2": {
+                      "type": "number",
+                      "minimum": 0,
+                      "description": "area, m²"
+                    }
+                  },
+                  "required": [
+                    "reason",
+                    "area_m2"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

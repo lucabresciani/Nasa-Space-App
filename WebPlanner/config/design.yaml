@@ -1,0 +1,118 @@
+# config/design.yaml — design block settings (WS15–WS18, docs/design.md).
+# Source: Notion page "Design config values (config/design.yaml, tokens.json)"
+#   https://app.notion.com/p/418961bcb61181cc8a38c7f4349afd04 (exported 2026-11-14, design bootstrap D1).
+# Every value is from DESIGN or marked assumed: true. Agents never hard-code a value that belongs here.
+# Changes go through C by PR.
+scale:
+  earth_radius_km: 6378.137
+  mars_radius_km: 3396.19
+  elevation_factor: 1.878          # Earth/Mars radius; baked into terrain tiles so 1x on screen = true shape
+terrain_tiles:
+  encoding: terrarium
+  tile_px: 256
+  zooms_planning_extent: [10, 15]
+  zooms_focus_area: [16, 16]
+  lowzoom_intro: [6, 10]            # CTX 20 m + MOLA-HRSC 200 m over Gale
+  budget_mb: 25
+  lowzoom_budget_mb: 5
+  height_step_cap_m:                 # coarsest Terrarium height step the budget fit may use, m of TRUE elevation (precision_m / factor)
+    terrain: 0.1                      # = P2 brief tolerance: decoded pad pixel = 1 m DEM x factor +- 0.1 m x factor (U1)
+    low: 1.0                          # added by P2b 2026-11-15 (assumed: true): z6-10 intro relief, below the vertical accuracy of CTX 20 m / MOLA-HRSC 200 m at 81-1300 m pixels
+  vertical_offset_m: 7028              # added by P2c 2026-11-15 (assumed: true): m added after scaling (h = elevation x factor + offset, terrain/ and terrain_low/) = -round(official pad -3742.4 m x 1.878), so the site sits near 0 m: MapLibre 6.18 selects zero tiles at pitch >~62 deg with the ground at ~-7000 m (black map, notes/flybug-*.png)
+exaggeration: {min: 1.0, max: 3.0, default: 1.0, step: 0.1}   # step added by D6b 2026-11-15 (assumed: true): slider step; the factor label shows one decimal (M8)
+terrain_3d:                          # added by D6b 2026-11-15 (DESIGN U1 items 4 and 6; keys asked for in notes/M8.md)
+  fallback_window_s: 3               # DESIGN U1 item 6 "below 30 fps for 3 s": the rate must stay under performance.fps_3d_min this long before the flat fallback
+  fps_window_s: 0.5                  # assumed: true (M8): the frame rate is the frame count over this trailing window
+  idle_gap_s: 1.0                    # assumed: true (M8): a frame gap longer than this is an idle map (MapLibre renders on demand), never a slow frame
+  light_update_sim_min: 1            # DESIGN U1 item 4: relief light follows the clock at most once per simulated minute
+  max_pitch_deg: 60                  # added by T1 2026-11-15 (assumed: true): manual 3D tilt cap (map maxPitch). MapLibre 6.18 selects zero tiles for every source above ~60 deg at zoom 16-17 with the terrain at about -7020 map m (-3740 m x 1.878): only the black background draws (notes/T1.md, flybug-*.png)
+  assumed: [fps_window_s, idle_gap_s, max_pitch_deg]
+field_layer:
+  sampling: nearest_then_manual_bilinear   # encoded values must not be filtered
+  update_hz_playing: 30
+  half_res_above_px: 1024
+  amber_min: 10                     # = hud.yaml margin_amber_min
+  o2_rate_l_min: 1.35               # effort-cap rate for the O2 term in minutes (D24, D45)
+  flat_speed_ms: 0.98               # D25
+  flat_radius_m: {30: 1764, 60: 3528}
+  hatch_px: 6
+collapse: {duration_s: 3, easing: ease-in-out}
+markers:                             # added by D6b 2026-11-15 (DESIGN U4; values M5 chose, RR judges; notes/M5.md "Left")
+  ring_width_px: [1, 6]              # assumed: true: station ring thickness over science value 0-1
+  ring_radius_px: 7                  # assumed: true: station ring radius
+  scored_site_halo_px: 1             # assumed: true: stroke of the extra halo on scored sites
+  scored_site_halo_offset_px: 5      # assumed: true: halo radius = ring_radius_px + this
+  pulse_every_s: 3                   # DESIGN U4 "pulses once every 3 s" (= tokens motion.pulseEveryMs)
+  pulse_active_divisor: 3            # assumed: true: the pulse ring grows and fades in the first 1/N of each period (M5: first third)
+  pulse_grow_px: 12                  # assumed: true: how far the pulse ring grows
+  pulse_stroke_px: 2                 # assumed: true: pulse ring stroke
+  assumed: [ring_width_px, ring_radius_px, scored_site_halo_px, scored_site_halo_offset_px, pulse_active_divisor, pulse_grow_px, pulse_stroke_px]
+route:                               # added by D6b 2026-11-15 (DESIGN U4; notes/M5.md)
+  draw_on_s: 1.5                     # DESIGN U4 "draws itself along its length (1.5 s)" (= tokens motion.routeDrawMs)
+  coming_opacity: 0.5                # DESIGN U4 "coming legs at 50% opacity"
+  width_px: 2.5                      # assumed: true (M5): route line width
+  turnback_tick_m: 30                # assumed: true (M5): turn-back tick length across the arriving direction, ground metres
+  assumed: [width_px, turnback_tick_m]
+thread:
+  update_hz: 30
+  dash_steps: 14                     # frames per dash cycle
+  tooltip: "Home in {t_home} min · margin {margin} min ({binding})"
+labels:
+  priority: [selected, pad, route_station, station, scored_site, user_point, landmark, overlay]
+  minzoom: {landmark: 6, pad: 10, station: 13, overlay: 15}
+  leader_line_min_pitch_deg: 30
+  pill_padding_px: [4, 2]
+camera:
+  presets:
+    overhead: {pitch: 0, bearing: 0}
+    isometric: {pitch: 45}
+    low: {pitch: 60}                  # T1 2026-11-15: was 70; = terrain_3d.max_pitch_deg (MapLibre 6.18 draws no tiles above ~60 deg at the pad's -7 km map elevation)
+    focus: {padding_px: 80}
+    follow: {behind_m: 250, above_m: 175, lookahead_m: 150}   # T1 2026-11-15: above_m was 120 (pitch 64.4 deg -> no tiles); 175 = pitch 55 deg, same as camera.flythrough
+  flythrough: {sample_m: 20, spline: centripetal_catmull_rom, behind_m: 250, above_m: 175, lookahead_m: 150, turn_deg_per_min: 12}   # above_m 120 -> 175 by T1 2026-11-15: atan(250/120) = 64.4 deg pitch made MapLibre 6.18 select zero tiles (terrain at about -7020 map m), atan(250/175) = 55 deg renders; turn_deg_per_min added by M10b 2026-11-15 (assumed: true, M10): follow-camera bearing turns at most this many deg per EVA minute (out-and-back routes flip 180 deg at a station; 180 deg in 15 EVA min, mostly in the dwell)
+  history_max: 10
+overlays:
+  max_thematic_on: 2
+  slope_classes_deg: [0, 10, 17, 20]
+  contours_m: {minor: 10, index: 50}
+  mineral_threshold: null           # S confirms (readiness item R9); until then highlight layers are labelled preliminary
+  ridge_index_threshold_m: null     # S confirms (R9); 0.75 m was the WS1 ridge rule, check before reuse
+  # --- added by P3 2026-11-15 (WS16 overlays/highlights exporters, DESIGN §6.1, U7) ---
+  simplify_m: 1                     # DESIGN §6.1 "simplified to 1 m" (contours); P3 applies it to the highlight polygons too (assumed: true)
+  rough_footing_variant: nominal    # assumed: true (P3): rough footing = max 1 m slope in the 3 m cell (maxslope_3m, D22) > site.yaml slope.nogo_deg[this variant] (the old max-slope rule, cellstate_3m_variants.json maxslope_rule_blocked_pct)
+  preliminary:                      # R9: used ONLY while the null keys above are unset; NOT confirmed by S. Every file made with them says preliminary: true
+    ridge_index_threshold_m: 0.75   # preliminary. Source: site.yaml ridge.threshold_m (WS1 ridge rule, assumed): ridge where elevation - 15 m median > this
+    ridge_min_length_m: 15          # preliminary. Source: site.yaml ridge.median_window_m (the ridge index window): a connected ridge shorter than its own window is not resolved; drops 1-px noise blobs
+    mineral_threshold: 1.0          # preliminary. Normalised index (stations.yaml scoring_assumptions: linear p2 -> 0, p98 -> 1 over the valid 18 m cells), i.e. patches at or above each index's p98. The station-naming 0.5 (stations.yaml extras.name_min_norm) is NOT reused: for D2300 it falls below 0 (no 2.3 um absorption)
+edit:
+  max_requests_per_s: 2
+  snap_access_radius_m: 50          # D27
+  undo_max: 50
+pad_validity:
+  max_slope_deg: 5
+  block_m: 20
+  disc_inside_grid_m: 1764          # D21
+performance:
+  first_load_added_kb_gz: 150
+  fonts_kb: 120
+  overlays_mb: 15
+  gpu_textures_mb: 64
+  fps_2d_min: 60
+  fps_3d_min: 30
+  hover_ms_max: 16
+  select_ms_max: 100
+quality:
+  cvd_min_delta_e00: 10            # assumed: true (Q1, moved here by D4b): min CIEDE2000 between safe/caution/limit/select under normal, protan, deutan, tritan simulation (Machado 2009); ~1 = JND for large patches side by side, 10 = "clearly different" for small marks seen apart (web/tests/a11y/colour.test.ts)
+3d:
+  shadows_off_below_fps: 30
+  crew_count: 2
+  ground_ring_radius_m: 1.5
+storm:                               # added by M10b 2026-11-15 (DESIGN U9; notes/M12.md)
+  ring_cell_m: 20                    # assumed: true (M12): dose-ring lattice cell, ground metres (stride 4 of the 5 m field); RR judges the staircase at z15-17
+  assumed: [ring_cell_m]
+intro: {once_per_browser: true, skip_on_any_input: true, off_with_reduced_motion: true, approx_s: 20, warmup_max_ms: 2500, warmup_extra_ms: 1000}   # warmup_* added by M10d 2026-11-15 (assumed: true): M10c caps on the live intro / kiosk wait before t = 0 (layer warm-up, then frame 0's tiles)
+capture: {size: [1920, 1080], fps: 60}
+render_review:
+  sizes: [[1440, 900], [1024, 768]]
+  key_screens: [plan_default, station_selected, drag_rover_ghost, fly_margin_storm, report, evidence]
+assumed: true

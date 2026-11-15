@@ -1,0 +1,419 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/pad.schema.json",
+  "title": "pad.json",
+  "description": "Pad in use (F8, added 13 Nov). Carries \"dummy\" per SPEC §6. v1.1.2 (C decision 2026-11-14 14:58): `pad` is the pad in use (config/site.yaml pad_default, user 11:24), never the siting result; the F8 siting result goes in the optional `proposal` block (adopted: false) with its own alternatives, hop options and rule; optional pad.source. v1.1.4 (D21, user 16:14): `pad` is the official pad, the candidate with the most feasible EVAs (pad.source cites D21); pad_default and the F8 result are listed in `alternatives`. Optional WS2 extras: pad.id, pad.score_kind, pad.tiebreak, pad.f8_score; alternatives[] id, kind, score_basis, d21_rank, tiebreak, picker, f8_score, note; top-level `d21` block. The picker files of the alternatives are under scenarios/pads/ (pads_index, pad_summary).",
+  "x-contract-version": "1.1.4",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "true only in web/public/data-dummy/; must be false in web/public/data/"
+    },
+    "pad": {
+      "type": "object",
+      "properties": {
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 360,
+          "description": "longitude, deg east (Mars 2000 planetocentric)"
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "description": "latitude, deg (Mars 2000 planetocentric)"
+        },
+        "elev_m": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "checks": {
+          "type": "object",
+          "properties": {
+            "assessed_pct_30min": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "max_slope_deg": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "rule_passed": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "assessed_pct_30min",
+            "max_slope_deg",
+            "rule_passed"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "description": "where the pad position comes from: D21 (official pad) or config/site.yaml pad_default (v1.1.2)"
+        },
+        "id": {
+          "type": "string",
+          "description": "D21 id of the pad, e.g. rank1 (= the official row of scenarios/pads/index.json) (v1.1.4)"
+        },
+        "score_kind": {
+          "type": "string",
+          "description": "what score counts, e.g. d21_feasible_eva_count (v1.1.4)"
+        },
+        "tiebreak": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "description": "D21 tiebreak values by name, e.g. reachable_pct_30 (%), elev_m (m) (v1.1.4)"
+        },
+        "f8_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "the F8 siting rule's score at this pad (v1.1.4)"
+        }
+      },
+      "required": [
+        "lon",
+        "lat",
+        "elev_m",
+        "score",
+        "checks"
+      ]
+    },
+    "alternatives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer"
+          },
+          "lon": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 360,
+            "description": "longitude, deg east (Mars 2000 planetocentric)"
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "latitude, deg (Mars 2000 planetocentric)"
+          },
+          "elev_m": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "D21 id (rank{n}, pad_default, f8_proposal); a picker pad's folder under scenarios/pads/ (v1.1.4)"
+          },
+          "kind": {
+            "type": "string",
+            "description": "block, pad_default or f8_proposal (v1.1.4)"
+          },
+          "score_basis": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "how score was obtained, e.g. full_run; null = not a D21 candidate (v1.1.4)"
+          },
+          "d21_rank": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "D21 rank; null = not a D21 candidate (v1.1.4)"
+          },
+          "tiebreak": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "description": "D21 tiebreak values by name, e.g. reachable_pct_30 (%), elev_m (m) (v1.1.4)"
+          },
+          "picker": {
+            "type": "boolean",
+            "description": "offered in the D21 parking-option picker (files under scenarios/pads/{id}/) (v1.1.4)"
+          },
+          "f8_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "F8 siting score (f8_proposal row) (v1.1.4)"
+          },
+          "note": {
+            "type": "string",
+            "description": "(v1.1.4)"
+          }
+        },
+        "required": [
+          "rank",
+          "lon",
+          "lat",
+          "elev_m",
+          "score"
+        ]
+      }
+    },
+    "hop_options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pads": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 3,
+              "description": "[lon, lat] deg"
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pads",
+          "note"
+        ]
+      }
+    },
+    "site_rule_version": {
+      "type": [
+        "string",
+        "integer"
+      ]
+    },
+    "proposal": {
+      "type": "object",
+      "description": "F8 siting proposal (WS2 pipeline/engine/siting.py) for S to accept or reject; not the pad in use (v1.1.2)",
+      "properties": {
+        "adopted": {
+          "const": false,
+          "description": "a proposal is never the pad in use; adopting one changes config/site.yaml pad_default"
+        },
+        "note": {
+          "type": "string"
+        },
+        "pad": {
+          "type": "object",
+          "properties": {
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 360,
+              "description": "longitude, deg east (Mars 2000 planetocentric)"
+            },
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "latitude, deg (Mars 2000 planetocentric)"
+            },
+            "elev_m": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "score": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "checks": {
+              "type": "object",
+              "properties": {
+                "assessed_pct_30min": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "max_slope_deg": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rule_passed": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "assessed_pct_30min",
+                "max_slope_deg",
+                "rule_passed"
+              ]
+            }
+          },
+          "required": [
+            "lon",
+            "lat",
+            "elev_m",
+            "score",
+            "checks"
+          ]
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rank": {
+                "type": "integer"
+              },
+              "lon": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 360,
+                "description": "longitude, deg east (Mars 2000 planetocentric)"
+              },
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90,
+                "description": "latitude, deg (Mars 2000 planetocentric)"
+              },
+              "elev_m": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "score": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "rank",
+              "lon",
+              "lat",
+              "elev_m",
+              "score"
+            ]
+          }
+        },
+        "hop_options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pads": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 3,
+                  "description": "[lon, lat] deg"
+                }
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "pads",
+              "note"
+            ]
+          }
+        },
+        "site_rule_version": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        }
+      },
+      "required": [
+        "pad"
+      ]
+    },
+    "d21": {
+      "type": "object",
+      "description": "D21 ranking record (WS2 padpick.py): decision, scenario, score_kind, order, official_id, top_full_runs, screening statistics, screening_top, assumptions; free form (v1.1.4)",
+      "properties": {
+        "official_id": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": "string"
+        },
+        "score_kind": {
+          "type": "string"
+        },
+        "screening_top": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "dummy",
+    "pad",
+    "alternatives",
+    "hop_options",
+    "site_rule_version"
+  ]
+}

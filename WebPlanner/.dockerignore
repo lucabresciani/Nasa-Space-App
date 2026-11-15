@@ -1,0 +1,22 @@
+# Docker build context for server/ops/Dockerfile (WS12). Allow-list: only what the API image copies.
+*
+!pyproject.toml
+!uv.lock
+!config/
+!contracts/
+!pipeline/
+!server/
+!tools/
+!web/public/data/
+
+# never in the image
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/tests/
+**/.env
+**/.env.*
+tools/discovery/
+contracts/bundle/fixtures/
+server/ops/
+!server/ops/healthcheck.py

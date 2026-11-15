@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/localisation.schema.json",
+  "title": "localisation/{image_id}.json",
+  "description": "Skyline localisation result for one Navcam frame (F22).",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.1",
+  "type": "object",
+  "properties": {
+    "true": {
+      "type": "object",
+      "properties": {
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 360,
+          "description": "longitude, deg east (Mars 2000 planetocentric)"
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "description": "latitude, deg (Mars 2000 planetocentric)"
+        }
+      },
+      "required": [
+        "lon",
+        "lat"
+      ]
+    },
+    "recovered": {
+      "type": "object",
+      "properties": {
+        "lon": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 360,
+          "description": "longitude, deg east (Mars 2000 planetocentric)"
+        },
+        "lat": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "description": "latitude, deg (Mars 2000 planetocentric)"
+        }
+      },
+      "required": [
+        "lon",
+        "lat"
+      ]
+    },
+    "error_m": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "rms_deg": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "candidates_evaluated": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "true",
+    "recovered",
+    "error_m",
+    "rms_deg",
+    "candidates_evaluated"
+  ]
+}

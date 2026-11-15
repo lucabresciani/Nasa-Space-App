@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/bundle/plan.schema.json",
+  "title": "plan.json",
+  "description": "One EVA plan: its identity and every input that fixes its results (D40, D41). It sits at the root of a plan bundle (zip) and is also served alone by the backend. Results (route, timeline, fields) are in the bundle's other files; plan.json holds no result numbers except the storm anchor t* that D39 derives from the route.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §11 D40, D41 (set A, 17:16-17:24); handover page 'EVA simulation module' parts A, D; contracts/bundle/README.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "description": "contract version of this file (the bundle family's x-contract-version)"
+    },
+    "kind": {
+      "const": "homeline_plan"
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "description": "stable id; precomputed plans use '{pad id}.{scenario id}', e.g. 'rank1.nom_104'; the backend may use its own ids"
+    },
+    "title": {
+      "type": "string",
+      "description": "human label, e.g. 'Official pad · nominal · 104 kg suit'"
+    },
+    "origin": {
+      "enum": ["precomputed", "computed_live"],
+      "description": "D40: 'precomputed' = built from the committed pipeline outputs (part of the validated scorecard); 'computed_live' = made by the backend on request"
+    },
+    "origin_label": {
+      "type": "string",
+      "description": "the text shown with the plan: 'precomputed, part of the validated scorecard' or 'computed live, not part of the validated scorecard' (D40)"
+    },
+    "pad": {
+      "type": "object",
+      "description": "the rover parking spot the EVA starts and ends at; also the origin of the pad-local frame",
+      "properties": {
+        "kind": {
+          "enum": ["official", "picker", "custom"],
+          "description": "official = D21 rank-1 pad; picker = a ranked option from scenarios/pads/index.json; custom = a backend pad"
+        },
+        "id": {
+          "type": "string",
+          "description": "pad id (official: pad.json pad.id, e.g. 'rank1'; picker: the scenarios/pads/{id} folder)"
+        },
+        "lon": {"type": "number", "minimum": -180, "maximum": 360},
+        "lat": {"type": "number", "minimum": -90, "maximum": 90},
+        "elev_m": {
+          "type": "number",
+          "description": "pad elevation, m above the Mars areoid (WS1 height datum); z = 0 of the pad-local frame"
+        },
+        "source": {"type": "string"}
+      },
+      "required": ["kind", "id", "lon", "lat", "elev_m"]
+    },
+    "scenario": {
+      "type": "object",
+      "description": "the engine scenario = physiology variant x suit mass",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(opt|nom|con)_[0-9]+$",
+          "description": "scenarios/index.json id, e.g. 'nom_104'"
+        },
+        "variant": {"enum": ["optimistic", "nominal", "conservative"]},
+        "suit_kg": {"type": "number", "exclusiveMinimum": 0}
+      },
+      "required": ["id", "variant", "suit_kg"]
+    },
+    "stations": {
+      "type": "array",
+      "description": "station ids in visit order (route legs pad -> stations[0] -> ... -> pad); empty = no route",
+      "items": {"type": "string"}
+    },
+    "eva_start": {
+      "type": "object",
+      "description": "D31: the simulated EVA starts at 09:00 LMST on the EVA sol",
+      "properties": {
+        "lmst": {"type": "string", "pattern": "^[0-9]{2}:[0-9]{2}:[0-9]{2}$"},
+        "lmst_h": {"type": "number", "minimum": 0, "maximum": 24},
+        "utc": {"type": "string", "pattern": "Z$"},
+        "msl_sol": {"type": "integer"},
+        "decision": {"type": "string"},
+        "source": {"type": "string"}
+      },
+      "required": ["lmst", "lmst_h", "utc"]
+    },
+    "storm_replay": {
+      "type": "object",
+      "description": "D39 shared storm timing (config/conditions.yaml storm_replay): the 20 May 2024 RAD storm series is shifted so its tripwire fires at EVA minute t* (the route's largest T_home). storm_utc(eva_min) = tripwire_utc + (eva_min - t_star_min) min",
+      "properties": {
+        "key": {"const": "conditions.storm_replay"},
+        "decision": {"type": "string"},
+        "tripwire_at": {"type": "string"},
+        "anchor_event": {"type": "string"},
+        "tie_break": {"type": "string"},
+        "tripwire_utc": {"type": ["string", "null"], "description": "rad.json storm_2024.tripwire_utc"},
+        "t_star_min": {"type": ["number", "null"], "description": "EVA minute the tripwire fires at (WS2 engine/summary.json routes.{scenario}.dose.t_star_min); null = no route"},
+        "storm_utc_at_eva_start": {"type": ["string", "null"], "description": "storm-series UTC shown at EVA minute 0 (pipeline/conditions/storm_replay.py storm_offset_utc)"},
+        "d_allow_mgy": {"type": "number", "description": "dose allowance in use (config/conditions.yaml leash)"}
+      },
+      "required": ["key", "tripwire_utc", "t_star_min"]
+    },
+    "engine": {
+      "type": "object",
+      "description": "the simulator compares these with GET /api/v1/engine/version and refuses a mismatched bundle (handover part D)",
+      "properties": {
+        "commit": {
+          "type": "string",
+          "description": "git commit of the engine run that produced the plan's results (manifest 'commit' of its route file); may end in '-dirty'"
+        },
+        "config_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "sha256 over config/*.yaml sorted by file name, each as utf-8 name, NUL, raw bytes, NUL (contracts/bundle/README.md)"
+        },
+        "contract_version": {"const": "1.0.0"}
+      },
+      "required": ["commit", "config_hash", "contract_version"]
+    },
+    "created_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      "description": "when the plan's results were computed: the newest manifest time among its input files (deterministic; not the zip time)"
+    },
+    "world": {
+      "type": "object",
+      "description": "the shared world pack this plan was built against",
+      "properties": {
+        "version": {"type": "string"},
+        "index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "required": ["version"]
+    },
+    "dummy": {"const": false, "description": "plans are never built from dummy data"}
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "plan_id",
+    "origin",
+    "origin_label",
+    "pad",
+    "scenario",
+    "stations",
+    "eva_start",
+    "storm_replay",
+    "engine",
+    "created_utc",
+    "dummy"
+  ]
+}

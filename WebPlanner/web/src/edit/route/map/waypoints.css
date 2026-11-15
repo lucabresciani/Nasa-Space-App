@@ -1,0 +1,67 @@
+/* WP6 (D97): free waypoints in the stop list and on the map, ghost route summary. Tokens only.
+   Colour meaning (DESIGN §3.1): a free point is the user's own stop (text colour, card ground);
+   red only for a refused stop; yellow only for the selection; the ghost is muted (an estimate). */
+@import '../../../ui/tokens.css';
+
+/* stop list rows of free points (R5's grid: handle | check | order | name) */
+.hl-route__stop[data-point] { border-style: dashed; border-color: var(--color-text-muted); }
+.hl-route__stop[data-point] .hl-route__check-slot { color: var(--color-text-muted); display: inline-flex; }
+.hl-route__point { display: flex; gap: var(--space-1); align-items: center; min-width: 0; }
+.hl-route__label-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-input);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+.hl-route__label-input:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); }
+.hl-route__delete { flex: none; }
+
+/* add waypoint */
+.hl-route__add { display: grid; gap: var(--space-1); }
+.hl-route__addbtn { justify-self: start; }
+.hl-route__addbtn.is-armed { border-color: var(--color-text); }
+
+/* ghost route summary: muted, every time an estimate */
+.hl-route__ghost {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px dashed var(--color-text-muted);
+  border-radius: var(--radius-input);
+  color: var(--color-text-muted);
+}
+.hl-route__ghost p { margin: 0; }
+.hl-route__ghost-title { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); color: var(--color-text); }
+.hl-route__ghost-total { font-variant-numeric: tabular-nums; }
+.hl-route__ghost-legs { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.hl-route__ghost-leg { display: flex; justify-content: space-between; gap: var(--space-2); }
+.hl-route__ghost-leg[data-routed='false'] .hl-route__ghost-time { font-style: italic; } /* unknown stays grey, never a warning colour */
+.hl-route__ghost-time { font-variant-numeric: tabular-nums; }
+
+/* map markers of free points (MapLibre Marker elements) */
+.hl-route-marker {
+  display: grid;
+  place-items: center;
+  min-width: var(--space-5);
+  height: var(--space-5);
+  padding: 0 var(--space-1);
+  border: var(--line-focus-ring) solid var(--color-text);
+  border-radius: var(--radius-chip);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-label);
+  font-weight: var(--font-weight-label);
+  cursor: grab;
+  user-select: none;
+}
+.hl-route-marker[data-validity='invalid'] { border-color: var(--color-limit); color: var(--color-limit); }
+.hl-route-marker.is-dragging { cursor: grabbing; opacity: var(--overlay-opacity-max); }
+.hl-route-marker:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); }
+.hl-route-adding .maplibregl-canvas-container.maplibregl-interactive,
+.hl-route-adding .maplibregl-canvas { cursor: crosshair; }

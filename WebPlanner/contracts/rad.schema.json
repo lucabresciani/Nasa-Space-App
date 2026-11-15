@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/rad.schema.json",
+  "title": "conditions/rad.json",
+  "description": "RAD radiation: latest rate, baseline, 20 May 2024 storm replay, tripwire and dose leash (F14). v1.1.0: optional leash.table (one row per D9 slider step), tau_min_at_latest, formula, D_allow_note, d_allow_range_mgy, d_allow_step_mgy.",
+  "x-contract-version": "1.1.0",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "latest": {
+      "type": "object",
+      "properties": {
+        "utc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "UTC time, ISO 8601 with Z, or null"
+        },
+        "dose_rate_uGy_day": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "lag_days": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "utc",
+        "dose_rate_uGy_day",
+        "lag_days"
+      ]
+    },
+    "baseline_uGy_day": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "storm_2024": {
+      "type": "object",
+      "properties": {
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string",
+                "description": "UTC time, ISO 8601 with Z"
+              },
+              {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "description": "[[utc, uGy_day]]"
+        },
+        "peak_uGy_day": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "excess_mGy": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "onset_utc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "UTC time, ISO 8601 with Z, or null"
+        },
+        "tripwire_utc": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "UTC time, ISO 8601 with Z, or null"
+        }
+      },
+      "required": [
+        "series",
+        "peak_uGy_day",
+        "excess_mGy",
+        "onset_utc",
+        "tripwire_utc"
+      ]
+    },
+    "leash": {
+      "type": "object",
+      "properties": {
+        "D_allow_mGy": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "tau_min_at_peak": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "tau_min_at_latest": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "tau_dose at the latest RAD rate, min"
+        },
+        "formula": {
+          "type": "string",
+          "description": "config/conditions.yaml leash.formula"
+        },
+        "D_allow_note": {
+          "type": "string"
+        },
+        "d_allow_range_mgy": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[min, max] of the D9 slider, mGy (config/conditions.yaml leash.d_allow_range_mgy)"
+        },
+        "d_allow_step_mgy": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "D9 slider step, mGy (config/conditions.yaml leash.d_allow_step_mgy)"
+        },
+        "table": {
+          "type": "array",
+          "description": "one row per slider step over d_allow_range_mgy (WS4 pipeline/conditions/rad.py)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "D_allow_mGy": {
+                "type": "number"
+              },
+              "tau_min_at_peak": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "tau_min_at_latest": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "D_allow_mGy",
+              "tau_min_at_peak"
+            ]
+          }
+        }
+      },
+      "required": [
+        "D_allow_mGy",
+        "tau_min_at_peak"
+      ]
+    }
+  },
+  "required": [
+    "latest",
+    "baseline_uGy_day",
+    "storm_2024",
+    "leash"
+  ]
+}

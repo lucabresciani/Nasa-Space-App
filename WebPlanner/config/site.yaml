@@ -1,0 +1,97 @@
+crs:
+  geographic: "Mars 2000 planetocentric, sphere R = 3396190 m"
+  analysis_proj: "+proj=eqc +lat_ts=-4.8 +lat_0=0 +lon_0=137.39 +x_0=0 +y_0=0 +R=3396190 +units=m +no_defs"
+  mars_radius_m: 3396190
+aoi_focus: {west: 137.37, east: 137.42, south: -4.82, north: -4.77}
+planning_radius_m: 3700          # flat 60-min disc at 0.98 m/s = 3528 m, plus margin
+pad_default:
+  lon: 137.382
+  lat: -4.806
+  rule: "centroid of Curiosity 2025-26 boxwork drive ends from MMGIS"
+  verify_at_h0: true
+grids_m: {dem: 1, route: 3, fields: 5, web: 10, siting_block: 20}
+siting:                            # added 13 Nov (gap found by WS2); F8 rule
+  block_m: 20
+  max_slope_deg: 5
+  require_assessed: true
+  score: "sum of station values with conservative T_home <= 30 min"
+  tiebreak: "lower elevation than the value-weighted station centroid"
+  top_k: 3
+coverage:
+  pad_disc_assessed_min_pct: 90  # else move pad by the F8 rule
+  source_edge_buffer_m: 20       # edges this close to a source boundary are labelled "data"
+  pad_check_reading: data_coverage  # decided (user for S/C, 12:37 CET): cells with data (assessed + blocked); state0_only still reported
+coreg: {search_m: 200, step_m: 2, metric: MAD}
+slope:
+  method: horn_3x3                # 1 m slope (slope_1m.tif): step guard and the rough-footing overlay
+  cell_slope: plane_fit_3x3       # D22 (user 2026-11-14 16:16 CET): 3 m cell slope = least-squares plane through the cell's nine 1 m elevations (slope_3m.tif)
+  step_guard_deg: 30              # D22: also block a cell if any 1 m slope inside it exceeds this (stepguard_3m.tif); assumed
+  step_guard_assumed: true        # step_guard_deg is assumed (D22: "step guard, config, assumed")
+  rough_footing: maxslope_3m      # D22: the old max-1 m-slope grid is kept only as the "rough footing" overlay
+  compare_window_m: 5
+  nogo_deg: {optimistic: 25, nominal: 20, conservative: 17}  # conservative = 17 per D23 (user 2026-11-14 16:16 CET), replaces "20 - v1_rmse_deg"; V1 is a validation, not a margin
+  flag_beyond_tested_deg: 17
+ridge: {median_window_m: 15, threshold_m: 0.75, assumed: true}
+roughness_window_m: 5
+sources:
+  merged_dem_vrt: "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars/MSL/MSL_Gale_DEM_Mosaic_1m_v3.vrt"
+  hirise_dtms: [DTEEC_009149_1750_009294_1750_U01, DTEEC_019698_1750_019988_1750_U01]
+  hirise_ortho: ESP_019698_1750_RED
+  crism_mtrdr: [FRT000058A3, FRT0000B6F1]
+  themis_tile: 30S120E
+# --- WS1 additions (fresh run, Sat 14 Nov; docs/discovery.md = D0 post-H0 report). ---
+dem_window_buffer_m: 200        # WS1 brief: dem_1m.tif = pad +/- (planning_radius_m + 200 m)
+raw_fetch_margin_m: 200         # assumed: true; extra merged-DEM rows cached beyond the dem window
+raw_fetch_chunk_rows: 400       # assumed: true; merged-DEM rows per cached chunk (striped TIFF, D0 2.1)
+download_budget_bytes: 3000000000  # assumed: true; WS1 raw-download cap (SPEC 5.1 total ~3-4 GB)
+d0_sources:                     # exact hrefs verified by D0 today (docs/discovery.md 2.1-2.7, 3.1)
+  merged_dem_nodata: -32767
+  merged_dem_area_or_point: Point  # D0 2.1: merged DEM is Point, HiRISE/CTX COGs are Area
+  hirise_dtm_href:
+    DTEEC_009149_1750_009294_1750_U01: "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/PSP_009149_1750_PSP_009294_1750/DTEEC_009149_1750_009294_1750_U01.tif"
+    DTEEC_019698_1750_019988_1750_U01: "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/DTEEC_019698_1750_019988_1750_U01.tif"
+  hirise_ortho_href: "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/ESP_019698_1750_RED_A_01_ORTHO.tif"
+  hirise_ortho_1m_href: "https://astrogeo-ard.s3-us-west-2.amazonaws.com/mars/mro/hirise/controlled/dtm/ESP_019698_1750_ESP_019988_1750/ESP_019698_1750_RED_C_01_ORTHO.tif"
+  lrgb_cog_href: "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars/MSL/MSL_Gale_HiRISE-LRGB_78quads_sharp_cog.tif"
+  mola_hrsc_200m_href: "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+  ctx_asset: geoid_adjusted_dem  # D0 2.4: raw `dem` is ~567 m lower, never use it
+  stac_hirise_planning: "data/raw/discovery/stac_hirise_dtms_planning_bbox.json"
+  crism_su_img:
+    FRT000058A3: "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2007/2007_112/frt000058a3/frt000058a3_07_su165j_mtr3.img"
+    FRT0000B6F1: "https://pds-geosciences.wustl.edu/mro/mro-m-crism-5-rdr-mptargeted-v1/mrocr_4001/mtrdr/2008/2008_191/frt0000b6f1/frt0000b6f1_07_su165j_mtr3.img"
+  crism_band_1based: {D2300: 40, SINDEX2: 42}   # D0 2.7, ENVI .hdr band names
+  crism_ignore_value: 65535
+  mmgis_waypoints_cached: "data/raw/discovery/mmgis_MSL_waypoints.json"   # D0 3.1, sols 3-5073
+d3:                             # D3 (source mask origin): decided A (user, 2026-11-14 11:24 CET, STATUS Decision log)
+  status: "decided: A (STAC footprint quads), user 2026-11-14 11:24 CET"
+  decided: true
+  applied: "STAC footprint quads (mro_hirise_socet_dtms) of the HiRISE pairs the merged DEM's Astropedia page lists"
+  note: "mosaic footprints are not published (D0 2.2); CTX vs HRSC cannot be told apart, non-HiRISE valid cells are coded 2"
+# HiRISE stereo pairs the merged DEM was built from (Astropedia page text, D0 2.2; orbit numbers,
+# the page writes _1755 where STAC writes _1750).
+merged_dem_hirise_pairs:
+  - [24234, 24300]   # West Gap
+  - [9650, 9716]     # West
+  - [10573, 10639]   # Center
+  - [9505, 9571]     # G2
+  - [11417, 11562]   # East
+  - [18854, 18920]   # West of Center
+  - [23957, 24023]   # Center Gap
+  - [24102, 25368]   # East Gap
+  - [9149, 9294]     # Traverse
+  - [12551, 12841]   # T2
+  - [1488, 1752]     # T1
+  - [19698, 19988]   # T3
+texture_check: {highpass_window_m: 9, rms_window_m: 25, assumed: true}  # D3 evidence only (HiRISE vs upsampled CTX texture), never the mask
+basemap_res_m: [0.25, 10]       # WS1 brief: XYZ zoom levels for 0.25-10 m
+ctx_qa:                         # WS3 mid-field CTX DTMs vs the MOLA-HRSC 200 m blend
+  max_abs_median_vs_mola_m: 50  # reject an item whose median offset to MOLA-HRSC is larger
+  level_to_mola: true           # subtract each accepted item's median offset (merged DEM is MOLA-tied)
+  assumed: true
+ctx_v2:                         # ctx_20m_v2.tif (session 2, WS3 Blocked 3): each CTX item co-registered to dem_1m in the overlap; C decides the switch
+  reference: dem_1m             # block-averaged to 20 m; rover-tied (coreg MAD 0.04 m) and MOLA-consistent (median +0.5 m at 200 m)
+  shift_search_m: 400           # horizontal grid search, +/- (WS1 session-2 investigation found 20-130 m)
+  shift_step_m: 10
+  sample_cells: 20000           # overlap cells sampled for the search (seed 0)
+  min_overlap_cells: 1000       # fewer: keep the item's MOLA levelling (ctx_qa)
+  assumed: true

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/fixes.schema.json",
+  "title": "nav/fixes.json",
+  "description": "Position fixes along the route (F21, F22). error_m and image_id for skyline fixes only.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.2",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "t_eva_min": {
+        "type": "number"
+      },
+      "station": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "type": {
+        "enum": [
+          "rover",
+          "station",
+          "skyline"
+        ]
+      },
+      "sigma_m": {
+        "type": "number"
+      },
+      "error_m": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "image_id": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "t_eva_min",
+      "station",
+      "type",
+      "sigma_m"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "type": {
+              "const": "skyline"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "error_m",
+            "image_id"
+          ]
+        }
+      }
+    ]
+  }
+}

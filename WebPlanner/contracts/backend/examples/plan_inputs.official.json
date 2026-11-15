@@ -1,0 +1,6 @@
+{
+ "contract_version": "1.0.0",
+ "title": "Official pad · default crew",
+ "pad": {"id": "rank1", "lon": 137.401783, "lat": -4.77748},
+ "stations": {"mode": "best"}
+}

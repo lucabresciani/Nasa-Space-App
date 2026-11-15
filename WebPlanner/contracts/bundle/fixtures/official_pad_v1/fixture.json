@@ -1,0 +1,20 @@
+{
+ "note": "Committed simulator fixture (contracts/bundle/README.md). Rebuild: make bundle-fixture. zlib_runtime: repacking is byte-identical only with the same zlib build.",
+ "zlib_runtime": "1.3.1",
+ "python": "3.11.15",
+ "plan_id": "rank1.nom_104",
+ "world_version_full": "world-dcd8def207c7",
+ "keep_near_chunks": null,
+ "zips": {
+  "plan_bundle.zip": {
+   "bytes": 38759065,
+   "sha256": "30ab7ae9bf1a884123a27772ae140a87f5e6a61c7f16d4aff1eeec98758a37fd",
+   "entries": 52
+  },
+  "world_pack.zip": {
+   "bytes": 18977656,
+   "sha256": "1aba49d5c4e06c8c4dd0c7dd47c3f536be28171839380711664bb9ae09dfdb24",
+   "entries": 123
+  }
+ }
+}

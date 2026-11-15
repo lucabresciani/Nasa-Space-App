@@ -1,0 +1,134 @@
+{
+ "contract_version": "1.2.0",
+ "hash": "a1b2c3d4e5f60718",
+ "origin": "computed_live",
+ "label": "Computed live · not part of the validated scorecard",
+ "inputs": {
+  "contract_version": "1.2.0",
+  "pad": {
+   "lon": 137.393301,
+   "lat": -4.776468
+  },
+  "crew": {
+   "body_mass_kg": 60,
+   "suit_kg": 95,
+   "tools_kg": 10,
+   "vo2max_ml_kg_min": 36,
+   "effort_cap_frac": 0.5
+  },
+  "eva": {
+   "duration_h": 6.5,
+   "reserve_min": 30,
+   "start_lmst_h": 9,
+   "walkback_budgets_min": [
+    30,
+    60
+   ]
+  },
+  "stations": {
+   "mode": "best"
+  },
+  "conditions": {
+   "storm": "none",
+   "d_allow_mgy": 0.5
+  },
+  "route": {
+   "mode": "ordered",
+   "stops": [
+    {
+     "station": "S4"
+    },
+    {
+     "station": "S1"
+    },
+    {
+     "station": "S2"
+    }
+   ]
+  },
+  "title": "Ridge loop, my order"
+ },
+ "engine": {
+  "tree": "0000000000000000000000000000000000000000",
+  "commit": "0000000000000000000000000000000000000000",
+  "config_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "web_contract_version": "1.1.5",
+  "backend_contract_version": "1.2.0"
+ },
+ "terrain_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+ "status": "done",
+ "started_utc": "2026-11-15T02:00:00Z",
+ "finished_utc": "2026-11-15T02:01:10Z",
+ "stages": [
+  {
+   "name": "nominal",
+   "started_utc": "2026-11-15T02:00:00Z",
+   "seconds": 20.0,
+   "files": [
+    "pad.json",
+    "stations.json",
+    "scenarios/index.json"
+   ]
+  },
+  {
+   "name": "hud",
+   "started_utc": "2026-11-15T02:00:20Z",
+   "seconds": 30.0,
+   "files": [
+    "cards/S1/overlay.png"
+   ]
+  }
+ ],
+ "files": [
+  {
+   "path": "pad.json",
+   "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+   "bytes": 512,
+   "contract": "pad.schema.json"
+  },
+  {
+   "path": "stations.json",
+   "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+   "bytes": 4096,
+   "contract": "stations.schema.json"
+  },
+  {
+   "path": "scenarios/index.json",
+   "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+   "bytes": 1024,
+   "contract": "scenarios_index.schema.json"
+  },
+  {
+   "path": "cards/S1/overlay.png",
+   "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+   "bytes": 2048,
+   "contract": null
+  }
+ ],
+ "range_flags": [
+  {
+   "key": "crew.body_mass_kg",
+   "value": 60,
+   "note": "outside the anchored range (ICES-2026-127, IST-2)"
+  }
+ ],
+ "route_mode": "ordered",
+ "feasibility": {
+  "feasible": false,
+  "leg": 2,
+  "from": "S1",
+  "to": "S2",
+  "limit": "O2",
+  "shortfall_min": 12.4,
+  "legs_planned": 2
+ },
+ "infeasible": {
+  "leg": 2,
+  "from": "S1",
+  "to": "S2",
+  "margin_min": -12.4,
+  "binding": "O2"
+ },
+ "error": null,
+ "dummy": true
+}

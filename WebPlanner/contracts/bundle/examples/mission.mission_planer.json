@@ -1,0 +1,313 @@
+{
+ "schema_version": "1.1.0",
+ "kind": "homeline_mission",
+ "mission_id": "m-f8efb70b3e02",
+ "title": "Mission · 1 waypoint · nom_104",
+ "created_utc": "2026-11-15T10:00:00Z",
+ "origin": "mission_planer",
+ "origin_label": "Mission Planer: browser estimate on the 5 m grid, not part of the validated scorecard",
+ "planner": {
+  "app_commit": null,
+  "config_hash": null,
+  "routing_grid_res_m": 5,
+  "elevation_res_m": 8,
+  "files": {}
+ },
+ "frame": {
+  "kind": "pad-local",
+  "axes": {
+   "x": "east",
+   "y": "north",
+   "z": "up"
+  },
+  "projection": {
+   "proj": "+proj=eqc +lat_ts=-4.8 +lat_0=0 +lon_0=137.39 +x_0=0 +y_0=0 +R=3396190 +units=m +no_defs",
+   "pad_xy_m": [
+    0,
+    -284518.5481
+   ]
+  },
+  "pad": {
+   "kind": "official",
+   "id": "rank1",
+   "lon": 137.39,
+   "lat": -4.8,
+   "elev_m": -3700,
+   "source": "test"
+  }
+ },
+ "scenario": {
+  "id": "nom_104",
+  "variant": "nominal",
+  "suit_kg": 104
+ },
+ "world": {
+  "version": null,
+  "plan_bundle_id": "rank1.nom_104"
+ },
+ "constants": {
+  "o2_capacity_l": 482.3113,
+  "effort_rate_l_min": 1.35,
+  "station_rate_l_min": 0.83735,
+  "reserve_l": 40.5,
+  "eva_limit_min": 390,
+  "margin_amber_min": 10
+ },
+ "conditions": {
+  "eva_start_lmst": "09:00:00",
+  "t_dark_min": 500,
+  "storm_replay": false,
+  "t_star_min": null,
+  "eva_start_utc": null,
+  "msl_sol": null,
+  "dose": null
+ },
+ "waypoints": [
+  {
+   "index": 1,
+   "id": 7,
+   "lonlat": [
+    137.39016929980681,
+    -4.8
+   ],
+   "x_m": 10,
+   "y_m": 0,
+   "z_m": 1,
+   "note": "core sample",
+   "tags": [
+    "Drill"
+   ],
+   "stop_min": 5,
+   "arrive_t_min": 0.2,
+   "leave_t_min": 5.2,
+   "o2_used_at_leave_l": 4.387,
+   "t_home_min": 0.2,
+   "o2_home_l": 0.1
+  }
+ ],
+ "legs": [
+  {
+   "leg": 1,
+   "kind": "out",
+   "from": "pad",
+   "to": "wp1",
+   "routed": true,
+   "length_m": 10,
+   "time_min": 0.2,
+   "o2_l": 0.2,
+   "t_start_min": 0,
+   "t_end_min": 0.2,
+   "first_row": 0,
+   "n_rows": 3
+  },
+  {
+   "leg": 2,
+   "kind": "home",
+   "from": "wp1",
+   "to": "pad",
+   "routed": true,
+   "length_m": 10,
+   "time_min": 0.2,
+   "o2_l": 0.1,
+   "t_start_min": 5.2,
+   "t_end_min": 5.4,
+   "first_row": 3,
+   "n_rows": 3
+  }
+ ],
+ "path": {
+  "columns": [
+   "leg",
+   "s_m",
+   "x_m",
+   "y_m",
+   "z_m",
+   "t_eva_min",
+   "o2_used_l",
+   "t_home_min",
+   "o2_home_l"
+  ],
+  "units": {
+   "s_m": "m (horizontal arc length from the leg start)",
+   "x_m": "m",
+   "y_m": "m",
+   "z_m": "m (pad-local)",
+   "t_eva_min": "min since EVA start",
+   "o2_used_l": "L since EVA start",
+   "t_home_min": "min",
+   "o2_home_l": "L"
+  },
+  "rows": [
+   [
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    1,
+    5,
+    5,
+    0,
+    0.5,
+    0.1,
+    0.1,
+    0.1,
+    0.05
+   ],
+   [
+    1,
+    10,
+    10,
+    0,
+    1,
+    0.2,
+    0.2,
+    0.2,
+    0.1
+   ],
+   [
+    2,
+    0,
+    10,
+    0,
+    1,
+    5.2,
+    4.387,
+    0.2,
+    0.1
+   ],
+   [
+    2,
+    5,
+    5,
+    0,
+    0.5,
+    5.3,
+    4.437,
+    0.1,
+    0.05
+   ],
+   [
+    2,
+    10,
+    0,
+    0,
+    0,
+    5.4,
+    4.487,
+    0,
+    0
+   ]
+  ]
+ },
+ "timeline": {
+  "columns": [
+   "t_min",
+   "phase",
+   "wp",
+   "o2_used_l",
+   "t_home_min",
+   "o2_home_l",
+   "tasks_left_l",
+   "margin_min",
+   "binding"
+  ],
+  "phases": {
+   "depart": "t = 0 at the pad",
+   "walk": "a route vertex",
+   "arrive": "at waypoint wp, stop starts",
+   "stop": "inside a stop (dose candidate)",
+   "leave": "stop over",
+   "home": "inside the walk home (dose candidate)",
+   "return": "back at the pad"
+  },
+  "terms": [
+   "O2",
+   "daylight",
+   "EVA duration"
+  ],
+  "rows": [
+   [
+    0,
+    "depart",
+    null,
+    0,
+    0,
+    0,
+    0,
+    327.27,
+    "O2"
+   ],
+   [
+    0.1,
+    "walk",
+    null,
+    0.1,
+    0.1,
+    0.05,
+    0,
+    327.16,
+    "O2"
+   ],
+   [
+    0.2,
+    "arrive",
+    1,
+    0.2,
+    0.2,
+    0.1,
+    4.187,
+    323.94,
+    "O2"
+   ],
+   [
+    5.2,
+    "leave",
+    1,
+    4.387,
+    0.2,
+    0.1,
+    0,
+    323.94,
+    "O2"
+   ],
+   [
+    5.4,
+    "return",
+    null,
+    4.487,
+    0,
+    0,
+    0,
+    323.94,
+    "O2"
+   ]
+  ],
+  "lowest": {
+   "margin_min": 323.94,
+   "binding": "O2",
+   "t_min": 0.2
+  }
+ },
+ "summary": {
+  "feasible": true,
+  "walk_min": 0.2,
+  "stop_min": 5,
+  "t_home_min": 0.2,
+  "eva_min": 5.4,
+  "time_margin_min": 384.6,
+  "o2_used_l": 4.387,
+  "o2_home_l": 0.1,
+  "o2_need_l": 40.6,
+  "o2_margin_l": 437.325,
+  "o2_margin_min": 323.944
+ },
+ "label": "Simulated EVA · real terrain and data",
+ "dummy": false
+}

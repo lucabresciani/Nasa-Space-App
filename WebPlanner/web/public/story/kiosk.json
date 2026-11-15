@@ -1,0 +1,117 @@
+{
+  "id": "kiosk",
+  "version": "1",
+  "title": "Kiosk loop (?demo=1, DESIGN U6): intro, flythrough, repeat; any input exits. Storm replay and drag-the-rover are not on design yet (notes/M10.md)",
+  "size": [
+    1920,
+    1080
+  ],
+  "fps": 60,
+  "steps": [
+    {
+      "t": 0,
+      "ui": "hide",
+      "caption": "intro.gale",
+      "layers": {
+        "relief_low": true,
+        "terrain": true,
+        "homeline": false,
+        "unknown": false,
+        "edges": false,
+        "stations": false
+      },
+      "camera": {
+        "target": "MSH",
+        "alt_m": 180000,
+        "bearing": 0,
+        "pitch": 0
+      }
+    },
+    {
+      "t": 4,
+      "camera": {
+        "target": "MSH",
+        "alt_m": 150000,
+        "bearing": 0,
+        "pitch": 0
+      }
+    },
+    {
+      "t": 9,
+      "caption": null,
+      "camera": {
+        "target": "MSH",
+        "alt_m": 30000,
+        "bearing": -40,
+        "pitch": 55
+      }
+    },
+    {
+      "t": 12,
+      "caption": "intro.walkback",
+      "layers": {
+        "homeline": true,
+        "unknown": true,
+        "edges": true,
+        "stations": true
+      },
+      "field": {
+        "mode": "bands",
+        "collapse": 0,
+        "duration_s": 0
+      },
+      "camera": {
+        "target": "PAD",
+        "alt_m": 9000,
+        "bearing": -15,
+        "pitch": 30
+      }
+    },
+    {
+      "t": 14.5,
+      "caption": "intro.notFlat",
+      "field": {
+        "collapse": 1,
+        "duration_s": 3
+      }
+    },
+    {
+      "t": 18,
+      "ui": "reveal",
+      "caption": null,
+      "camera": {
+        "target": "PAD",
+        "alt_m": 9000,
+        "bearing": 0,
+        "pitch": 0
+      }
+    },
+    {
+      "t": 20,
+      "layers": {
+        "route": true,
+        "relief_low": false
+      },
+      "field": {
+        "mode": "margin"
+      },
+      "clock": {
+        "t_min": 0,
+        "playing": true,
+        "speed": 4
+      },
+      "camera": {
+        "target": "CREW"
+      }
+    },
+    {
+      "t": 102,
+      "clock": {
+        "playing": false
+      }
+    },
+    {
+      "t": 104
+    }
+  ]
+}

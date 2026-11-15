@@ -1,0 +1,27 @@
+/* WS16 task 11 (M11, U7): layer manager panel and contour index labels. Tokens only. */
+.hl-ovl { display: flex; flex-direction: column; gap: var(--space-2); }
+.hl-ovl__notice { margin: 0; font-size: var(--font-size-small); line-height: var(--line-height-small); color: var(--color-text-muted); }
+.hl-ovl__notice:empty { display: none; }
+.hl-ovl__group { display: flex; flex-direction: column; gap: var(--space-1); }
+.hl-ovl__group-title { margin: 0; font-size: var(--font-size-small); line-height: var(--line-height-small); font-weight: var(--font-weight-label); letter-spacing: 0.02em; color: var(--color-text-muted); text-transform: uppercase; }
+.hl-ovl__layers, .hl-ovl__legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hl-ovl__layer { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) 0; border-top: 1px solid var(--color-card-border); }
+.hl-ovl__head { display: flex; align-items: center; gap: var(--space-2); }
+.hl-ovl__head .hl-toggle { flex: 1; min-width: 0; }
+.hl-ovl__what { margin: 0; font-size: var(--font-size-small); line-height: var(--line-height-small); color: var(--color-text-muted); }
+.hl-ovl__legend { padding-left: var(--space-2); }
+.hl-swatch--none { border: 1px solid var(--color-text-faint); }
+.hl-swatch--heavy { border-top-width: calc(var(--line-thread) * 1.5); }
+
+.hl-contour-label {
+  pointer-events: none;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-label-pill);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-label);
+  line-height: var(--line-height-label);
+  font-weight: var(--font-weight-map-label);
+  white-space: nowrap;
+}

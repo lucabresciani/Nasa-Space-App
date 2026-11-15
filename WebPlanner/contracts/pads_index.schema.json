@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/pads_index.schema.json",
+  "title": "scenarios/pads/index.json",
+  "description": "D21 \"Rover parking options\" ranking table (user 2026-11-14 16:14; C file layout 16:17). One row per ranked pad, the official pad included (rank 1, the pad of pad.json and of every main scenario file); the other rows with picker: true have their own files under scenarios/pads/{id}/ (summary.json, bands_{suit}.geojson, edges.geojson, partner.geojson, route_{scenario}.geojson, timeline_{scenario}.json; nominal suit only, no isochrones or fields). Exactly one row has official: true, and its id equals the top-level official when that is given (checked by tools/validate_contracts.py; the browser checker's keyword subset cannot count). Index file: requires \"dummy\". Producer WS2 (pipeline/engine/padpick.py). Manifest keys pads.{id}.*. Added in v1.1.4; extra keys allowed. v1.1.5: optional feasible block (D45).",
+  "x-contract-version": "1.1.5",
+  "x-source": "SPEC §11 D21; STATUS Decision log 2026-11-14 16:14 and 16:17",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "true only in web/public/data-dummy/; must be false in web/public/data/"
+    },
+    "official": {
+      "type": "string",
+      "pattern": "^(?!\\.\\.?$)[A-Za-z0-9_.-]+$",
+      "description": "id of the official pad row (optional; WS2 writes it). When present it must equal the id of the row with official: true"
+    },
+    "scenario": {
+      "type": "string",
+      "description": "scenario the ranking and the picker files use, e.g. nom_104"
+    },
+    "score_kind": {
+      "type": "string",
+      "description": "what score counts, e.g. d21_feasible_eva_count"
+    },
+    "order": {
+      "type": "string",
+      "description": "ranking order and tiebreaks, as text"
+    },
+    "decision": {
+      "type": "string"
+    },
+    "ids": {
+      "type": "string",
+      "description": "how the ids are formed"
+    },
+    "screening": {
+      "type": "object",
+      "description": "screening statistics (candidate counts, histogram, timings); free form"
+    },
+    "pads": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(?!\\.\\.?$)[A-Za-z0-9_.-]+$",
+            "description": "plain file name: the folder scenarios/pads/{id}/; rank{n} = D21 rank n, pad_default keeps its name"
+          },
+          "kind": {
+            "type": "string",
+            "description": "candidate kind, e.g. block (F8 candidate block) or pad_default"
+          },
+          "label": {
+            "type": "string",
+            "description": "optional display label"
+          },
+          "lon": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 360,
+            "description": "longitude, deg east (Mars 2000 planetocentric)"
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "latitude, deg (Mars 2000 planetocentric)"
+          },
+          "elev_m": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "pad-cell elevation, m (areoid)"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "D21 rank (1 = official)"
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "D21 score: feasible-EVA count (station subsets with a feasible route)"
+          },
+          "official": {
+            "type": "boolean",
+            "description": "true for exactly one row: the official pad"
+          },
+          "picker": {
+            "type": "boolean",
+            "description": "row has its own files under scenarios/pads/{id}/ and is offered in the picker"
+          },
+          "tiebreak": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "description": "tiebreak values by name, in D21 order, e.g. reachable_pct_30 (%), elev_m (m)"
+          },
+          "screen_score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "screen_rank": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "data path of the row's summary.json (scenarios/pads/{id}/summary.json); null for the official pad, whose files are the main scenario files"
+          },
+          "files": {
+            "description": "official row: note on where its files are; free form"
+          },
+          "route": {
+            "type": "object",
+            "description": "official row: route summary {stops, total_min}",
+            "properties": {
+              "stops": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "total_min": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          },
+          "feasible": {
+            "type": "object",
+            "description": "v1.1.5, optional (D45 of set A): how many station combinations the planning rule keeps. screen_count = screening count (walk + dwell within the EVA budget, no margin check); full_run_count = exact DP count with margin >= 0 on every leg (the D21 score); excluded_by_effort_cap_rule = screen_count - full_run_count. Extra keys allowed.",
+            "properties": {
+              "screen_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "full_run_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "excluded_by_effort_cap_rule": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "screen_count",
+              "full_run_count",
+              "excluded_by_effort_cap_rule"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "lon",
+          "lat",
+          "elev_m",
+          "rank",
+          "score",
+          "official",
+          "tiebreak"
+        ],
+        "if": {
+          "properties": {
+            "picker": {
+              "const": true
+            }
+          },
+          "required": [
+            "picker"
+          ]
+        },
+        "then": {
+          "properties": {
+            "official": {
+              "const": false
+            },
+            "summary": {
+              "type": "string",
+              "pattern": "^scenarios/pads/[A-Za-z0-9_.-]+/summary\\.json$"
+            }
+          },
+          "required": [
+            "summary"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "dummy",
+    "pads"
+  ]
+}

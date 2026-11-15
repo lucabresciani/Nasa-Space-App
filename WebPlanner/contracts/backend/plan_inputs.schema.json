@@ -1,0 +1,158 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "homeline/contracts/backend/plan_inputs.schema.json",
+ "title": "plan_inputs.json",
+ "description": "User inputs of one plan (K1, D52): what POST /jobs, POST /pads/screen, POST /plans/import, the plan library (plan_versions.inputs) and JSON export carry. Not the bundle's plan.json (contracts/bundle/plan.schema.json), which is the resolved plan identity built from these inputs and a result. Every omitted field takes its default from config (config/backend.yaml ranges, crew.yaml, conditions.yaml). Ranges, length caps and the number of user points are enforced by the server from config/backend.yaml, not here; this schema fixes structure and names only. The result hash is computed over the inputs AFTER defaults are filled (contracts/backend/README.md 'Result hash').",
+ "x-contract-version": "1.2.0",
+ "x-source": "Backend spec §7, F24, F25, F26, F28; kit K1; D52; D97 (route, v1.2.0)",
+ "type": "object",
+ "properties": {
+  "contract_version": {
+   "type": "string",
+   "pattern": "^1\\.\\d+\\.\\d+$",
+   "description": "backend contract family version the document was written against"
+  },
+  "title": {
+   "type": "string",
+   "description": "free text, rendered as text; removed before hashing (a title never changes a result); cap: config/backend.yaml limits.title_max_chars"
+  },
+  "pad": {
+   "type": "object",
+   "description": "Rover pad (F24). lon/lat in Mars 2000 planetocentric degrees (east positive), 6 decimals.",
+   "properties": {
+    "id": {
+     "type": "string",
+     "description": "a pad id from scenarios/pads/index.json (the official pad is the entry with official: true) when the pad was picked; absent for a custom pad"
+    },
+    "lon": {"type": "number", "minimum": -180, "maximum": 360},
+    "lat": {"type": "number", "minimum": -90, "maximum": 90}
+   },
+   "additionalProperties": false,
+   "required": ["lon", "lat"]
+  },
+  "crew": {
+   "type": "object",
+   "description": "Custom crew and suit (F26). Ranges: config/backend.yaml ranges; defaults: crew.yaml.",
+   "properties": {
+    "body_mass_kg": {"type": "number"},
+    "suit_kg": {"type": "number"},
+    "tools_kg": {"type": "number"},
+    "vo2max_ml_kg_min": {"type": "number"},
+    "effort_cap_frac": {"type": "number", "description": "fraction of VO2max, e.g. 0.5"}
+   },
+   "additionalProperties": false
+  },
+  "eva": {
+   "type": "object",
+   "description": "Per-plan EVA settings (F25, F26).",
+   "properties": {
+    "duration_h": {"type": "number"},
+    "reserve_min": {"type": "number"},
+    "start_lmst_h": {"type": "number", "description": "EVA start, local mean solar time, hours"},
+    "walkback_budgets_min": {
+     "type": "array",
+     "items": {"type": "number"},
+     "minItems": 1,
+     "uniqueItems": true,
+     "description": "walkback contour levels, min (crew.yaml walkback_budgets_min)"
+    }
+   },
+   "additionalProperties": false
+  },
+  "stations": {
+   "type": "object",
+   "description": "Station choice (F25). best = exact DP over all stations (F9); set = fixed set in the best order; order = fixed order as given. v1.2.0: stops and their order are set with route (D97); mode set/order and custom stay cut (D69) and the server refuses them.",
+   "properties": {
+    "mode": {"enum": ["best", "set", "order"]},
+    "ids": {
+     "type": "array",
+     "items": {"type": "string", "pattern": "^(S[0-9]+|U[1-3])$"},
+     "uniqueItems": true,
+     "description": "station ids (stations.json) and user points; required for set and order"
+    },
+    "dwell_min": {
+     "type": "object",
+     "description": "dwell per station, min",
+     "propertyNames": {"pattern": "^(S[0-9]+|U[1-3])$"},
+     "additionalProperties": {"type": "number"}
+    },
+    "custom": {
+     "type": "array",
+     "maxItems": 3,
+     "description": "user science points U1-U3 (F25 stretch); label 'user station · no science scoring'",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {"type": "string", "pattern": "^U[1-3]$"},
+       "name": {"type": "string"},
+       "lon": {"type": "number", "minimum": -180, "maximum": 360},
+       "lat": {"type": "number", "minimum": -90, "maximum": 90}
+      },
+      "additionalProperties": false,
+      "required": ["id", "lon", "lat"]
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": ["mode"],
+   "if": {"properties": {"mode": {"enum": ["set", "order"]}}},
+   "then": {"required": ["ids"], "properties": {"ids": {"minItems": 1}}}
+  },
+  "route": {
+   "type": "object",
+   "description": "Route (D97, v1.2.0). auto = the engine chooses stations and order (F9, as the official plan); ordered = legs pad -> stops[0] -> ... -> pad in exactly the given order, never reordered; an order that breaks a limit is answered with run_record.feasibility (feasible false), not refused. Missing route = auto. A stop is a station of stations.json ({station}) or a free point ({lon, lat, label?}); free points are named W1, W2, ... in their order among the free stops (run_record.feasibility from/to). Limits (config/backend.yaml route.max_stops, route.max_free_points, route.min_stop_spacing_m) and stop validity (inside the grid, assessed, walkable, reachable) are enforced by the server, which answers 422 naming the stop. Hash: a missing route or mode auto hashes as absent (v1.1 hashes unchanged); ordered hashes the stops in order with label removed (D57).",
+   "properties": {
+    "mode": {"enum": ["auto", "ordered"]},
+    "stops": {
+     "type": "array",
+     "description": "the stops in visiting order; absent or empty for auto",
+     "items": {
+      "oneOf": [
+       {
+        "type": "object",
+        "title": "station stop",
+        "properties": {"station": {"type": "string", "pattern": "^S[0-9]+$", "description": "station id (stations.json)"}},
+        "additionalProperties": false,
+        "required": ["station"]
+       },
+       {
+        "type": "object",
+        "title": "free point",
+        "properties": {
+         "lon": {"type": "number", "minimum": -180, "maximum": 360},
+         "lat": {"type": "number", "minimum": -90, "maximum": 90},
+         "label": {"type": "string", "description": "free text, rendered as text; removed before hashing (D57); cap: config/backend.yaml limits.title_max_chars"}
+        },
+        "additionalProperties": false,
+        "required": ["lon", "lat"]
+       }
+      ]
+     }
+    }
+   },
+   "additionalProperties": false,
+   "required": ["mode"],
+   "if": {"properties": {"mode": {"const": "ordered"}}},
+   "then": {"required": ["stops"], "properties": {"stops": {"minItems": 1}}},
+   "else": {"properties": {"stops": {"maxItems": 0}}}
+  },
+  "conditions": {
+   "type": "object",
+   "description": "Storm timing (F25, D39) and dose allowance (F26, D9).",
+   "properties": {
+    "storm": {"enum": ["none", "2024-05-20"]},
+    "tripwire_at": {
+     "oneOf": [
+      {"const": "route_max_t_home"},
+      {"type": "number", "minimum": 0}
+     ],
+     "description": "route_max_t_home (D39 default, conditions.yaml storm_replay.tripwire_at) or an EVA minute"
+    },
+    "d_allow_mgy": {"type": "number", "description": "dose allowance, mGy"}
+   },
+   "additionalProperties": false
+  }
+ },
+ "additionalProperties": false,
+ "required": ["contract_version", "pad"]
+}

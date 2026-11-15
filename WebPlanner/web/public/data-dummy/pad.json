@@ -1,0 +1,39 @@
+{
+  "dummy": true,
+  "pad": {
+    "lon": 137.382,
+    "lat": -4.806,
+    "elev_m": null,
+    "score": null,
+    "checks": {
+      "assessed_pct_30min": 90.2,
+      "max_slope_deg": 2.85,
+      "rule_passed": true
+    }
+  },
+  "alternatives": [
+    {
+      "rank": 1,
+      "lon": 137.386692,
+      "lat": -4.808699,
+      "elev_m": null,
+      "score": 2.38
+    },
+    {
+      "rank": 2,
+      "lon": 137.380552,
+      "lat": -4.809963,
+      "elev_m": null,
+      "score": 1.97
+    },
+    {
+      "rank": 3,
+      "lon": 137.38327,
+      "lat": -4.803808,
+      "elev_m": null,
+      "score": 0.89
+    }
+  ],
+  "hop_options": [],
+  "site_rule_version": "DUMMY"
+}

@@ -1,0 +1,157 @@
+az_step_deg: 0.25
+az_step_coarse_deg: 1.0            # F22 coarse search
+sampling:
+  # handover: band_edge = C decision 2026-11-14 12:35 (F20 at S2; STATUS Decision log): use the 1 m DEM
+  # out to the edge of its valid coverage before handing over to CTX. The handover distance on each
+  # ray = max(to_m, distance at which the ray leaves dem_1m's valid extent), capped at the next
+  # band's to_m; a no-data sample inside that range still falls back to the next coarser band
+  # (band_fallback). dem_1m = pad +/- 3.9 km, so from the pad the handover is 3.9-5.5 km (was 2 km).
+  - {to_m: 2000,  step_m: 1,   source: dem_1m, handover: band_edge}
+  - {to_m: 30000, step_m: 20,  source: ctx_20m}
+  - {to_m: 80000, step_m: 200, source: mola_hrsc_200m}
+curvature: "drop = d^2 / (2 R)"
+eye_height_m: 1.7
+navcam_height_m: 1.9               # verify_at_h0 from camera model C-vector
+distance_classes_km: [0.5, 2.0]
+v2: {min_stops: 10, target_stops: 30, manual_check_frac: 0.2}
+sky_detector: "per column, top-down: first pixel where vertical gradient > 3x the median gradient of the top 10% rows"
+
+# --- WS3 additions (fresh run, 2026-11-14; each assumed: true and flagged in STATUS.md) ------
+# Ray engine: DEM bands are north-up rasters in the analysis CRS (site.yaml); a sample with no
+# data in its configured source falls back to the next coarser source given (never finer).
+band_fallback: {value: coarser, assumed: true}
+# Raw-image API facts verified by D0 today (docs/discovery.md 3.3, 3.3a, 3.4); cited, not assumed.
+navcam_api:
+  url: "https://mars.nasa.gov/api/v1/raw_image_items/"   # 3.3, no key needed
+  camera_model_field: camera_model_component_list        # 3.3: "C;A;H;V;O;R"
+  camera_frame: "rover frame, +X forward, +Y right, +Z down"                          # 3.3a
+  attitude: "quaternion (w, x, y, z), rover -> site (N, E, Down); ZYX Euler = MMGIS yaw/pitch/roll"  # 3.3a
+  lmst_format: "Sol-NNNNNMhh:mm:ss.sss"                  # 3.3
+  downsampled_models_in_downsampled_px: true             # 3.3
+  c_height_above_rover_origin_m: {median_near_horizontal: 1.924, min: 1.835, max: 2.026}  # 3.4
+# Navcam frame selection and cache (data/raw/navcam/). WS3 assumptions, flagged in STATUS.md.
+navcam_selection:
+  instruments: [NAV_LEFT_B]        # left eye only: the right eye has the same pointing; halves downloads
+  sample_types: [full]             # API filter extended=full::sample_type::eq (checked by WS3 on sol 4200: 48/48 full)
+  per_page: 200                    # 3.3: per_page=200 works
+  stops_wanted: 36                 # v2.target_stops (30) + 20% for frames the detector fails on
+  max_stops_tried: 120              # all 116 distinct focus-area stops at 30 m spacing (WS3 run 1: 11/70 had a frame with sky)
+  max_frames_per_stop: 4           # widest azimuth spread among frames that pass the sky test
+  min_stop_spacing_m: 30           # distinct stops: farthest-point order over focus-area drive ends
+  first_stops:                     # stations.yaml rules that name a drive end go first
+    - {station: S4, nearest_sol: 4200}   # S4 rule "Curiosity drive end nearest sol 4200 from MMGIS"
+  top_row_min_el_deg: 0.0          # pre-test only (no DEM needed): top-centre pixel above local level; the predicted-skyline test below decides (WS3 run 1: 10 deg kept 15/116 stops, most frames still had no sky)
+  bottom_row_max_el_deg: -5.0      # ... and its bottom-centre pixel at most this (ground in frame)
+  min_predicted_skyline_col_frac: 0.5   # keep a frame only if the DEM-predicted skyline is testable (below the detector reference band, inside the frame) in >= 50 % of columns; WS3 run 1: the geometric test alone kept frames filled by rising terrain
+  max_extra_sols: 1                # also look at drive-end sol + 1 if the drive-end sol has no usable frame
+  max_total_mb: 150                # cache budget for API JSON + JPG
+  timeout_s: 60
+  retries: 2
+  assumed: true
+# Structured copy of the sky_detector rule above (same numbers: 3x, top 10% rows) so code does not
+# parse prose, plus WS3 additions justified on fresh frames (see STATUS.md WS3 for the evidence):
+#  zero_median_guard: a zero reference median (smooth 8-bit sky) uses one DN instead.
+#  border_px: Navcam JPEG artefact border (fresh cache, 12 frames: row 0 ~235-254 DN, row 1
+#             ~20 DN above row 2, column 0 ~25 DN darker, last row bright 141-252 DN).
+#  presmooth_sigma_px: Gaussian pre-smoothing before the gradient; 0 = rule as written.
+sky_detector_params: {grad_ratio: 3.0, ref_top_frac: 0.10, zero_median_guard: one_count,
+                      border_px: 2, presmooth_sigma_px: 2.0, assumed: true}
+# DEM bands for the ray engine (pipeline/horizon/bands.py). `path` = the band the engine reads.
+# Canonical far-field bands (C decisions, STATUS Decision log 2026-11-14 11:15 and 14:13): WS1's
+# terrain/ctx_20m_v2.tif (farfield_v2.json; CTX items co-registered to dem_1m) + mola_hrsc_200m.tif.
+# The other keys describe WS3's own reference build (`python -m pipeline.horizon.bands --build`,
+# written to data/interim/horizon/bands/, no longer used by the engine). URLs and assets from
+# docs/discovery.md 2.4/2.5; radii, item counts and resolution choices are WS3 assumptions.
+bands:
+  dem_1m: {path: data/interim/terrain/dem_1m.tif}       # WS1 (7,800 x 7,800 at 1 m, pad +/- 3.9 km)
+  ctx_20m:
+    # C decision 2026-11-14 14:13 (STATUS Decision log): canonical CTX = WS1 session 2's
+    # ctx_20m_v2.tif, each CTX item co-registered to dem_1m (v2 - dem_1m +0.16 m in the 1.5-3.9 km
+    # ring, was +19.79 m with ctx_20m.tif; closer to MOLA-HRSC in every ring). ctx_20m.tif is kept
+    # by WS1 for reference only.
+    path: data/interim/terrain/ctx_20m_v2.tif           # WS1, canonical (C, 14:13; was ctx_20m.tif, C 11:15)
+    listing: data/raw/discovery/stac_ctx_pad_point_idbbox.json   # D0: first 500 STAC items at the pad
+    stac_item_url: "https://stac.astrogeology.usgs.gov/api/collections/mro_ctx_controlled_usgs_dtms/items/{id}"
+    asset: geoid_adjusted_dem      # discovery 2.4: plain `dem` is 567 m lower at the pad
+    res_m: 20
+    radius_m: 34000                # 30 km sampling limit + planning radius 3.7 km, rounded up
+    max_items: 3                   # greedy footprint gain over the disc (D0 listing saturates at ~73 %)
+    min_gain_pct: 1.0
+    max_offset_to_mola_m: 20       # reject an item whose median offset to MOLA-HRSC is larger (WS3 run 1: one item -55 m, the others -4 m)
+    max_rejects: 5
+    assumed: true
+  mola_hrsc_200m:
+    path: data/interim/terrain/mola_hrsc_200m.tif       # WS1, canonical (C, 11:15)
+    url: "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars/HRSC_MOLA_Blend/Mars_HRSC_MOLA_BlendDEM_Global_200mp_v2.tif"
+    res_m: 200
+    radius_m: 84000                # 80 km sampling limit + planning radius 3.7 km, rounded up
+    assumed: true
+# V2 frame-level failure: if the detector's boundary falls inside the top reference band in more
+# than this share of columns, the top of the frame is not clear sky; the frame is reported as
+# failed (not dropped). Fresh evidence: 34 of 44 geometric candidates had 88-100 % of columns there.
+v2_frame_fail: {max_in_ref_band_frac: 0.5, assumed: true}
+# Presentation only (overlay PNGs and V2 check composites; panorama strips for station cards).
+overlay: {line_rgba: [255, 90, 0, 255], line_width_px: 2, tick_rgba: [255, 215, 0, 255],
+          tick_len_px: 14, detected_rgba: [0, 200, 255, 255], assumed: true}
+panorama: {px_per_deg: 4, el_margin_deg: 2, sky_rgb: [210, 168, 140], ground_rgb: [118, 84, 62],
+           line_rgb: [255, 255, 255], tick_rgb: [255, 215, 0], min_el_span_deg: 10,
+           label_band_px: 34, font_px: 13, assumed: true}
+# --- WS3 session 2 additions (2026-11-14; each assumed: true unless cited, flagged in STATUS.md) ---
+# Landmarks: the IAU gazetteer CSV D0 cached (docs/discovery.md 3.5, file written after H0);
+# "within 80 km of the pad" and "Adopted by IAU" are landmarks.yaml sources.official (cited).
+landmarks_source: {csv: data/raw/discovery/iau_mars.csv, max_dist_km: 80, approval: "Adopted by IAU"}
+# Structured copy of landmarks.yaml `rule` / `drop_if` (3-6 landmarks; above the skyline or within
+# 5 km). WS3 additions: the label point is the gazetteer centre (a large feature's centre is not
+# its summit, discovery 3.5); it counts as above the skyline when its elevation angle is at most
+# above_skyline_tol_deg under the computed skyline at its bearing (ray sampling tolerance); when
+# more than max_n qualify, the nearest are kept.
+landmark_rule: {min_n: 3, max_n: 6, near_km: 5, above_skyline_tol_deg: 0.05, order: nearest_first,
+                assumed: true}
+# D33 (user, 2026-11-14 16:20 CET, SPEC §11): hidden landmarks = gazetteer features (within
+# landmarks_source.max_dist_km of the pad) whose centre is below the computed skyline, at any
+# distance (this replaces the near_km clause for display: a landmark within 5 km but below the
+# skyline is hidden too). Visible ones (above the skyline) keep the 3-6 nearest-first rule and are
+# labelled at their elevation; hidden ones are all listed after them, nearest first, as
+# bearing-only ticks marked `label`, on the panorama strip and (WS5) the compass. The photo overlay
+# shows only landmarks above the skyline seen from the photo's own stop.
+hidden_landmarks: {display: bearing_tick, visible_display: label, label: "below skyline",
+                   source: "SPEC §11 D33 (user 2026-11-14 16:20 CET)"}
+# Presentation of the hidden ticks on the panorama (D33): a dashed line through the ground at the
+# bearing, and a bottom band with the labels (rows stacked so labels never overlap).
+panorama_hidden: {tick_rgb: [235, 235, 235], band_rgb: [70, 50, 38], dash_px: [4, 3],
+                  tick_len_px: 6, assumed: true}
+# Far skyline ring for WS8 (fp3d/horizon_ring.json): horizon from the pad at eye height, counting
+# only terrain beyond the near mesh (SPEC F20 "one 8 m mesh over the planning extent" =
+# site.yaml planning_radius_m); az step = az_step_deg.
+horizon_ring: {observer: pad, min_range: site.planning_radius_m, assumed: true}
+# Station-card Navcam frame (brief WS3 "nearest suitable frame"): the frame whose stop is nearest
+# the station observer among V2 frames with status ok and manual_ok not false (no choice by error).
+card_frame: {rule: "nearest V2 frame with status ok and manual_ok != false", assumed: true}
+# D7 preparation only (D7 is C's / the user's decision): frames put on the manual-check sheet are
+# the 20 % sample (v2.manual_check_frac), every ok frame whose far-class median error exceeds
+# far_fail_abs_deg (the hazy north-facing group sits at -3.2 to -7.6 deg), and the failed frames.
+# Diagnostic on the sheet (evidence for the reviewer, not a verdict): the predicted skyline is
+# recomputed counting only terrain within each cut range (same sampling, truncated); the range
+# whose skyline best matches the detector (smallest median |detected - predicted| over the
+# frame's far columns) is reported and drawn in cut_rgba. A short best range on a far-failed
+# frame means only nearby terrain is seen (haze); a range at the longest cut with a large error
+# points to the model or the detector.
+manual_check_sheet: {far_fail_abs_deg: 2.0, include_failed_frames: true,
+                     verdicts: [ok, rim_not_visible, detector_wrong, model_wrong, unsure],
+                     cut_ranges_km: [2, 5, 10, 20, 30], cut_rgba: [80, 230, 80, 255],
+                     assumed: true}
+# D7 decided (user, 2026-11-14 15:01 CET): automatic detector only, no manual review; near/mid V2
+# quoted; far class reported as "not validated: far rim hidden by haze in north-facing frames".
+# The manual-check sheet above stays available but is not required.
+# validation/v2.json far_note carries the evidence numbers, each with a manifest key:
+#   far-fail frame = V2-ok frame whose far-class median error exceeds
+#     manual_check_sheet.far_fail_abs_deg;
+#   north-facing   = frame centre azimuth (site frame) within north_half_width_deg of north;
+#   rim distance   = per frame, the median predicted-skyline distance over its far columns;
+#     min and max over the far-fail frames (km);
+#   "matches terrain within ~2 km" (match_range_km, from the D7 text) = the sheet's best cut
+#     range is <= match_range_km; also counted: those whose median (detected - predicted from
+#     the cut horizon) is within +-match_tol_deg.
+# north_half_width_deg and match_tol_deg are WS3 assumptions.
+d7_far_note: {decision: "D7, user 2026-11-14 15:01 CET", north_half_width_deg: 45,
+              match_range_km: 2, match_tol_deg: 0.3, assumed: true}

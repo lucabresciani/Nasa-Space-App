@@ -1,0 +1,104 @@
+sets:                              # decided (D15), all assumed
+  low:    {sigma_s: 0.01, sigma_b_deg_h: 1,  psi0_deg: 1, psi_rw_deg_sqrt_min: 0.05, slip: 0.02}
+  medium: {sigma_s: 0.03, sigma_b_deg_h: 5,  psi0_deg: 3, psi_rw_deg_sqrt_min: 0.10, slip: 0.05}
+  high:   {sigma_s: 0.05, sigma_b_deg_h: 20, psi0_deg: 5, psi_rw_deg_sqrt_min: 0.30, slip: 0.10}
+default_set: medium
+step_m: 0.7
+step_noise_frac: 0.05
+slip_min_slope_deg: 10
+monte_carlo: {runs: 500, dt_s: 1, seed: 20261114}
+ellipse_conf: 0.95
+r95_fit: "r95(D) = a*D + b*D^2"
+fix_sigma_m: {rover: 2, station: 5}
+fix_interval:
+  criterion: "r95(D) <= margin radius"   # D17 default 95%
+  classes_m: [100, 300, 1000]
+skyline_fix:
+  coarse_grid_m: 50
+  search_extent_m: 1000
+  refine_grid_m: 10
+  refine_top_k: 3
+  far_field_min_m: 500
+  column_weights: {far: 2.0, mid: 1.0, near: 0.5}
+  sigma_rule: "region with RMS <= 1.5 x minimum RMS"
+  standalone_prior_offset_m: 300
+vo_probe:                          # WS10
+  drives: 5
+  go_rule: ">= 2 drives with >= 10 consecutive stereo pairs at <= 2 m spacing, with camera models"
+
+# --- WS9 additions (fresh run, flagged for N in STATUS.md) -----------------------------------
+# How the prose error model (SPEC §2.4 F21) maps to code. Conventions, no new science numbers.
+model_conventions:
+  psi0: "heading error drawn N(0, psi0_deg) per run at the start and again at every fix"
+  gyro_bias: "b_g drawn N(0, sigma_b_deg_h) once per run; integrates with time, also while dwelling"
+  heading_rw: "increment N(0, psi_rw_deg_sqrt_min * sqrt(dt_min)) per time step"
+  step_noise: "per-step N(0, step_noise_frac * L) summed over the d / L steps of a time step"
+  slip: "on slope > slip_min_slope_deg: extra along-track per-step N(0, slip * sin(slope) * L)"
+  fix_sigma: "a fix resets the position error to N(0, sigma) per axis"
+  ellipse: "second moment of the error about zero, scaled by the chi-square 2-dof quantile of ellipse_conf"
+  r95: "ellipse_conf quantile of the radial error over runs"
+  r95_fit_method: "non-negative least squares on per-minute (D > 0, r95) pairs, no intercept"
+  assumed: true
+tracks:
+  ellipse_every_min: 5               # SPEC §6.2
+  ellipse_vertices: 72               # polygon resolution; presentation only
+  assumed: true                      # ellipse_vertices only
+fix_interval_ws9:
+  budget_from: "crew.yaml walkback_budgets_min[0]"   # the 30-min homeline (SPEC F21)
+  reserve_min: 0                     # SPEC "budget minus reserve": no reserve defined for this; question to N
+  margin_radius_method: edt          # exact distance to the nearest over-limit cell; "worst_fields" = SPEC interpolation in t_home_worst_*
+  unknown_cells: exceed              # unknown T_home counts as over the limit (conservative)
+  edge_percentile: 10                # edge_p10_m in fix_interval_summary.json
+  assumed: true
+real_run_ws9:                      # run.py real (WS2 route + timeline + T_home, WS1 slope, WS3 Navcam); conventions, flagged for N
+  scenario_from: "variants.yaml scenarios.default"   # the route the Monte Carlo walks (override: --scenario)
+  fix_events: {rover: [depart, return, arrive_home], station: [arrive]}   # timeline event -> fix type (SPEC F21 fix events)
+  skyline_station_fix: replace     # a station with an F22 result: the skyline fix (sigma = measured error) replaces the surveyed-station fix; "add" keeps both
+  skyline_frames: "all navcam_frames.json frames tried and reported; frames whose station is a route station become fix events"
+  skyline_frame_pick: min_rms      # frame used for the fix among a station's frames: lowest skyline RMS (never the error, which needs the truth)
+  skyline_prior: standalone        # SPEC F22 standalone prior (true + standalone_prior_offset_m, random direction, monte_carlo.seed)
+  unknown_slope: no_slip           # route samples on unknown slope get no slip term (fraction reported)
+  field_grid: "pad_default +/- site.yaml planning_radius_m at hud.yaml field_png.res_m"   # fix_interval PNG grid (SPEC §6.1 planning extent); D_max sampled nearest from the T_home grid
+  skyline_bands: horizon.yaml       # the horizon engine's bands: horizon.yaml bands.{dem_1m,ctx_20m,mola_hrsc_200m}.path (WS1 canonical, C 11:15)
+  assumed: true
+  skyline_fix_gate:                # decided (C, STATUS Decision log 2026-11-14 11:58), not assumed
+    rule: "a station's skyline result becomes a position fix only if error_m <= tolerance; else the surveyed station fix is kept"
+    tolerance_from: skyline_fix.refine_grid_m   # the F22 KAT tolerance: recovered within one grid step
+
+# --- WS10 X8 visual odometry constants (moved verbatim from vo.py PENDING_VO_CONFIG at WS10's
+# request, STATUS WS10 Blocked; read by pipeline/navigation/vo.py load_vo_config). X8-internal:
+# none of these reaches the F21 model. All assumed (WS10), for N to review.
+vo:
+  resolution: downsampled          # D16: the 256 x 256 drive frames
+  sequence_tag: TRAV               # imageid tag of Curiosity's drive (VO) frames
+  pointing_tol_deg: 5.0            # drop pairs whose mast az/el differ from the run's median
+  sift_nfeatures: 0                # 0 = OpenCV default (no cap)
+  ratio_test: 0.8                  # Lowe ratio, L-R and frame-to-frame
+  max_reproj_px: 1.0               # stereo: both CAHVOR reprojections within this
+  min_range_m: 0.5
+  max_range_m: 25.0                # 256^2 depth error ~ Z^2/(f b) * 0.25 px = 0.8 m at 25 m
+  pnp_reproj_px: 1.5               # RANSAC threshold on the linearised left(k+1) pixels
+  pnp_iterations: 2000
+  pnp_confidence: 0.999
+  min_inliers: 15
+  max_step_m: 3.0                  # a VO step longer than this is rejected (poses ~1 m apart)
+  max_step_deg: 45.0               # a VO step rotating more than this is rejected
+  plausible:                       # D16 stop-rule per-drive checks, proposal for N
+    max_drift_pct: 10.0            # MER/MSL VO design requirement: 10 % of distance
+    max_heading_drift_deg: 10.0
+    min_vo_step_fraction: 0.8      # at least 80 % of the steps measured by VO, not bridged
+  assumed: true
+
+# --- Optional F21 parameter sets: recorded, NOT run by `make nav` and NOT a default -----------
+optional_sets:
+  curiosity_vo_256:
+    label: "rover analogue: a rover is not an astronaut"
+    status: "pending N review (WS10 STATUS: N to confirm sigma_b per hour of rover driving)"
+    source: "WS10 X8 stereo VO at 256^2, data/interim/vo/vo_report.json calibrated_set (5 drives, sols 5041-5073)"
+    sigma_s: 0.00638               # RMS along-track scale error over 5 drives
+    sigma_b_deg_h: 1.248           # RMS heading drift / drive duration, per hour of ROVER driving (~1 m/min), not walking
+    psi0_deg: null                 # not measured by VO
+    psi_rw_deg_sqrt_min: null      # not measured by VO
+    slip: null                     # not measured by VO
+    missing_terms_from: medium     # WS10: "WS9 keeps its assumed values" for the unmeasured terms
+    assumed: true

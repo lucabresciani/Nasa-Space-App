@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/terrain_tiles.schema.json",
+  "title": "terrain/tiles.json, terrain_low/tiles.json",
+  "description": "Design contracts v1 (family 'design', DESIGN §6; frozen at merge: additive change = minor bump, breaking change = human-gated). Metadata of the U1 elevation tiles (terrain/, z10-15 planning extent + z16 focus area, 1 m merged DEM with 20 m CTX at low zoom, budget config/design.yaml terrain_tiles.budget_mb 25) and of the intro relief tiles (terrain_low/, z6-10 over Gale, CTX 20 m + MOLA-HRSC 200 m, budget lowzoom_budget_mb 5). Tiles: 256 px PNG, XYZ scheme (Mars lon/lat straight through, D4), Terrarium encoding: h = (R*256 + G + B/256) - 32768 m, with h = true elevation * factor + vertical_offset_m (factor = Earth/Mars radius 1.878, so 1x exaggeration on screen is true shape; vertical_offset_m, optional, default 0, puts the site near 0 m on the map). True elevation = (h - vertical_offset_m) / factor; elevation readouts never come from these tiles (they come from the fields). Written by pipeline/export/terrain_tiles.py and relief_lowzoom.py (WS16).",
+  "x-contract-version": "1.1.0",
+  "x-source": "DESIGN §6.1, §2.2 U1, U6 step 3; config/design.yaml scale, terrain_tiles",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "name": {
+      "enum": [
+        "terrain",
+        "terrain_low"
+      ],
+      "description": "which tile set (= its folder)"
+    },
+    "encoding": {
+      "const": "terrarium",
+      "description": "MapLibre raster-dem encoding"
+    },
+    "format": {
+      "const": "png"
+    },
+    "scheme": {
+      "const": "xyz"
+    },
+    "tile_px": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "tile size, px (config terrain_tiles.tile_px = 256)"
+    },
+    "factor": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "elevation multiplier baked into the tiles (config scale.elevation_factor = 1.878); also in the manifest"
+    },
+    "vertical_offset_m": {
+      "type": "number",
+      "description": "optional (P2c, additive, contract 1.1.0): metres added to every tile height after scaling, h = true elevation * factor + vertical_offset_m (config terrain_tiles.vertical_offset_m; the same value in terrain/ and terrain_low/; absent = 0); also in the manifest"
+    },
+    "datum": {
+      "type": "string",
+      "description": "optional: vertical datum of the true elevation (e.g. Mars 2000 areoid)"
+    },
+    "tiles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\{z\\}.*\\{x\\}.*\\{y\\}"
+      },
+      "minItems": 1,
+      "description": "URL templates relative to the data root, e.g. terrain/{z}/{x}/{y}.png; the app prefixes its data base URL"
+    },
+    "minzoom": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 24
+    },
+    "maxzoom": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 24,
+      "description": "highest zoom written anywhere (terrain: the focus zoom 16)"
+    },
+    "bounds": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "[w, s, e, n] lon/lat deg tiled at every zoom from minzoom to the zoom below focus.minzoom (all zooms when focus is null)"
+    },
+    "focus": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "minzoom": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "maxzoom": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "bounds": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "[w, s, e, n] lon/lat deg of the focus area"
+        }
+      },
+      "required": [
+        "minzoom",
+        "maxzoom",
+        "bounds"
+      ],
+      "description": "zooms tiled over the focus area only (terrain: z16, config zooms_focus_area); null when none (terrain_low). A client that wants no 404s uses one source for minzoom..focus.minzoom-1 with bounds and one for the focus zooms with focus.bounds"
+    },
+    "source": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      },
+      "minItems": 1,
+      "description": "input elevation products, finest first (e.g. data/interim/terrain/dem_1m.tif, CTX 20 m DTM, MOLA-HRSC 200 m)"
+    },
+    "source_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16,64}$",
+      "description": "sha256 (hex, full or first 16+) over the source files in source order; also in the manifest"
+    },
+    "total_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "sum of all tile file sizes, bytes"
+    },
+    "budget_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "optional: the budget the writer enforced (config budget_mb * 2^20); total_bytes <= budget_bytes"
+    },
+    "tile_count": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "description": "optional: zoom level (string) -> number of tiles written"
+    },
+    "attribution": {
+      "type": "string",
+      "description": "optional: credit line for the elevation sources"
+    }
+  },
+  "required": [
+    "name",
+    "encoding",
+    "tile_px",
+    "factor",
+    "tiles",
+    "minzoom",
+    "maxzoom",
+    "bounds",
+    "focus",
+    "source",
+    "source_hash",
+    "total_bytes"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+ "name": "terrain_low",
+ "encoding": "terrarium",
+ "format": "png",
+ "scheme": "xyz",
+ "tile_px": 256,
+ "factor": 1.878,
+ "vertical_offset_m": 7028.0,
+ "tiles": [
+  "terrain_low/{z}/{x}/{y}.png"
+ ],
+ "minzoom": 6,
+ "maxzoom": 10,
+ "bounds": [
+  136.5078,
+  -6.219757,
+  138.800732,
+  -4.0675
+ ],
+ "focus": null,
+ "source": [
+  "data/interim/terrain/ctx_20m_v2.tif",
+  "data/interim/terrain/mola_hrsc_200m.tif"
+ ],
+ "source_hash": "4527e503a074c666df912dfa426ea64233be6335a1d3c48c318dbe2956b2368a",
+ "total_bytes": 5121720,
+ "budget_bytes": 5242880,
+ "tile_count": {
+  "6": 2,
+  "7": 4,
+  "8": 6,
+  "9": 16,
+  "10": 49
+ },
+ "precision_m": 0.25,
+ "source_pixel_pct": {
+  "data/interim/terrain/ctx_20m_v2.tif": 10.854,
+  "data/interim/terrain/mola_hrsc_200m.tif": 89.146
+ },
+ "edge_extended_pixel_pct": 17.445,
+ "attribution": "Elevation: USGS controlled CTX DTMs; HRSC-MOLA blended DEM 200 m v2 (USGS Astrogeology)"
+}

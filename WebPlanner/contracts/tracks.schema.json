@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/tracks.schema.json",
+  "title": "nav/tracks_{set}.geojson",
+  "description": "True track, one sample estimated track and 95% ellipse polygons every 5 min (F21); t_eva_min on every feature.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.2",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "Feature"
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "LineString",
+                  "MultiLineString",
+                  "Polygon",
+                  "MultiPolygon",
+                  "Point",
+                  "MultiPoint"
+                ]
+              },
+              "coordinates": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "t_eva_min": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t_eva_min"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ]
+      }
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/cellstate.schema.json",
+  "title": "terrain/cellstate.json, terrain/cellstate_conservative.json",
+  "description": "Placement and legend of terrain/cellstate.png, the routing-grid cell states (F1: assessed / blocked / unknown) for hatching unknown terrain. PNG encoding as the field PNGs: 8-bit RGBA, counts = R*256 + G (0 assessed, 1 blocked), B = 0, A = 255 known, A = 0 unknown (state 2, incl. non-HiRISE and no data). One PNG pixel per routing cell, rows north to south. Written by make web from WS1's cellstate_3m.tif (tools/make_web.py). Added in v1.1.0. v1.1.2: the same schema for terrain/cellstate_conservative.json (+ .png), from WS1's cellstate_3m_conservative.tif (variant conservative: blocked = max 1 m slope > 20 - V1 RMSE deg); manifest keys terrain.cellstate_conservative.pct.*. Since D22/D23 (2026-11-14 16:16, 16:20): blocked = 3 m plane-fit slope above the variant's no-go (25 / 20 / 17°) or the 30° step guard; descriptive change only, the encoding is unchanged.",
+  "x-contract-version": "1.1.2",
+  "x-source": "SPEC §2.2 F1 (unknown drawn hatched); brief WS1 (cellstate_3m.tif); WS5 STATUS (no cell-state web file)",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "image": {
+      "type": "string",
+      "description": "PNG path relative to the data root (terrain/cellstate.png or terrain/cellstate_conservative.png)"
+    },
+    "bounds": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "[w, s, e, n] lon/lat deg of the outer pixel edges"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "px"
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "px"
+    },
+    "res_m": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "m per px (config/site.yaml grids_m.route)"
+    },
+    "variant": {
+      "enum": [
+        "nominal",
+        "conservative"
+      ],
+      "description": "which no-go limit set 'blocked' (config/site.yaml slope.nogo_deg)"
+    },
+    "codes": {
+      "type": "object",
+      "properties": {
+        "0": {
+          "type": "string"
+        },
+        "1": {
+          "type": "string"
+        },
+        "2": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "0",
+        "1",
+        "2"
+      ],
+      "description": "state code -> label (0 assessed, 1 blocked, 2 unknown)"
+    },
+    "pct": {
+      "type": "object",
+      "properties": {
+        "assessed": {
+          "type": "number"
+        },
+        "blocked": {
+          "type": "number"
+        },
+        "unknown": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "assessed",
+        "blocked",
+        "unknown"
+      ],
+      "description": "share of the image's cells in each state, %"
+    },
+    "source": {
+      "type": "string",
+      "description": "producer file (data/interim/...)"
+    }
+  },
+  "required": [
+    "image",
+    "bounds",
+    "width",
+    "height",
+    "res_m",
+    "variant",
+    "codes",
+    "pct"
+  ]
+}

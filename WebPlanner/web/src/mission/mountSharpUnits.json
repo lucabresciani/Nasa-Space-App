@@ -1,0 +1,363 @@
+{
+ "source": "Copied (fields used by the map only) from MarsRockDatabase.json (schema mars-rock-db/1) in the team's Unity repo Nasa-Space-App, commit e5a40ad (origin/main, 2026-11-14 21:21 CET). Elevations are MOLA-areoid metres of real Curiosity (MSL) analyses from the PDS Geosciences Node APXS supplements; see each sample's citation.",
+ "rule": "Unity MarsElevationMap units layer: a layered class (abundance > 0, setting not caprock, samples with elevation) spans [min, max] sample elevation +/- band_margin_m; beyond it the weight fades by e every band_falloff_m; a cell takes the class with the highest abundance x fade; below min_fade nothing is drawn.",
+ "band_margin_m": 15,
+ "band_falloff_m": 20,
+ "min_fade": 0.15,
+ "classes": [
+  {
+   "id": "murray-mudstone",
+   "name": "Murray formation mudstone (lower Mount Sharp)",
+   "unitSymbol": "Mm",
+   "abundance": 0.3,
+   "setting": null,
+   "summary": "Finely laminated lake mudstone that makes up the lower slopes of Mount Sharp."
+  },
+  {
+   "id": "vera-rubin-ridge",
+   "name": "Vera Rubin ridge (hematite-bearing Murray)",
+   "unitSymbol": "Mvr",
+   "abundance": 0.12,
+   "setting": null,
+   "summary": "Resistant ridge of Murray mudstone, seen from orbit as rich in hematite."
+  },
+  {
+   "id": "glen-torridon-clay",
+   "name": "Glen Torridon clay-bearing unit (Carolyn Shoemaker fm.)",
+   "unitSymbol": "Cs",
+   "abundance": 0.2,
+   "setting": null,
+   "summary": "Clay-rich mudstone and sandstone of the trough south of Vera Rubin ridge."
+  },
+  {
+   "id": "mirador-sulfate",
+   "name": "Mirador formation sulfate-bearing unit",
+   "unitSymbol": "Msu",
+   "abundance": 0.2,
+   "setting": null,
+   "summary": "Sulfate-rich layers higher on Mount Sharp, from the drying of Gale's lake."
+  },
+  {
+   "id": "amapari-iron",
+   "name": "Amapari iron-rich bed (Mirador fm.)",
+   "unitSymbol": "Ma",
+   "abundance": 0.02,
+   "setting": null,
+   "summary": "Unusually iron-rich layer of the Mirador formation (about 40 wt% FeO by APXS)."
+  },
+  {
+   "id": "stimson-sandstone",
+   "name": "Stimson formation sandstone (Siccar Point group)",
+   "unitSymbol": "Ss",
+   "abundance": 0.12,
+   "setting": "caprock",
+   "summary": "Cross-bedded sandstone from ancient dunes, lying on top of the eroded Murray mudstone."
+  },
+  {
+   "id": "silica-alteration",
+   "name": "Silica-rich alteration (Buckskin, Stimson halos)",
+   "unitSymbol": "Si",
+   "abundance": 0.03,
+   "setting": "caprock",
+   "summary": "Pale rock strongly enriched in silica by later fluids."
+  },
+  {
+   "id": "iron-meteorite",
+   "name": "Iron-nickel meteorite (found on Mount Sharp)",
+   "unitSymbol": "Fe",
+   "abundance": 0.002,
+   "setting": null,
+   "summary": "Dense, magnetic iron-nickel meteorite from a metal-rich asteroid, with a pitted, highly specular surface."
+  }
+ ],
+ "samples": [
+  {
+   "classId": "murray-mudstone",
+   "target": "Mojave2 DTc drilltailings",
+   "instrument": "APXS",
+   "sol": 884,
+   "elevationM": -4459.6,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "murray-mudstone",
+   "target": "Telegraph Peak DT",
+   "instrument": "APXS",
+   "sol": 922,
+   "elevationM": -4453.5,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "murray-mudstone",
+   "target": "Oudam tailings APXS",
+   "instrument": "APXS",
+   "sol": 1364,
+   "elevationM": -4435.59,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "murray-mudstone",
+   "target": "Marimba2 full drill tailings",
+   "instrument": "APXS",
+   "sol": 1426,
+   "elevationM": -4410.38,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "murray-mudstone",
+   "target": "Quela full drill tailings",
+   "instrument": "APXS",
+   "sol": 1466,
+   "elevationM": -4379.46,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "murray-mudstone",
+   "target": "Sebina full drill tailings",
+   "instrument": "APXS",
+   "sol": 1496,
+   "elevationM": -4360.81,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "murray-mudstone",
+   "target": "Duluth DBA dump center",
+   "instrument": "APXS",
+   "sol": 2080,
+   "elevationM": -4192.46,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "vera-rubin-ridge",
+   "target": "Stoer tailings",
+   "instrument": "APXS",
+   "sol": 2155,
+   "elevationM": -4169.95,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "vera-rubin-ridge",
+   "target": "Highfield Drill Tailings",
+   "instrument": "APXS",
+   "sol": 2247,
+   "elevationM": -4146.95,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "vera-rubin-ridge",
+   "target": "Rock Hall Drill Tailings",
+   "instrument": "APXS",
+   "sol": 2292,
+   "elevationM": -4143.79,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "glen-torridon-clay",
+   "target": "Glen Etive 1 tailings",
+   "instrument": "APXS",
+   "sol": 2524,
+   "elevationM": -4133.36,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "glen-torridon-clay",
+   "target": "Hutton tailings",
+   "instrument": "APXS",
+   "sol": 2686,
+   "elevationM": -4095.37,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "glen-torridon-clay",
+   "target": "Glasgow1 tailings",
+   "instrument": "APXS",
+   "sol": 2776,
+   "elevationM": -4107.93,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "glen-torridon-clay",
+   "target": "Nontron tailings",
+   "instrument": "APXS",
+   "sol": 3072,
+   "elevationM": -4072.91,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "glen-torridon-clay",
+   "target": "Bardou tailings",
+   "instrument": "APXS",
+   "sol": 3108,
+   "elevationM": -4066.48,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "glen-torridon-clay",
+   "target": "Pontours tailings",
+   "instrument": "APXS",
+   "sol": 3180,
+   "elevationM": -4041.25,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "mirador-sulfate",
+   "target": "Maria Gordon tailings",
+   "instrument": "APXS",
+   "sol": 3246,
+   "elevationM": -4015.23,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "mirador-sulfate",
+   "target": "Zechstein tailings",
+   "instrument": "APXS",
+   "sol": 3303,
+   "elevationM": -3991.11,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "mirador-sulfate",
+   "target": "Avanavero tailings",
+   "instrument": "APXS",
+   "sol": 3528,
+   "elevationM": -3909.96,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "mirador-sulfate",
+   "target": "Canaima tailings",
+   "instrument": "APXS",
+   "sol": 3626,
+   "elevationM": -3879.79,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "mirador-sulfate",
+   "target": "Catrimani DRT",
+   "instrument": "APXS",
+   "sol": 3637,
+   "elevationM": -3863.05,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "amapari-iron",
+   "target": "Amapari1 tailings",
+   "instrument": "APXS",
+   "sol": 3684,
+   "elevationM": -3859.47,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "amapari-iron",
+   "target": "Amapari2 tailings",
+   "instrument": "APXS",
+   "sol": 3682,
+   "elevationM": -3859.47,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "stimson-sandstone",
+   "target": "Big Sky full drill tailings",
+   "instrument": "APXS",
+   "sol": 1123,
+   "elevationM": -4434.69,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "stimson-sandstone",
+   "target": "Okoruso full drill tailings",
+   "instrument": "APXS",
+   "sol": 1337,
+   "elevationM": -4429.29,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "stimson-sandstone",
+   "target": "Edinburgh tailings",
+   "instrument": "APXS",
+   "sol": 2728,
+   "elevationM": -4088.69,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "stimson-sandstone",
+   "target": "Venlaw DRT",
+   "instrument": "APXS",
+   "sol": 3428,
+   "elevationM": -3976.18,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 3054-3712, PDS Geosciences Node, doi:10.17189/1139-2w66 (file ds01_2024.csv)"
+  },
+  {
+   "classId": "silica-alteration",
+   "target": "Greenhorn full drill tailings",
+   "instrument": "APXS",
+   "sol": 1142,
+   "elevationM": -4434.52,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "silica-alteration",
+   "target": "Lubango fulldrill tailings",
+   "instrument": "APXS",
+   "sol": 1325,
+   "elevationM": -4429.0,
+   "useAsAnalog": true,
+   "citation": "MSL APXS supplement with stratigraphic context, sols 0-3076, PDS Geosciences Node, doi:10.17189/6q8a-kg55 (file ds01_2021je007171r.csv); accompanies Berger et al., JGR Planets, doi:10.1029/2021JE007171"
+  },
+  {
+   "classId": "silica-alteration",
+   "target": "Buckskin drill sample, post-sieve (<150 um) dump pile",
+   "instrument": "APXS + CheMin XRD",
+   "sol": 1091,
+   "elevationM": null,
+   "useAsAnalog": true,
+   "citation": "Morris R.V. et al. (2016) PNAS 113(26), 7071-7076, doi:10.1073/pnas.1607098113, Table 1 ('Postsieve' column) and Table 2 ('Bulk sample: XRD' column). Sigmas and traces are from the PDS file msl_apxs_concentrations_mno_recalib.csv, row sol 1091 'Buckskin_post_sieve_dump_twk_corrected'."
+  },
+  {
+   "classId": "iron-meteorite",
+   "target": "Egg Rock (Aeolis Mons 001), iron-nickel meteorite",
+   "instrument": "ChemCam LIBS",
+   "sol": 1505,
+   "elevationM": null,
+   "useAsAnalog": true,
+   "citation": "Meslin P.-Y. et al. (2019) 50th LPSC, abstract #3179, Table 1, row 'Aeolis Mons 001 (Egg Rock)', Ni (wt%) +/- 2-sigma, without point #9."
+  },
+  {
+   "classId": "iron-meteorite",
+   "target": "Ames Knob (Aeolis Mons 002), iron-nickel meteorite",
+   "instrument": "ChemCam LIBS",
+   "sol": 1577,
+   "elevationM": null,
+   "useAsAnalog": true,
+   "citation": "Meslin P.-Y. et al. (2019) 50th LPSC, abstract #3179, Table 1, row 'Aeolis Mons 002 (Ames Knob)'."
+  }
+ ]
+}

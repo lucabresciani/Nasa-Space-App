@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/bundle/config_snapshot.schema.json",
+  "title": "config_snapshot.json (plan bundle)",
+  "description": "Every constant the plan used: the parsed content of each config/*.yaml file at build time, keyed by file name (crew, variants, haul, conditions, hud, ...). config_snapshot.yaml holds the same mapping as YAML. config_hash is computed from the raw files (README), so it matches the backend's GET /api/v1/engine/version.",
+  "x-contract-version": "1.0.0",
+  "x-source": "handover page part A (config_snapshot.yaml) and part D (JSON as well as YAML)",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "config_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "files": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z0-9_]+\\.yaml$"},
+      "additionalProperties": true,
+      "minProperties": 1
+    }
+  },
+  "required": ["schema_version", "config_hash", "files"]
+}

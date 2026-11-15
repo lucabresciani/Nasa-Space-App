@@ -1,0 +1,41 @@
+/* Command palette (DESIGN U17, §3.7; package A8). Tokens only (token lint). One overlay elevation, like
+   the shortcut help dialog. The active option is the keyboard focus inside the listbox, so it gets the
+   focus-ring colour (select) plus a heavier border (second cue). */
+.hl-search {
+  width: min(calc(100vw - var(--space-6)), calc(var(--layout-sidebar) * 2));
+  max-height: min(calc(100vh - var(--space-7) * 2), calc(var(--layout-sidebar) * 2));
+  margin: var(--space-7) auto auto;
+  padding: var(--space-3); color: var(--color-text); background: var(--color-card);
+  border: 1px solid var(--color-card-border); border-radius: var(--radius-card); box-shadow: 0 0 24px var(--color-bg);
+  font-family: var(--font-text); font-size: var(--font-size-body); line-height: var(--line-height-body);
+}
+.hl-search[open] { display: flex; flex-direction: column; gap: var(--space-2); }
+.hl-search::backdrop { background: var(--color-label-pill); }
+.hl-search__field {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 0 var(--space-2); background: var(--color-sidebar);
+  border: 1px solid var(--color-card-border); border-radius: var(--radius-input);
+}
+.hl-search__field:focus-within { outline: var(--line-focus-ring) solid var(--color-select); outline-offset: 2px; }
+.hl-search__field > .icon { color: var(--color-text-muted); flex: none; }
+.hl-search__input {
+  flex: 1; min-width: 0; height: var(--layout-top-bar);
+  font: inherit; color: var(--color-text); background: transparent; border: 0; outline: none;
+}
+.hl-search__input::placeholder { color: var(--color-text-muted); }
+.hl-search__close:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); outline-offset: 2px; }
+.hl-search__list { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-1); }
+.hl-search__list:empty { display: none; }
+.hl-search__opt {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2); cursor: pointer;
+  font-size: var(--font-size-small); line-height: var(--line-height-small);
+  border: 1px solid transparent; border-radius: var(--radius-input);
+}
+.hl-search__opt:hover { background: var(--color-card-border); }
+.hl-search__opt.is-active { border-color: var(--color-select); outline: 1px solid var(--color-select); background: var(--color-sidebar); }
+.hl-search__opt > .icon { flex: none; color: var(--color-text-muted); }
+.hl-search__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hl-search__kind { flex: none; color: var(--color-text-muted); }
+.hl-search__status { margin: 0; padding: 0 var(--space-2); color: var(--color-text-muted); font-size: var(--font-size-small); line-height: var(--line-height-small); }
+.hl-search__status:empty { display: none; }

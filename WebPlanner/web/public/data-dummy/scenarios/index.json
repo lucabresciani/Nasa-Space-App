@@ -1,0 +1,63 @@
+{
+  "dummy": true,
+  "default": "nom_104",
+  "scenarios": [
+    {
+      "id": "nom_104",
+      "variant": "nominal",
+      "suit_kg": 104,
+      "files": {
+        "isochrones": "scenarios/nom_104/isochrones.geojson",
+        "bands": "scenarios/bands_104.geojson",
+        "edges": "scenarios/nom_104/edges.geojson",
+        "partner": "scenarios/nom_104/partner.geojson"
+      },
+      "headline": {
+        "budget_min": 30,
+        "reachable_pct": 99.4,
+        "range_pct": [
+          99.3,
+          99.5
+        ]
+      }
+    },
+    {
+      "id": "opt_104",
+      "variant": "optimistic",
+      "suit_kg": 104,
+      "files": {
+        "isochrones": "scenarios/opt_104/isochrones.geojson",
+        "bands": "scenarios/bands_104.geojson",
+        "edges": "scenarios/opt_104/edges.geojson",
+        "partner": "scenarios/opt_104/partner.geojson"
+      },
+      "headline": {
+        "budget_min": 30,
+        "reachable_pct": 99.5,
+        "range_pct": [
+          99.3,
+          99.5
+        ]
+      }
+    },
+    {
+      "id": "con_104",
+      "variant": "conservative",
+      "suit_kg": 104,
+      "files": {
+        "isochrones": "scenarios/con_104/isochrones.geojson",
+        "bands": "scenarios/bands_104.geojson",
+        "edges": "scenarios/con_104/edges.geojson",
+        "partner": "scenarios/con_104/partner.geojson"
+      },
+      "headline": {
+        "budget_min": 30,
+        "reachable_pct": 99.3,
+        "range_pct": [
+          99.3,
+          99.5
+        ]
+      }
+    }
+  ]
+}

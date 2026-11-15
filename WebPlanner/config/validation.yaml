@@ -1,0 +1,15 @@
+# WS6 validation constants (F13 V1). Added by WS6 at H1 (no config file held them);
+# flagged in STATUS.md (WS6 "Assumptions added" and "Blocked").
+v1:
+  # SPEC §2.2 F13: "confusion matrix at 10° and 20°". Positive class = tilt >= threshold.
+  confusion_thresholds_deg: [10, 20]
+  # DECIDED 2026-11-14 12:37 CET by the user (for S), STATUS.md Decision log "V1 footprint":
+  # 3 m, the rover's ≈3 m footprint of SPEC F13 / brief WS6. The other candidate (5 m,
+  # config/site.yaml slope.compare_window_m) is reported as a sensitivity, never as the result.
+  footprint_m: 3
+  footprint_candidates_m: [3, 5]   # 3: SPEC F13 wording (primary); 5: sensitivity
+  # How the DEM tilt over the footprint is measured (assumed: true, WS6, H1): least-squares plane
+  # through the DEM cells whose centres fall in an axis-aligned square of side footprint_m centred
+  # on the drive end; any nodata cell or a footprint leaving the DEM excludes that drive end.
+  dem_method: plane_fit_square
+  dem_method_assumed: true

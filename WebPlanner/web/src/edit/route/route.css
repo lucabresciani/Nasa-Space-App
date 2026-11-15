@@ -1,0 +1,81 @@
+/* R5 (D97): Edit-route panel in the Plan rail (live builds only). Tokens only. */
+@import '../../ui/tokens.css';
+
+.hl-route { display: grid; gap: var(--space-2); font-size: var(--font-size-small); line-height: var(--line-height-small); color: var(--color-text); }
+.hl-route__note, .hl-route__hint { margin: 0; color: var(--color-text-muted); }
+.hl-route__warn { margin: 0; color: var(--color-caution); }
+.hl-route__ok { margin: 0; color: var(--color-safe); }
+.hl-route__subtitle { margin: 0; font-size: var(--font-size-label); line-height: var(--line-height-label); font-weight: var(--font-weight-label); color: var(--color-text-muted); }
+
+/* mode: engine chooses / my order */
+.hl-route__mode { display: flex; gap: var(--space-1); }
+.hl-route__modebtn {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-input);
+  background: var(--color-card);
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.hl-route__modebtn[aria-checked='true'] { color: var(--color-text); border-color: var(--color-live); }
+.hl-route__modebtn:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); }
+
+/* stop list: checkbox + drag handle; checked rows first in route order */
+.hl-route__stops, .hl-route__legs, .hl-route__stagelist { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.hl-route__stop {
+  display: grid;
+  grid-template-columns: var(--space-3) auto var(--space-4) 1fr;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-input);
+  background: var(--color-card);
+}
+.hl-route__stop.is-checked { border-color: var(--color-science); }
+.hl-route__stop.is-dragging { opacity: var(--overlay-opacity-max); }
+.hl-route__stop[draggable='true'] { cursor: grab; }
+.hl-route__stop:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); }
+.hl-route__handle { color: var(--color-text-muted); user-select: none; }
+.hl-route__order { font-family: var(--font-mono); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.hl-route__id { font-family: var(--font-mono); font-weight: var(--font-weight-label); }
+.hl-route__validity { grid-column: 4; color: var(--color-text-muted); font-size: var(--font-size-label); line-height: var(--line-height-label); }
+.hl-route__validity.is-invalid { color: var(--color-limit); }
+.hl-route__validity.is-valid { color: var(--color-safe); }
+
+/* legs; the failing one in the limit colour */
+.hl-route__leg { padding: 0 var(--space-2); border-left: var(--line-focus-ring) solid var(--color-card-border); color: var(--color-text-muted); }
+.hl-route__leg[data-state='planned'] { border-left-color: var(--color-safe); }
+.hl-route__leg.is-failing { border-left-color: var(--color-limit); color: var(--color-text); font-weight: var(--font-weight-label); }
+
+.hl-route__actions { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.hl-route__compute { margin-left: auto; }
+.hl-route__hash { margin: 0; color: var(--color-text-muted); }
+.hl-route__hash code { font-family: var(--font-mono); color: var(--color-text); }
+
+/* staged result and answer (purple = computed live) */
+.hl-route__stages, .hl-route__result, .hl-route__failed {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--color-card-border);
+  border-left: var(--line-focus-ring) solid var(--color-live);
+  border-radius: var(--radius-input);
+  background: var(--color-card);
+}
+.hl-route__stage { color: var(--color-text-muted); }
+.hl-route__stage.is-shown { color: var(--color-text); }
+.hl-route__progress { margin: 0; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.hl-route__label { margin: 0; color: var(--color-live); }
+.hl-route__prov { color: inherit; }
+.hl-route__commit { color: var(--color-text-muted); font-family: var(--font-mono); }
+.hl-route__infeasible { display: grid; gap: var(--space-1); padding-left: var(--space-2); border-left: var(--line-focus-ring) solid var(--color-limit); }
+.hl-route__infeasible p, .hl-route__failed p, .hl-route__result p { margin: 0; }
+.hl-route__infeasible-title { display: flex; gap: var(--space-1); align-items: center; font-weight: var(--font-weight-label); color: var(--color-limit); }
+.hl-route__failed { border-left-color: var(--color-limit); }
+
+/* dock note while a route result is on the map (the official timeline is not shown) */
+.hl-route__docknote { margin: 0; padding: var(--space-2) var(--space-3); color: var(--color-text-muted); font-size: var(--font-size-small); line-height: var(--line-height-small); }
+.hl-route__docknote a { color: var(--color-live); }

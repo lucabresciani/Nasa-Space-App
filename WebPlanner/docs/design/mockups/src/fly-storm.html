@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fly storm</title>
+<link rel="stylesheet" href="shell.css">
+</head><body>
+<div class="app no-side" id="app">
+  <aside class="rail" id="rail"></aside>
+  <main class="map" id="map"><canvas></canvas><svg class="ov"></svg>
+    <div class="legend" id="legend" style="top:auto;bottom:64px"></div>
+    <div class="scalebar" id="scale"></div>
+    <div class="readout" id="readout"></div>
+  </main>
+  <footer class="dock" id="dock"></footer>
+</div>
+<script src="hl.js"></script><script src="shell.js"></script><script src="map-common.js"></script>
+<script>
+(async () => {
+  await HL.load({ o2: true, pointer: true });
+  const m = HL.m, f = HL.fmt;
+  const rad = await (await fetch('../../../../web/public/data/conditions/rad.json')).json();
+  const T = 60; // playhead: the t = 60 min checkpoint (crew at S7)
+  const e = HL.D.timeline.find((x) => x.t_min === T);
+  const tau = m('rad.leash.tau_min_at_peak');
+  const app = document.getElementById('app');
+  app.insertAdjacentHTML('afterbegin', HL.top('Fly'));
+  app.insertAdjacentHTML('beforeend', HL.stamp());
+  const o2Frac = (v) => (100 * v / m('margin.o2_budget_L')).toFixed(1);
+  document.getElementById('rail').innerHTML = `
+  <section class="sec"><h3>${HL.icon('crew', 'sm')} Crew · simulated EVA ${HL.chip('sim')}</h3>
+    <div class="label faint">Simulated EVA · real terrain and data</div>
+    <div class="ros">
+      <div class="ro safe big"><div class="l">Margin now ${HL.chip('modelled')}</div><div class="v">—<small>min</small></div><div class="s">storm replay value: placeholder</div></div>
+      <div class="ro"><div class="l">${HL.icon('thread-home', 'sm')} Time home ${HL.chip('modelled')}</div><div class="v">${f(e.t_home_min, 0)}<small>min</small></div><div class="s">from S7</div></div>
+    </div>
+  </section>
+  <section class="sec"><h3>${HL.icon('gauge', 'sm')} Gauges</h3>
+    <div class="kv"><span class="k">O₂ left</span><span class="v">${f(e.o2_left_L)} L ${HL.chip('modelled')}</span></div>
+    <div style="position:relative;height:10px;background:var(--color-card-border);border-radius:2px;margin:4px 0 10px">
+      <i style="position:absolute;left:0;top:0;bottom:0;width:${o2Frac(e.o2_left_L)}%;background:var(--color-safe);border-radius:2px"></i>
+      <i style="position:absolute;left:0;top:0;bottom:0;width:${o2Frac(m('margin.o2_reserve_L'))}%;background:repeating-linear-gradient(135deg, var(--color-limit) 0 2px, transparent 2px 5px)"></i></div>
+    <div class="kv"><span class="k">Reserve</span><span class="v">${f(m('margin.o2_reserve_L'))} L</span></div>
+    <div class="kv"><span class="k">Plan margin (no storm)</span><span class="v">${f(e.margin_min, 0)} min · ${e.margin_binding} ${HL.chip('modelled')}</span></div>
+    <div class="kv"><span class="k">Turn-back at S7</span><span class="v">${HL.hhmm(m('card.S7.timeline.turn_back'))} ${HL.chip('modelled')}</span></div>
+  </section>
+  <section class="sec"><h3>${HL.icon('radiation', 'sm')} Storm replay ${HL.chip('real')}</h3>
+    <div class="ros">
+      <div class="ro limit"><div class="l">Head home within ${HL.chip('modelled')}</div><div class="v">${f(tau, 0)}<small>min</small></div><div class="s">leash at peak · ${f(m('rad.leash.D_allow_mGy'))} mGy allowed</div></div>
+      <div class="ro"><div class="l">Peak dose rate ${HL.chip('real')}</div><div class="v">${f(m('rad.storm_2024.peak_uGy_day'), 0)}</div><div class="s">µGy/day · RAD, May 2024</div></div>
+    </div>
+    <div class="kv" style="margin-top:6px"><span class="k">Tripwire</span><span class="v">${f(m('rad.storm_2024.tripwire_threshold_uGy_day'))} µGy/day · ${m('rad.storm_2024.tripwire_halfwidth_label')}</span></div>
+    <div class="label" style="color:var(--color-caution);margin-top:6px">${HL.icon('info', 'sm')} Hypothetical timing: the 2024 storm is replayed as if its tripwire fell at ${HL.hhmm(T)} EVA ${HL.chip('sim')}</div>
+  </section>
+  <section class="sec"><h3>${HL.icon('camera', 'sm')} View</h3>
+    <div class="seg"><span class="on">Map</span><span>3D chase</span><span>First person</span></div></section>`;
+  const mapEl = document.getElementById('map');
+  mapEl.insertAdjacentHTML('beforeend', HL.mapctl());
+  mapEl.insertAdjacentHTML('beforeend', `<div class="banner">${HL.icon('radiation')} Radiation: head home within ${f(tau, 0)} min <span class="sub">hypothetical timing</span> ${HL.chip('sim')}</div>`);
+  const view0 = HL.fitView(mapEl, 1.0);
+  const view = HL.view(view0.lon, view0.lat, view0.mpp * 1.7, view0.W, view0.H);
+  // margin field painted with the DESIGN U2 formula from the published fields (daylight term omitted here)
+  HL.paint(mapEl.querySelector('canvas'), view, { mode: 'margin', margin: { t: T, o2Left: e.o2_left_L, reserve: m('margin.o2_reserve_L'), tau, tEva: 390 } });
+  const svg = mapEl.querySelector('svg');
+  HL.drawRoute(svg, view, { t: T });
+  HL.drawStations(svg, view);
+  HL.pad(svg, view, HL.D.pad.pad.lon, HL.D.pad.pad.lat);
+  const [lo, la] = HL.positionAt(T);
+  HL.thread(svg, view, lo, la);
+  const [cx, cy] = view.px(lo, la);
+  HL.svg('circle', { cx, cy, r: 9, fill: 'var(--color-bg)', stroke: 'var(--color-text)', 'stroke-width': 2 }, svg);
+  const u = HL.svg('use', { href: '../../../../web/src/ui/icons/sprite.svg#i-crew', x: cx - 7, y: cy - 7, width: 14, height: 14 }, svg); u.style.color = 'var(--color-text)';
+  const tip = document.createElement('div');
+  tip.className = 'tip'; tip.style.left = `${cx + 16}px`; tip.style.top = `${cy - 40}px`;
+  tip.innerHTML = `${HL.icon('thread-home', 'sm')} Home in <b class="mono">${f(e.t_home_min, 0)} min</b> · margin <b class="mono">—</b> (dose) ${HL.chip('modelled')} <span class="faint">placeholder</span>`;
+  mapEl.appendChild(tip);
+  document.getElementById('readout').innerHTML = `<span><b>CREW</b>${lo.toFixed(4)}°, ${la.toFixed(4)}°</span><span><b>T</b>${HL.hhmm(T)} EVA</span><span>${HL.chip('sim')}</span>`;
+  HL.scalebar(document.getElementById('scale'), view);
+  document.getElementById('legend').innerHTML = `
+    <div class="label">Margin field at ${HL.hhmm(T)} ${HL.chip('modelled')}</div>
+    <div class="li"><span class="sw" style="background:color-mix(in srgb, var(--color-safe) 45%, transparent)"></span>≥ 10 min</div>
+    <div class="li"><span class="sw" style="background:color-mix(in srgb, var(--color-caution) 45%, transparent);box-shadow:inset 0 0 0 1px var(--color-caution)"></span>under 10 min</div>
+    <div class="li"><span class="sw" style="background:color-mix(in srgb, var(--color-limit) 45%, transparent);box-shadow:inset 0 0 0 1.5px var(--color-limit)"></span>below zero · edge = dose leash</div>
+    <div class="li faint">mockup paint: U2 formula, τ = leash at peak; daylight term omitted</div>`;
+  // dock: dose-rate curve of the real 2024 storm, shifted so its tripwire sits at T (hypothetical timing)
+  HL.dock(document.getElementById('dock'), { t: T, playing: true, storm: (svg, { X, cTop, cBot, top }) => {
+    const tw = Date.parse(m('rad.storm_2024.tripwire_utc'));
+    const lg = (v) => Math.log10(v);
+    const lo = lg(m('rad.baseline_uGy_day')) - 0.2, hi = lg(m('rad.storm_2024.peak_uGy_day'));
+    const Yd = (v) => cBot - (cBot - cTop) * (lg(v) - lo) / (hi - lo);
+    const pts = rad.storm_2024.series.filter(([u, v]) => v !== null).map(([u, v]) => [T + (Date.parse(u) - tw) / 60000, v]).filter(([t]) => t >= 0 && t <= 390);
+    const d = pts.map(([t, v], i) => `${i ? 'L' : 'M'}${X(t).toFixed(1)},${Yd(v).toFixed(1)}`).join('');
+    HL.svg('path', { d, fill: 'none', stroke: 'var(--color-limit)', 'stroke-width': 1.5 }, svg);
+    HL.svg('line', { x1: X(T), x2: X(T), y1: top - 6, y2: cBot, stroke: 'var(--color-limit)', 'stroke-width': 1.5, 'stroke-dasharray': '3 2' }, svg);
+    const tx = HL.svg('text', { x: X(T) + 6, y: cTop + 10, fill: 'var(--color-limit)', style: 'font-size:var(--font-size-label)' }, svg);
+    tx.textContent = 'Dose rate (log) ● · tripwire ○ hypothetical timing';
+  } });
+  HL.ready();
+})();
+</script>
+</body></html>

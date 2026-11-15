@@ -1,0 +1,78 @@
+{
+ "source": "PDS mslrem_1001 MODRDR (RMD), row sample",
+ "ls_window_deg": [
+  10,
+  35
+ ],
+ "sols_used": 159,
+ "mars_years": [
+  36,
+  37,
+  38
+ ],
+ "variables": [
+  {
+   "name": "air temperature (REMS AMBIENT_TEMP)",
+   "units": "degC",
+   "n_sols": 159,
+   "daily_min": {
+    "median": -74.5,
+    "p10": -77.3,
+    "p90": -72.5
+   },
+   "daily_max": {
+    "median": -19.5,
+    "p10": -27.4,
+    "p90": -13.9
+   }
+  },
+  {
+   "name": "pressure (REMS PRESSURE)",
+   "units": "Pa",
+   "n_sols": 159,
+   "daily_min": {
+    "median": 792.2,
+    "p10": 775.9,
+    "p90": 809.7
+   },
+   "daily_max": {
+    "median": 861.6,
+    "p10": 846.1,
+    "p90": 883.9
+   }
+  }
+ ],
+ "latest_feed": {
+  "sol": 4995,
+  "terrestrial_date": "2026-08-25",
+  "stale": true,
+  "stale_since": "2026-08-25",
+  "age_days": 81,
+  "values": {
+   "min_temp_degC": -71.0,
+   "max_temp_degC": -5.0,
+   "pressure_Pa": 777.0,
+   "ls_deg": 341.0,
+   "atmo_opacity": "Sunny",
+   "sunrise": "06:46",
+   "sunset": "18:51",
+   "season": "Month 12"
+  },
+  "label": "stale since 25 Aug 2026",
+  "note": "outreach feed, not current; shown for context only"
+ },
+ "method": "200 rows per sol spread evenly over the 1-Hz MODRDR table; daily min/max = extremes of the valid rows (sol kept if they cover >= 18 LMST hours); median, p10, p90 over sols; confidence flags not applied; extremes may understate the 1-Hz values slightly",
+ "sols_fetched": 162,
+ "feed_crosscheck": {
+  "note": "same sols: sampled PDS extreme minus the outreach feed's daily value",
+  "max_temp_degC": {
+   "n_sols": 144,
+   "median_diff_degC": -2.6
+  },
+  "min_temp_degC": {
+   "n_sols": 144,
+   "median_diff_degC": -0.2
+  }
+ },
+ "build_utc": "2026-11-14T16:22:25Z"
+}

@@ -1,0 +1,70 @@
+/* WS16 task 4 (M4): collapse headline overlay and "Flat vs real" toggle (DESIGN U3). Tokens only. */
+/* The token custom properties (idempotent :root block; the WS15 shell imports it app-wide later). */
+@import '../../ui/tokens.css';
+.collapse-headline {
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: calc(100% - var(--space-7));
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-family: var(--font-text);
+  pointer-events: auto;
+  opacity: var(--collapse-headline-opacity, 1);
+}
+.collapse-headline[hidden] { display: none; }
+.collapse-headline-value {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-display);
+  font-weight: var(--font-weight-heading);
+  font-variant-numeric: tabular-nums;
+}
+.collapse-headline-range {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-readout);
+  line-height: var(--line-height-readout);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.collapse-headline-text {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  color: var(--color-text-muted);
+}
+.collapse-headline.is-flat .collapse-headline-text {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-text);
+}
+.maplibregl-ctrl-group.collapse-toggle {
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+}
+.collapse-toggle-btn {
+  width: auto !important;
+  color: var(--color-text);
+  padding: 0 var(--space-2) !important;
+  font-family: var(--font-text);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-label);
+  white-space: nowrap;
+}
+.maplibregl-ctrl-group .collapse-toggle-btn:focus-visible {
+  outline: var(--line-focus-ring) solid var(--color-select);
+  outline-offset: var(--line-focus-ring);
+}
+.collapse-toggle-btn[aria-pressed='true'] {
+  outline: var(--line-focus-ring) solid var(--color-select);
+  outline-offset: calc(-1 * var(--line-focus-ring));
+}

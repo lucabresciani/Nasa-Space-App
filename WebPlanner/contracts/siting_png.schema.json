@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/siting_png.schema.json",
+  "title": "siting_png.json",
+  "description": "Placement of the F8 siting heatmap siting.png (grey PNG next to this file) as a MapLibre image source. Producer WS2 (pipeline/engine/siting.py). Added in v1.1.0.",
+  "x-contract-version": "1.1.0",
+  "x-source": "SPEC §2.2 F8; brief WS2 (siting.tif + PNG); WS2 STATUS question 7",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "image": {
+      "type": "string",
+      "description": "PNG path relative to the data root (siting.png)"
+    },
+    "coordinates": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2,
+        "description": "[lon, lat] deg"
+      },
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "corners, order as corner_order"
+    },
+    "corner_order": {
+      "type": "string",
+      "description": "top-left, top-right, bottom-right, bottom-left (MapLibre)"
+    },
+    "grey_max_score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "siting score shown as white"
+    },
+    "rule": {
+      "type": [
+        "string",
+        "integer"
+      ],
+      "description": "site.yaml siting rule version"
+    }
+  },
+  "required": [
+    "image",
+    "coordinates",
+    "corner_order",
+    "grey_max_score",
+    "rule"
+  ]
+}

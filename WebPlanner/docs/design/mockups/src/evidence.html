@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evidence</title>
+<link rel="stylesheet" href="shell.css">
+<style>
+  .main { grid-area: main; overflow: hidden; display: grid; grid-template-columns: 240px 1fr; }
+  .nav { background: var(--color-sidebar); border-right: 1px solid var(--color-card-border); padding: var(--space-3); display: flex; flex-direction: column; gap: 2px; }
+  .nav a { padding: 6px var(--space-2); border-radius: var(--radius-input); font-size: var(--font-size-small); color: var(--color-text-muted); }
+  .nav a.on { background: var(--color-card); color: var(--color-text); }
+  .body { padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); position: relative; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); }
+  .tile .v { font-family: var(--font-mono); font-size: var(--font-size-readout-large); line-height: var(--line-height-readout-large); font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: var(--font-size-small); color: var(--color-text-muted); }
+  .pass { display: inline-flex; align-items: center; gap: 4px; font-size: var(--font-size-small); }
+  .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--space-3); }
+  .pop { position: absolute; z-index: 6; width: 340px; background: var(--color-card); border: 1px solid var(--color-card-border); border-radius: var(--radius-card); padding: var(--space-3); box-shadow: 0 0 24px color-mix(in srgb, var(--color-bg) 40%, transparent); }
+  .pop .kv .v { font-size: var(--font-size-small); }
+</style>
+</head><body>
+<div class="app doc" id="app"><main class="main" id="main"></main></div>
+<script src="hl.js"></script><script src="shell.js"></script>
+<script>
+(async () => {
+  await HL.load({});
+  const m = HL.m, f = HL.fmt;
+  const v1 = await (await fetch('../../../../web/public/data/validation/v1.json')).json();
+  const app = document.getElementById('app');
+  app.insertAdjacentHTML('afterbegin', HL.top('Evidence'));
+  app.insertAdjacentHTML('beforeend', HL.stamp());
+  const ok = (b, t) => `<span class="pass" style="color:${b ? 'var(--color-text)' : 'var(--color-caution)'}">${HL.icon(b ? 'check' : 'triangle-alert', 'sm')} ${t}</span>`;
+  const e = HL.D.manifest['v1.rmse_deg'];
+  document.getElementById('main').innerHTML = `
+  <nav class="nav">
+    <div class="label" style="padding:4px 8px">EVIDENCE</div>
+    <a class="on">Scorecard</a><a>V1 · slope model vs rover tilt</a><a>V2 · skyline vs Navcam</a><a>RAD checks</a><a>Coverage and co-registration</a><a>Optional add-ons (navigation)</a><a>Data and licences</a><a>Provenance</a><a>About · privacy</a>
+  </nav>
+  <div class="body">
+    <div><h2>Why believe it?</h2><div class="muted">Every number links to its source file, script, commit and time. Click any chip.</div></div>
+    <div class="tiles">
+      <div class="card tile"><div class="label">Known-answer tests ${HL.chip('real')}</div><div class="v">${m('kats.summary.passed')}<small> / ${m('kats.summary.total')}</small></div>${ok(m('kats.summary.failed') === 0, `${m('kats.summary.failed')} failed · ${m('kats.summary.skipped')} skipped`)}</div>
+      <div class="card tile"><div class="label">V1 slope RMSE ${HL.chip('modelled')}</div><div class="v">${f(m('v1.rmse_deg'), 2)}<small>°</small></div><div class="label faint">n = ${m('v1.n')} drive ends · bias ${f(m('v1.bias_deg'), 2)}° · r ${f(m('v1.r'), 2)}</div></div>
+      <div class="card tile"><div class="label">V2 skyline · near / mid ${HL.chip('modelled')}</div><div class="v">${f(m('v2.near.median_abs_deg'), 2)}<small>° / </small>${f(m('v2.mid.median_abs_deg'), 2)}<small>°</small></div><div class="label faint">median |error| · far class not validated (D7)</div></div>
+      <div class="card tile"><div class="label">Pad coverage (1 m terrain) ${HL.chip('real')}</div><div class="v">${f(m('validation.coverage.pad_check.known_pct'))}<small>%</small></div>${ok(m('validation.coverage.pad_check.pass'), `rule ≥ ${m('validation.coverage.pad_check.min_assessed_pct')}% · 30-min disc`)}</div>
+      <div class="card tile"><div class="label">RAD storm peak (May 2024) ${HL.chip('real')}</div><div class="v">${f(m('rad.storm_2024.peak_uGy_day'), 0)}<small> µGy/day</small></div><div class="label faint">tripwire ${m('rad.storm_2024.tripwire_halfwidth_label')} · excess ${m('rad.storm_2024.excess_label').split(' (')[0]}</div></div>
+      <div class="card tile"><div class="label">Co-registration residual ${HL.chip('modelled')}</div><div class="v">${f(m('coreg.residual_mad_m'), 3)}<small> m MAD</small></div><div class="label faint">n = ${m('coreg.n')}</div></div>
+      <div class="card tile"><div class="label">Physiology golden cases ${HL.chip('modelled')}</div><div class="v">${m('physio.golden.n_cases')}</div><div class="label faint">version ${m('physio.golden.version')}</div></div>
+      <div class="card tile"><div class="label">Terrain source ${HL.chip('real')}</div><div class="v">${f(m('coverage.source_fractions_pct.hirise'), 0)}<small>% HiRISE</small></div><div class="label faint">no-data ${f(m('coverage.source_fractions_pct.nodata'), 0)}%</div></div>
+    </div>
+    <div class="two">
+      <div class="card"><div class="label" style="margin-bottom:6px">V1 · DEM tilt vs rover IMU tilt at ${m('v1.n')} drive ends ${HL.chip('modelled')} <span class="faint">· ${v1.caveat}</span></div><svg id="sc" width="100%" height="270"></svg></div>
+      <div class="card"><div class="label" style="margin-bottom:6px">Data and licences</div>
+        ${[['HiRISE DTMs and orthoimages', 'NASA/JPL/UArizona', 'real'], ['CRISM spectral parameters', 'NASA/JHU-APL', 'real'], ['MSL RAD dose rate (L2)', 'NASA PDS', 'real'], ['Curiosity Navcam frames', 'NASA/JPL-Caltech', 'real'], ['REMS weather', 'NASA PDS', 'real'], ['DONKI space-weather events', 'NASA CCMC', 'real'], ['Inter, JetBrains Mono', 'SIL OFL 1.1', 'visual'], ['Lucide icons', 'ISC', 'visual']]
+          .map(([a, b, c]) => `<div class="kv"><span class="k" style="color:var(--color-text)">${a}</span><span class="v" style="font-family:var(--font-text);color:var(--color-text-muted)">${b} ${HL.chip(c)}</span></div>`).join('')}
+        <div class="label faint" style="margin-top:6px">list = placeholder layout; the real list comes from web/src/ui/licences.json and the data README</div>
+      </div>
+    </div>
+    <div class="pop" id="pop">
+      <div class="card-title"><span class="h-sm">V1 slope RMSE</span><span style="flex:1"></span>${HL.chip('modelled')}<span class="label">Modelled</span></div>
+      <div class="kv"><span class="k">Value</span><span class="v">${e.value.toFixed(3)} ${e.units}</span></div>
+      <div class="kv"><span class="k">Source file</span><span class="v">${e.file}</span></div>
+      <div class="kv"><span class="k">Script</span><span class="v">${e.script}</span></div>
+      <div class="kv"><span class="k">Commit</span><span class="v">${e.commit.slice(0, 12)}</span></div>
+      <div class="kv"><span class="k">UTC</span><span class="v">${e.utc}</span></div>
+      <div class="label faint" style="margin-top:4px">${v1.role}</div>
+    </div>
+  </div>`;
+  // provenance popover anchored under the V1 tile
+  const tile = document.querySelectorAll('.tile')[1].getBoundingClientRect(), body = document.querySelector('.body').getBoundingClientRect();
+  const pop = document.getElementById('pop');
+  pop.style.left = `${tile.left - body.left + 20}px`; pop.style.top = `${tile.top - body.top + 80}px`;
+  // V1 scatter from validation/v1.json points [DEM tilt, IMU tilt]
+  const sc = document.getElementById('sc'), W = sc.getBoundingClientRect().width, H = 270, P = 32, mx = 30;
+  const X = (v) => P + (W - P - 8) * v / mx, Y = (v) => H - 20 - (H - 28) * v / mx;
+  for (let g = 0; g <= mx; g += 10) {
+    HL.svg('line', { x1: X(g), x2: X(g), y1: Y(0), y2: Y(mx), stroke: 'var(--color-card-border)' }, sc);
+    HL.svg('line', { x1: X(0), x2: X(mx), y1: Y(g), y2: Y(g), stroke: 'var(--color-card-border)' }, sc);
+    const t = HL.svg('text', { x: X(g) - 4, y: H - 4, fill: 'var(--color-text-faint)', style: 'font-size:var(--font-size-label)', class: 'mono' }, sc); t.textContent = g + '°';
+    const t2 = HL.svg('text', { x: 2, y: Y(g) + 4, fill: 'var(--color-text-faint)', style: 'font-size:var(--font-size-label)', class: 'mono' }, sc); t2.textContent = g + '°';
+  }
+  HL.svg('line', { x1: X(0), y1: Y(0), x2: X(mx), y2: Y(mx), stroke: 'var(--color-text-muted)', 'stroke-dasharray': '4 4' }, sc);
+  for (const th of v1.thresholds_deg) HL.svg('line', { x1: X(th), x2: X(th), y1: Y(0), y2: Y(mx), stroke: 'var(--color-caution)', 'stroke-opacity': 0.6 }, sc);
+  for (const [d, i] of v1.points) HL.svg('circle', { cx: X(d), cy: Y(i), r: 2.5, fill: 'var(--color-text)', 'fill-opacity': 0.7 }, sc);
+  const lx = HL.svg('text', { x: W - 150, y: H - 24, fill: 'var(--color-text-muted)', style: 'font-size:var(--font-size-label)' }, sc); lx.textContent = 'x: DEM tilt · y: IMU tilt';
+  HL.ready();
+})();
+</script>
+</body></html>

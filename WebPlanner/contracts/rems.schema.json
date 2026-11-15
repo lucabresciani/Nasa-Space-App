@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/rems.schema.json",
+  "title": "conditions/rems.json",
+  "description": "REMS same-season climatology (F14): temperature, pressure, UV daily ranges; latest sol marked stale. Beyond SPEC §6: file named in SPEC §2 F14 (conditions/*.json) and brief WS4.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §2 F14; briefs/WS4.md",
+  "type": "object"
+}

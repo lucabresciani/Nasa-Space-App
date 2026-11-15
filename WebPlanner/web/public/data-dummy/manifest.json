@@ -1,0 +1,2203 @@
+{
+  "dummy": true,
+  "nav.fix_interval.medium.median_m": {
+    "value": 663.1,
+    "units": "m",
+    "file": "nav/fix_interval_summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fix_interval.medium.edge_p10_m": {
+    "value": 22.4,
+    "units": "m",
+    "file": "nav/fix_interval_summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fix_interval.medium.class_area_pct.<100": {
+    "value": 6.8,
+    "units": "%",
+    "file": "nav/fix_interval_summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fix_interval.medium.class_area_pct.100-300": {
+    "value": 14.6,
+    "units": "%",
+    "file": "nav/fix_interval_summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fix_interval.medium.class_area_pct.300-1000": {
+    "value": 55.1,
+    "units": "%",
+    "file": "nav/fix_interval_summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fix_interval.medium.class_area_pct.>1000": {
+    "value": 23.5,
+    "units": "%",
+    "file": "nav/fix_interval_summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "partner_radius_m.nom_104": {
+    "value": 1296.0,
+    "units": "m",
+    "file": "scenarios/nom_104/partner.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "partner_radius_m.opt_104": {
+    "value": 1440.0,
+    "units": "m",
+    "file": "scenarios/opt_104/partner.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "partner_radius_m.con_104": {
+    "value": 1152.0,
+    "units": "m",
+    "file": "scenarios/con_104/partner.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct.nom_104.30": {
+    "value": 99.4,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct_range.nom_104.30.low": {
+    "value": 99.3,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct_range.nom_104.30.high": {
+    "value": 99.5,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct.opt_104.30": {
+    "value": 99.5,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct_range.opt_104.30.low": {
+    "value": 99.3,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct_range.opt_104.30.high": {
+    "value": 99.5,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct.con_104.30": {
+    "value": 99.3,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct_range.con_104.30.low": {
+    "value": 99.3,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "reachable_pct_range.con_104.30.high": {
+    "value": 99.5,
+    "units": "%",
+    "file": "scenarios/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.end_min": {
+    "value": 177.9,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.0.t_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.0.o2_left_L": {
+    "value": 482.0,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.0.t_home_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.0.margin_min": {
+    "value": 360.0,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.1.t_min": {
+    "value": 11.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.1.o2_left_L": {
+    "value": 479.2,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.1.t_home_min": {
+    "value": 11.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.1.margin_min": {
+    "value": 337.8,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.2.t_min": {
+    "value": 41.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.2.o2_left_L": {
+    "value": 471.7,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.2.t_home_min": {
+    "value": 11.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.2.margin_min": {
+    "value": 307.8,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.3.t_min": {
+    "value": 61.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.3.o2_left_L": {
+    "value": 466.7,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.3.t_home_min": {
+    "value": 16.7,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.3.margin_min": {
+    "value": 282.2,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.4.t_min": {
+    "value": 91.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.4.o2_left_L": {
+    "value": 459.2,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.4.t_home_min": {
+    "value": 16.7,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.4.margin_min": {
+    "value": 252.2,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.5.t_min": {
+    "value": 122.0,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.5.o2_left_L": {
+    "value": 451.5,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.5.t_home_min": {
+    "value": 25.9,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.5.margin_min": {
+    "value": 212.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.6.t_min": {
+    "value": 152.0,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.6.o2_left_L": {
+    "value": 444.0,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.6.t_home_min": {
+    "value": 25.9,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.6.margin_min": {
+    "value": 182.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.7.t_min": {
+    "value": 177.9,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.7.o2_left_L": {
+    "value": 437.5,
+    "units": "L",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.7.t_home_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "timeline.nom_104.7.margin_min": {
+    "value": 182.1,
+    "units": "min",
+    "file": "timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "route.nom_104.leg1.length_m": {
+    "value": 600.0,
+    "units": "m",
+    "file": "route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "route.nom_104.leg2.length_m": {
+    "value": 1081.7,
+    "units": "m",
+    "file": "route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "route.nom_104.leg3.length_m": {
+    "value": 1664.3,
+    "units": "m",
+    "file": "route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "route.nom_104.leg4.length_m": {
+    "value": 1400.0,
+    "units": "m",
+    "file": "route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S1.nom_104": {
+    "value": 11.1,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S1.opt_104": {
+    "value": 10.0,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S1.con_104": {
+    "value": 12.5,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "dwell_min.S1": {
+    "value": 30,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_value.S1": {
+    "value": 0.96,
+    "units": null,
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_lon.S1": {
+    "value": 137.382,
+    "units": "deg",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_lat.S1": {
+    "value": -4.795878,
+    "units": "deg",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S1.0.bearing_deg": {
+    "value": 112.5,
+    "units": "deg",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S1.0.dist_km": {
+    "value": 0.459,
+    "units": "km",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S1.1.bearing_deg": {
+    "value": 213.7,
+    "units": "deg",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S1.1.dist_km": {
+    "value": 0.721,
+    "units": "km",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S1.2.bearing_deg": {
+    "value": 180.0,
+    "units": "deg",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S1.2.dist_km": {
+    "value": 0.6,
+    "units": "km",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "arrive_min.S1": {
+    "value": 11.1,
+    "units": "min",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "leave_min.S1": {
+    "value": 41.1,
+    "units": "min",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "turn_back_min.S1": {
+    "value": 348.9,
+    "units": "min",
+    "file": "cards/S1.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S2.nom_104": {
+    "value": 16.7,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S2.opt_104": {
+    "value": 15.0,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S2.con_104": {
+    "value": 18.8,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "dwell_min.S2": {
+    "value": 30,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_value.S2": {
+    "value": 0.42,
+    "units": null,
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_lon.S2": {
+    "value": 137.397237,
+    "units": "deg",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_lat.S2": {
+    "value": -4.806,
+    "units": "deg",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S2.0.bearing_deg": {
+    "value": 311.7,
+    "units": "deg",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S2.0.dist_km": {
+    "value": 0.637,
+    "units": "km",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S2.1.bearing_deg": {
+    "value": 270.0,
+    "units": "deg",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S2.1.dist_km": {
+    "value": 1.3,
+    "units": "km",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S2.2.bearing_deg": {
+    "value": 270.0,
+    "units": "deg",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S2.2.dist_km": {
+    "value": 0.9,
+    "units": "km",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "arrive_min.S2": {
+    "value": 61.1,
+    "units": "min",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "leave_min.S2": {
+    "value": 91.1,
+    "units": "min",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "turn_back_min.S2": {
+    "value": 343.3,
+    "units": "min",
+    "file": "cards/S2.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S3.nom_104": {
+    "value": 25.9,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S3.opt_104": {
+    "value": 23.3,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "t_home_min.S3.con_104": {
+    "value": 29.2,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "dwell_min.S3": {
+    "value": 30,
+    "units": "min",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_value.S3": {
+    "value": 0.58,
+    "units": null,
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_lon.S3": {
+    "value": 137.382,
+    "units": "deg",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "station_lat.S3": {
+    "value": -4.829619,
+    "units": "deg",
+    "file": "stations.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S3.0.bearing_deg": {
+    "value": 13.1,
+    "units": "deg",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S3.0.dist_km": {
+    "value": 1.873,
+    "units": "km",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S3.1.bearing_deg": {
+    "value": 344.1,
+    "units": "deg",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S3.1.dist_km": {
+    "value": 1.456,
+    "units": "km",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S3.2.bearing_deg": {
+    "value": 360.0,
+    "units": "deg",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "landmarks.S3.2.dist_km": {
+    "value": 1.4,
+    "units": "km",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "arrive_min.S3": {
+    "value": 122.0,
+    "units": "min",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "leave_min.S3": {
+    "value": 152.0,
+    "units": "min",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "turn_back_min.S3": {
+    "value": 334.1,
+    "units": "min",
+    "file": "cards/S3.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.80.science_value": {
+    "value": 0.49,
+    "units": null,
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.80.reachable_pct": {
+    "value": 24.8,
+    "units": "%",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.80.partner_area_km2": {
+    "value": 1.715,
+    "units": "km2",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.104.science_value": {
+    "value": 0.37,
+    "units": null,
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.104.reachable_pct": {
+    "value": 19.1,
+    "units": "%",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.104.partner_area_km2": {
+    "value": 1.319,
+    "units": "km2",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.120.science_value": {
+    "value": 0.32,
+    "units": null,
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.120.reachable_pct": {
+    "value": 16.5,
+    "units": "%",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.30.120.partner_area_km2": {
+    "value": 1.143,
+    "units": "km2",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.80.science_value": {
+    "value": 1.95,
+    "units": null,
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.80.reachable_pct": {
+    "value": 99.5,
+    "units": "%",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.80.partner_area_km2": {
+    "value": 6.86,
+    "units": "km2",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.104.science_value": {
+    "value": 1.5,
+    "units": null,
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.104.reachable_pct": {
+    "value": 76.5,
+    "units": "%",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.104.partner_area_km2": {
+    "value": 5.277,
+    "units": "km2",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.120.science_value": {
+    "value": 1.3,
+    "units": null,
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.120.reachable_pct": {
+    "value": 66.3,
+    "units": "%",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "trade.60.120.partner_area_km2": {
+    "value": 4.573,
+    "units": "km2",
+    "file": "trade_table.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.latest.utc": {
+    "value": "2026-11-01T00:00:00Z",
+    "units": null,
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.latest.dose_rate_uGy_day": {
+    "value": 216.0,
+    "units": "uGy/day",
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.latest.lag_days": {
+    "value": 13.0,
+    "units": "days",
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.baseline_uGy_day": {
+    "value": 216.0,
+    "units": "uGy/day",
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.storm_2024.peak_uGy_day": {
+    "value": 8400.0,
+    "units": "uGy/day",
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.storm_2024.excess_mGy": {
+    "value": 4.604,
+    "units": "mGy",
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.storm_2024.onset_utc": {
+    "value": "2024-05-19T02:00:00Z",
+    "units": null,
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.storm_2024.tripwire_utc": {
+    "value": "2024-05-19T04:00:00Z",
+    "units": null,
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.leash.D_allow_mGy": {
+    "value": 0.5,
+    "units": "mGy",
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "rad.leash.tau_min_at_peak": {
+    "value": 85.7,
+    "units": "min",
+    "file": "conditions/rad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.r95_fit.medium.a": {
+    "value": 0.02,
+    "units": "1",
+    "file": "nav/montecarlo_medium.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.r95_fit.medium.b": {
+    "value": 0.0,
+    "units": "1/m",
+    "file": "nav/montecarlo_medium.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.montecarlo.medium.runs": {
+    "value": 500,
+    "units": "1",
+    "file": "nav/montecarlo_medium.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.montecarlo.medium.final.r95_m": {
+    "value": 27.04,
+    "units": "m",
+    "file": "nav/montecarlo_medium.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.montecarlo.medium.final.a_m": {
+    "value": 27.04,
+    "units": "m",
+    "file": "nav/montecarlo_medium.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.montecarlo.medium.final.t_eva_min": {
+    "value": 177,
+    "units": "min",
+    "file": "nav/montecarlo_medium.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.0.t_eva_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.0.sigma_m": {
+    "value": 2,
+    "units": "m",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.1.t_eva_min": {
+    "value": 11.1,
+    "units": "min",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.1.sigma_m": {
+    "value": 5,
+    "units": "m",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.2.t_eva_min": {
+    "value": 61.1,
+    "units": "min",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.2.sigma_m": {
+    "value": 5,
+    "units": "m",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.3.t_eva_min": {
+    "value": 122.0,
+    "units": "min",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.3.sigma_m": {
+    "value": 5,
+    "units": "m",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.4.t_eva_min": {
+    "value": 177.9,
+    "units": "min",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "nav.fixes.4.sigma_m": {
+    "value": 2,
+    "units": "m",
+    "file": "nav/fixes.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pad.lon": {
+    "value": 137.382,
+    "units": "deg",
+    "file": "pad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pad.lat": {
+    "value": -4.806,
+    "units": "deg",
+    "file": "pad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pad.checks.assessed_pct_30min": {
+    "value": 90.2,
+    "units": "%",
+    "file": "pad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pad.checks.max_slope_deg": {
+    "value": 2.85,
+    "units": "deg",
+    "file": "pad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pad.checks.rule_passed": {
+    "value": true,
+    "units": null,
+    "file": "pad.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank1.lon": {
+    "value": 137.382,
+    "units": "deg",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank1.lat": {
+    "value": -4.806,
+    "units": "deg",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank1.elev_m": {
+    "value": 0.0,
+    "units": "m",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank1.rank": {
+    "value": 1,
+    "units": null,
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank1.score": {
+    "value": 7,
+    "units": null,
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank1.tiebreak.reachable_pct_30": {
+    "value": 99.4,
+    "units": "%",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank1.tiebreak.elev_m": {
+    "value": 0.0,
+    "units": "m",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.lon": {
+    "value": 137.386789,
+    "units": "deg",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.lat": {
+    "value": -4.810772,
+    "units": "deg",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.elev_m": {
+    "value": 14.1,
+    "units": "m",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.rank": {
+    "value": 2,
+    "units": null,
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.score": {
+    "value": 7,
+    "units": null,
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.tiebreak.reachable_pct_30": {
+    "value": 99.1,
+    "units": "%",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.tiebreak.elev_m": {
+    "value": 14.1,
+    "units": "m",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.lon": {
+    "value": 137.375567,
+    "units": "deg",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.lat": {
+    "value": -4.806,
+    "units": "deg",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.elev_m": {
+    "value": 0.0,
+    "units": "m",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.rank": {
+    "value": 3,
+    "units": null,
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.score": {
+    "value": 7,
+    "units": null,
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.tiebreak.reachable_pct_30": {
+    "value": 96.3,
+    "units": "%",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.tiebreak.elev_m": {
+    "value": 0.0,
+    "units": "m",
+    "file": "scenarios/pads/index.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.1.t_min": {
+    "value": 17.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.1.length_m": {
+    "value": 927.0,
+    "units": "m",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.1.o2_L": {
+    "value": 4.3,
+    "units": "L",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.2.t_min": {
+    "value": 20.0,
+    "units": "min",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.2.length_m": {
+    "value": 1081.7,
+    "units": "m",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.2.o2_L": {
+    "value": 5.0,
+    "units": "L",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.3.t_min": {
+    "value": 30.8,
+    "units": "min",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.3.length_m": {
+    "value": 1664.3,
+    "units": "m",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.3.o2_L": {
+    "value": 7.7,
+    "units": "L",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.4.t_min": {
+    "value": 21.3,
+    "units": "min",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.4.length_m": {
+    "value": 1152.4,
+    "units": "m",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.leg.4.o2_L": {
+    "value": 5.3,
+    "units": "L",
+    "file": "scenarios/pads/rank2/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.0.t_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.0.o2_left_L": {
+    "value": 482.0,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.0.t_home_min": {
+    "value": 0.1,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.0.margin_min": {
+    "value": 359.9,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.1.t_min": {
+    "value": 17.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.1.o2_left_L": {
+    "value": 477.7,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.1.t_home_min": {
+    "value": 17.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.1.margin_min": {
+    "value": 325.6,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.2.t_min": {
+    "value": 47.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.2.o2_left_L": {
+    "value": 470.2,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.2.t_home_min": {
+    "value": 17.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.2.margin_min": {
+    "value": 295.6,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.3.t_min": {
+    "value": 67.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.3.o2_left_L": {
+    "value": 465.2,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.3.t_home_min": {
+    "value": 12.6,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.3.margin_min": {
+    "value": 280.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.4.t_min": {
+    "value": 97.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.4.o2_left_L": {
+    "value": 457.7,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.4.t_home_min": {
+    "value": 12.6,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.4.margin_min": {
+    "value": 250.2,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.5.t_min": {
+    "value": 128.0,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.5.o2_left_L": {
+    "value": 450.0,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.5.t_home_min": {
+    "value": 21.3,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.5.margin_min": {
+    "value": 210.7,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.6.t_min": {
+    "value": 158.0,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.6.o2_left_L": {
+    "value": 442.5,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.6.t_home_min": {
+    "value": 21.3,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.6.margin_min": {
+    "value": 180.7,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.7.t_min": {
+    "value": 179.4,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.7.o2_left_L": {
+    "value": 437.2,
+    "units": "L",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.7.t_home_min": {
+    "value": 0.1,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.timeline.7.margin_min": {
+    "value": 180.5,
+    "units": "min",
+    "file": "scenarios/pads/rank2/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.route.total_min": {
+    "value": 179.4,
+    "units": "min",
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.headline.30.reachable_pct": {
+    "value": 99.1,
+    "units": "%",
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.headline.30.range_pct.low": {
+    "value": 99.0,
+    "units": "%",
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.headline.30.range_pct.high": {
+    "value": 99.3,
+    "units": "%",
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.headline.60.reachable_pct": {
+    "value": 99.7,
+    "units": "%",
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.headline.60.range_pct.low": {
+    "value": 99.6,
+    "units": "%",
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank2.headline.60.range_pct.high": {
+    "value": null,
+    "units": "%",
+    "file": "scenarios/pads/rank2/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.1.t_min": {
+    "value": 13.2,
+    "units": "min",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.1.length_m": {
+    "value": 710.2,
+    "units": "m",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.1.o2_L": {
+    "value": 3.3,
+    "units": "L",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.2.t_min": {
+    "value": 20.0,
+    "units": "min",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.2.length_m": {
+    "value": 1081.7,
+    "units": "m",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.2.o2_L": {
+    "value": 5.0,
+    "units": "L",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.3.t_min": {
+    "value": 30.8,
+    "units": "min",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.3.length_m": {
+    "value": 1664.3,
+    "units": "m",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.3.o2_L": {
+    "value": 7.7,
+    "units": "L",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.4.t_min": {
+    "value": 26.9,
+    "units": "min",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.4.length_m": {
+    "value": 1450.7,
+    "units": "m",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.leg.4.o2_L": {
+    "value": 6.7,
+    "units": "L",
+    "file": "scenarios/pads/rank3/route_nom_104.geojson",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.0.t_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.0.o2_left_L": {
+    "value": 482.0,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.0.t_home_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.0.margin_min": {
+    "value": 360.0,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.1.t_min": {
+    "value": 13.2,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.1.o2_left_L": {
+    "value": 478.7,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.1.t_home_min": {
+    "value": 13.2,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.1.margin_min": {
+    "value": 333.6,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.2.t_min": {
+    "value": 43.2,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.2.o2_left_L": {
+    "value": 471.2,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.2.t_home_min": {
+    "value": 13.2,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.2.margin_min": {
+    "value": 303.6,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.3.t_min": {
+    "value": 63.2,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.3.o2_left_L": {
+    "value": 466.2,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.3.t_home_min": {
+    "value": 23.7,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.3.margin_min": {
+    "value": 273.1,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.4.t_min": {
+    "value": 93.2,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.4.o2_left_L": {
+    "value": 458.7,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.4.t_home_min": {
+    "value": 23.7,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.4.margin_min": {
+    "value": 243.1,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.5.t_min": {
+    "value": 124.0,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.5.o2_left_L": {
+    "value": 451.0,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.5.t_home_min": {
+    "value": 26.9,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.5.margin_min": {
+    "value": 209.1,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.6.t_min": {
+    "value": 154.0,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.6.o2_left_L": {
+    "value": 443.5,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.6.t_home_min": {
+    "value": 26.9,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.6.margin_min": {
+    "value": 179.1,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.7.t_min": {
+    "value": 180.9,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.7.o2_left_L": {
+    "value": 436.8,
+    "units": "L",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.7.t_home_min": {
+    "value": 0.0,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.timeline.7.margin_min": {
+    "value": 179.1,
+    "units": "min",
+    "file": "scenarios/pads/rank3/timeline_nom_104.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.route.total_min": {
+    "value": 180.9,
+    "units": "min",
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.headline.30.reachable_pct": {
+    "value": 96.3,
+    "units": "%",
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.headline.30.range_pct.low": {
+    "value": 95.8,
+    "units": "%",
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.headline.30.range_pct.high": {
+    "value": 96.7,
+    "units": "%",
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.headline.60.reachable_pct": {
+    "value": 98.3,
+    "units": "%",
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.headline.60.range_pct.low": {
+    "value": 98.0,
+    "units": "%",
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  },
+  "pads.rank3.headline.60.range_pct.high": {
+    "value": null,
+    "units": "%",
+    "file": "scenarios/pads/rank3/summary.json",
+    "script": "tools/make_dummy.py",
+    "commit": "dummy",
+    "utc": "2026-11-14T09:00:00Z"
+  }
+}

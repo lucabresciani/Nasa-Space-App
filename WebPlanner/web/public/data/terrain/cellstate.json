@@ -1,0 +1,24 @@
+{
+ "image": "terrain/cellstate.png",
+ "bounds": [
+  137.319325,
+  -4.868455,
+  137.444675,
+  -4.743545
+ ],
+ "width": 2468,
+ "height": 2468,
+ "res_m": 3.0,
+ "variant": "nominal",
+ "codes": {
+  "0": "assessed",
+  "1": "blocked",
+  "2": "unknown"
+ },
+ "pct": {
+  "assessed": 75.59,
+  "blocked": 24.41,
+  "unknown": 0.0
+ },
+ "source": "data/interim/terrain/cellstate_3m.tif (WS1)"
+}

@@ -1,0 +1,379 @@
+/* WS7 HUD (F18). Helmet-display look; everything scoped under .hl-hud* */
+.hl-hud {
+  --hud-fg: #c8f7e1;
+  --hud-dim: #7fa79a;
+  --hud-bg: rgba(6, 14, 16, 0.78);
+  --hud-line: rgba(127, 216, 190, 0.35);
+  --hud-green: #40c878;
+  --hud-amber: #f0aa28;
+  --hud-red: #eb463c;
+  --hud-info: #9aa7b8;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  background: #0b0d10;
+  color: var(--hud-fg);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+.hl-hud-loading,
+.hl-hud-error {
+  padding: 2rem;
+}
+.hl-hud-error {
+  color: var(--hud-red);
+}
+.hl-hud-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.hl-hud-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hl-hud-sim-label {
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  padding: 4px 8px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud-bg);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+/* panel */
+.hl-hud-panel {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - 20px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-line);
+  border-radius: 14px;
+  box-shadow: 0 0 24px rgba(64, 200, 160, 0.15) inset;
+  font-size: 13px;
+  backdrop-filter: blur(2px);
+}
+.hl-hud-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--hud-dim);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.hl-hud-dummy {
+  color: var(--hud-amber);
+  font-weight: 700;
+}
+.hl-hud-alarm {
+  margin: 4px 0 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+.hl-hud-alarm[data-level='red'] {
+  background: var(--hud-red);
+  color: #fff;
+  animation: hl-hud-blink 1s steps(2) infinite;
+}
+.hl-hud-alarm[data-level='amber'] {
+  background: var(--hud-amber);
+  color: #111;
+}
+.hl-hud-alarm[data-level='info'] {
+  background: rgba(154, 167, 184, 0.25);
+  color: var(--hud-fg);
+  font-weight: 400;
+}
+@keyframes hl-hud-blink {
+  50% {
+    opacity: 0.65;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hl-hud-alarm[data-level='red'] {
+    animation: none;
+  }
+}
+.hl-hud-row {
+  display: grid;
+  grid-template-columns: 9.5em 1fr;
+  column-gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px dashed rgba(127, 216, 190, 0.12);
+}
+.hl-hud-k {
+  color: var(--hud-dim);
+  font-size: 11px;
+  align-self: center;
+}
+.hl-hud-v {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.hl-hud-sub {
+  grid-column: 2;
+  color: var(--hud-dim);
+  font-size: 11px;
+}
+.hl-hud-sub:empty {
+  display: none;
+}
+.hl-hud-row[data-band='green'] .hl-hud-v {
+  color: var(--hud-green);
+}
+.hl-hud-row[data-band='amber'] .hl-hud-v {
+  color: var(--hud-amber);
+}
+.hl-hud-row[data-band='red'] .hl-hud-v {
+  color: var(--hud-red);
+}
+.hl-hud-row[data-band='info'] .hl-hud-v {
+  color: var(--hud-info);
+}
+
+/* compass ribbon */
+.hl-hud-ribbon {
+  position: relative;
+  height: 26px;
+  margin: 6px 0 4px;
+  overflow: hidden;
+  border: 1px solid var(--hud-line);
+  border-radius: 4px;
+}
+.hl-hud-ribbon-ticks {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  will-change: transform;
+}
+.hl-hud-tick {
+  position: absolute;
+  top: 0;
+  height: 6px;
+  border-left: 1px solid var(--hud-dim);
+  font-size: 10px;
+  color: var(--hud-dim);
+  padding-top: 7px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.hl-hud-tick.major {
+  height: 9px;
+  color: var(--hud-fg);
+}
+.hl-hud-ribbon-home {
+  position: absolute;
+  left: calc(50% - 7px);
+  bottom: 0;
+  color: #ffd34d;
+  font-size: 14px;
+  line-height: 14px;
+  will-change: transform;
+}
+.hl-hud-ribbon-centre {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 2px solid var(--hud-fg);
+}
+.hl-hud-pos {
+  color: var(--hud-dim);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.hl-hud-exp {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--hud-line);
+}
+.hl-hud-minimap-canvas {
+  display: block;
+  width: 100%;
+  height: 170px;
+  margin-top: 8px;
+  border: 1px solid var(--hud-line);
+  border-radius: 8px;
+}
+.hl-hud-toggle,
+.hl-hud-controls button {
+  font: inherit;
+  color: var(--hud-fg);
+  background: transparent;
+  border: 1px solid var(--hud-line);
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.hl-hud-toggle {
+  margin-top: 8px;
+  width: 100%;
+}
+.hl-hud-controls button.active {
+  background: rgba(127, 216, 190, 0.2);
+}
+.hl-hud-controls button:focus-visible,
+.hl-hud-toggle:focus-visible,
+.hl-hud-scrub:focus-visible {
+  outline: 2px solid var(--hud-amber);
+  outline-offset: 2px;
+}
+
+/* controls */
+.hl-hud-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--hud-line);
+  background: #0e1216;
+}
+.hl-hud-scrub {
+  flex: 1 1 200px;
+  min-width: 120px;
+  accent-color: var(--hud-green);
+}
+.hl-hud-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.hl-hud-fps {
+  color: var(--hud-dim);
+  font-size: 11px;
+  min-width: 4.5em;
+  text-align: right;
+}
+@media (max-width: 640px) {
+  .hl-hud-panel {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+  }
+  .hl-hud-stage {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .hl-hud-map {
+    height: 55vh;
+  }
+}
+
+/* --- session 2: drag-anywhere, way home, nav panel slot (F18, F19, §2.4) --- */
+.hl-hud-map {
+  cursor: crosshair;
+  touch-action: none;
+}
+.hl-hud-fromhere {
+  margin-top: 4px;
+  padding: 4px 6px;
+  border-left: 2px solid #7fd8ff;
+  color: var(--hud-fg);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.hl-hud-navslot .hl-nav-panel {
+  margin: 6px 0 0;
+}
+.hl-hud-expslot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+  font-size: 11px;
+  color: var(--hud-dim);
+}
+.hl-hud-expslot select {
+  background: #0b0d10;
+  color: var(--hud-fg);
+  border: 1px solid rgba(127, 216, 190, 0.35);
+  font: inherit;
+}
+.hl-hud-dragbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-top: 1px solid rgba(127, 216, 190, 0.2);
+}
+.hl-hud-sigma {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.hl-hud-sigma-input {
+  width: 110px;
+}
+.hl-hud-back {
+  background: transparent;
+  color: var(--hud-fg);
+  border: 1px solid rgba(127, 216, 190, 0.5);
+  padding: 1px 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.hl-hud-draghint-map {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  padding: 3px 8px;
+  background: var(--hud-bg);
+  color: var(--hud-dim);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+/* --- fresh run: storm / drift toggles, empty-route note --- */
+.hl-hud-toggle-btn {
+  font: inherit;
+  font-size: 12px;
+  color: var(--hud-fg);
+  background: transparent;
+  border: 1px solid var(--hud-line);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.hl-hud-toggle-btn.active {
+  border-color: var(--hud-amber);
+  color: var(--hud-amber);
+}
+.hl-hud-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.hl-hud-noroute {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  max-width: min(420px, calc(100% - 24px));
+  padding: 6px 10px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud-bg);
+  font-size: 12px;
+}
+/* the hidden attribute must win over the display rules above (drag bar, hints, banner) */
+.hl-hud [hidden] {
+  display: none !important;
+}
+/* /hud slot (WS5 .outlet > .slot): fill the outlet so the controls stay on screen */
+.slot[data-slot='hud'] {
+  height: 100%;
+}

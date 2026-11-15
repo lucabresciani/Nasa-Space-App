@@ -1,0 +1,127 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "homeline/contracts/backend/run_record.schema.json",
+ "title": "run_record.json",
+ "description": "Provenance of one result tree (F35): results/{hash}/run_record.json, also served as GET /results/{hash}/provenance. Written by WS11 for every live result and for the pinned precomputed ones (official and picker pads); read by the WS13 verify view (#/plan/{hash}/provenance).",
+ "x-contract-version": "1.2.0",
+ "x-source": "Backend spec F23, F25, F35; D57; D97 (route_mode, feasibility, v1.2.0)",
+ "type": "object",
+ "$defs": {
+  "utc": {"type": "string", "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(\\.\\d+)?Z$"},
+  "sha256_tagged": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+ },
+ "properties": {
+  "contract_version": {"type": "string", "pattern": "^1\\.\\d+\\.\\d+$"},
+  "hash": {"type": "string", "pattern": "^[0-9a-f]{16}$", "description": "result hash (D57, contracts/backend/README.md)"},
+  "origin": {"enum": ["computed_live", "precomputed"]},
+  "label": {"type": "string", "description": "config/backend.yaml labels.live for computed_live results"},
+  "inputs": {"$ref": "plan_inputs.schema.json", "description": "the inputs with every default filled in (what was hashed, plus the title if any)"},
+  "engine": {
+   "type": "object",
+   "properties": {
+    "tree": {"type": "string", "pattern": "^[0-9a-f]{40}$", "description": "git rev-parse HEAD:pipeline (D57)"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "config_hash": {"$ref": "#/$defs/sha256_tagged", "description": "tools/make_bundle.py config_hash over config/*.yaml except backend.yaml (D57)"},
+    "web_contract_version": {"type": "string"},
+    "backend_contract_version": {"type": "string"}
+   },
+   "additionalProperties": false,
+   "required": ["tree", "commit", "config_hash"]
+  },
+  "terrain_hash": {"$ref": "#/$defs/sha256_tagged", "description": "sha256 of the server data manifest (tools/make_serverdata.py)"},
+  "status": {"enum": ["done", "partial", "error", "timeout"]},
+  "started_utc": {"$ref": "#/$defs/utc"},
+  "finished_utc": {"$ref": "#/$defs/utc"},
+  "stages": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "name": {"type": "string"},
+     "started_utc": {"$ref": "#/$defs/utc"},
+     "seconds": {"type": "number", "minimum": 0},
+     "files": {"type": "array", "items": {"type": "string"}}
+    },
+    "additionalProperties": false,
+    "required": ["name", "seconds"]
+   }
+  },
+  "files": {
+   "type": "array",
+   "description": "every file of the result tree except run_record.json, paths relative to results/{hash}/",
+   "items": {
+    "type": "object",
+    "properties": {
+     "path": {"type": "string"},
+     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+     "bytes": {"type": "integer", "minimum": 0},
+     "contract": {"type": ["string", "null"], "description": "schema file it validated against (contracts/), null for PNG and other non-JSON files"}
+    },
+    "additionalProperties": false,
+    "required": ["path", "sha256", "bytes"]
+   }
+  },
+  "range_flags": {
+   "type": "array",
+   "description": "inputs outside the anchored range (F26): config/backend.yaml ranges.anchored_flag_note",
+   "items": {
+    "type": "object",
+    "properties": {
+     "key": {"type": "string", "description": "dotted path in plan_inputs, e.g. crew.suit_kg"},
+     "value": {"type": "number"},
+     "note": {"type": "string"}
+    },
+    "additionalProperties": false,
+    "required": ["key", "note"]
+   }
+  },
+  "route_mode": {"enum": ["auto", "ordered"], "description": "v1.2.0 (D97): inputs.route.mode; auto when the route is absent"},
+  "feasibility": {
+   "description": "v1.2.0 (D97): the answer for the route as given. feasible true: every leg keeps its margins. feasible false: the first failing leg, its limit and the shortfall; the files of the legs planned before it are in the tree. Infeasible is a result (job status done), not an error. Absent in records written before v1.2.0.",
+   "oneOf": [
+    {
+     "type": "object",
+     "properties": {"feasible": {"const": true}},
+     "additionalProperties": false,
+     "required": ["feasible"]
+    },
+    {
+     "type": "object",
+     "properties": {
+      "feasible": {"const": false},
+      "leg": {"type": "integer", "minimum": 0, "description": "first failing leg: 0 = pad to stops[0], i = stops[i-1] to stops[i], len(stops) = last stop to pad"},
+      "from": {"type": "string", "pattern": "^(pad|S[0-9]+|W[0-9]+)$", "description": "'pad', a station id or a free point W1, W2, ..."},
+      "to": {"type": "string", "pattern": "^(pad|S[0-9]+|W[0-9]+)$", "description": "'pad', a station id or a free point W1, W2, ..."},
+      "limit": {"enum": ["O2", "daylight", "dose", "EVA duration"], "description": "the limit that fails first: O2 at the effort-cap rule (D45), daylight, dose, EVA duration (D28)"},
+      "shortfall_min": {"type": "number", "minimum": 0, "description": "minutes short on that limit (the negative margin as a positive number)"},
+      "legs_planned": {"type": "integer", "minimum": 0, "description": "legs before the failing one whose files are in the tree"}
+     },
+     "additionalProperties": false,
+     "required": ["feasible", "leg", "from", "to", "limit", "shortfall_min"]
+    }
+   ]
+  },
+  "infeasible": {
+   "description": "F25: infeasible plans are answered, not refused. null (or absent) when every leg keeps margin >= 0. v1.2.0: superseded by feasibility (D97); kept for v1.1 readers.",
+   "oneOf": [
+    {"type": "null"},
+    {
+     "type": "object",
+     "properties": {
+      "leg": {"type": "integer", "minimum": 0, "description": "index of the first leg (0 = pad to first station) where the margin goes negative"},
+      "from": {"type": "string", "description": "station id or 'pad'"},
+      "to": {"type": "string", "description": "station id or 'pad'"},
+      "margin_min": {"type": "number"},
+      "binding": {"enum": ["O2", "daylight", "dose", "EVA duration"]}
+     },
+     "additionalProperties": false,
+     "required": ["leg", "from", "to", "binding"]
+    }
+   ]
+  },
+  "error": {"type": ["string", "null"]},
+  "dummy": {"type": "boolean"}
+ },
+ "additionalProperties": false,
+ "required": ["contract_version", "hash", "origin", "label", "inputs", "engine", "terrain_hash", "status", "started_utc", "stages", "files", "dummy"]
+}

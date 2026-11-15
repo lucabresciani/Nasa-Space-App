@@ -1,0 +1,95 @@
+/* GENERATED from tokens.json by web/scripts/gen-tokens.mjs. Do not edit by hand. */
+/* Regenerate: cd web && node scripts/gen-tokens.mjs  (a test fails when this file is stale). */
+/* Layout breakpoints are listed for JS (matchMedia); CSS custom properties do not work in @media. */
+:root {
+  --color-bg: #0C1211;
+  --color-sidebar: #111A19;
+  --color-card: #202A27;
+  --color-card-border: #2C3834;
+  --color-text: #E6EDF3;
+  --color-text-muted: #9AA7A3;
+  --color-text-faint: #6B7773;
+  --color-shadow: #263348;
+  --color-light: #FFF4E0;
+  --color-select: #F5D900;
+  --color-safe: #3DD68C;
+  --color-caution: #FB923C;
+  --color-limit: #F43F5E;
+  --color-science: #60A5FA;
+  --color-live: #A78BFA;
+  --color-unknown: #6B7280;
+  --color-label-pill: rgba(0,0,0,0.70);
+  --overlay-opacity-min: 0.35;
+  --overlay-opacity-max: 0.55;
+  --font-text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-size-label: 11px;
+  --font-size-small: 12px;
+  --font-size-body: 14px;
+  --font-size-heading: 20px;
+  --font-size-readout: 20px;
+  --font-size-readout-large: 28px;
+  --font-size-display: 40px;
+  --line-height-label: 14px;
+  --line-height-small: 16px;
+  --line-height-body: 20px;
+  --line-height-heading: 28px;
+  --line-height-readout: 24px;
+  --line-height-readout-large: 32px;
+  --line-height-display: 44px;
+  --font-weight-body: 400;
+  --font-weight-label: 500;
+  --font-weight-heading: 600;
+  --font-weight-map-label: 600;
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --radius-pill: 4px;
+  --radius-input: 4px;
+  --radius-card: 8px;
+  --radius-chip: 999px;
+  --motion-panel-min: 180ms;
+  --motion-panel-max: 240ms;
+  --motion-hover-min: 80ms;
+  --motion-hover-max: 120ms;
+  --motion-data-min: 300ms;
+  --motion-data-max: 600ms;
+  --motion-camera-min: 1200ms;
+  --motion-camera-max: 2500ms;
+  --motion-collapse: 3000ms;
+  --motion-route-draw: 1500ms;
+  --motion-pulse-every: 3000ms;
+  --layout-top-bar: 48px;
+  --layout-left-rail: 320px;
+  --layout-left-rail-collapsed: 56px;
+  --layout-sidebar: 360px;
+  --layout-timeline: 120px;
+  --layout-timeline-collapsed: 40px;
+  --layout-breakpoint-tablet: 768px;
+  --layout-breakpoint-desktop: 1280px;
+  --line-field-edge: 1.5px;
+  --line-thread: 2px;
+  --line-focus-ring: 2px;
+}
+
+/* Reduced motion (DESIGN §3.4, kit rule 9): every motion duration is zero. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-panel-min: 0ms;
+    --motion-panel-max: 0ms;
+    --motion-hover-min: 0ms;
+    --motion-hover-max: 0ms;
+    --motion-data-min: 0ms;
+    --motion-data-max: 0ms;
+    --motion-camera-min: 0ms;
+    --motion-camera-max: 0ms;
+    --motion-collapse: 0ms;
+    --motion-route-draw: 0ms;
+    --motion-pulse-every: 0ms;
+  }
+}

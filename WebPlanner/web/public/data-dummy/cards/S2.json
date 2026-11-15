@@ -1,0 +1,39 @@
+{
+  "dummy": true,
+  "navcam": {
+    "sol": null,
+    "image_id": null,
+    "url_local": "cards/placeholder.png",
+    "overlay_png": null
+  },
+  "skyline_error_deg": {
+    "near": null,
+    "mid": null,
+    "far": null
+  },
+  "panorama_png": null,
+  "landmarks": [
+    {
+      "name": "DUMMY synthetic hill",
+      "bearing_deg": 311.7,
+      "dist_km": 0.637
+    },
+    {
+      "name": "DUMMY synthetic wall",
+      "bearing_deg": 270.0,
+      "dist_km": 1.3
+    },
+    {
+      "name": "Pad",
+      "bearing_deg": 270.0,
+      "dist_km": 0.9
+    }
+  ],
+  "timeline": {
+    "arrive": 61.1,
+    "leave": 91.1,
+    "turn_back": 343.3
+  },
+  "margin_binding": "O2",
+  "contingency": "DUMMY contingency: walk straight back to the pad."
+}

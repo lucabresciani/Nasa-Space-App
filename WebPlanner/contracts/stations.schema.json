@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/stations.schema.json",
+  "title": "stations.json",
+  "description": "Science stations (F7). Array of station records. v1.1.1: optional access-cell properties (WS2 pipeline/engine/access.py): lon/lat stay the science point; t_home_min is at the access cell.",
+  "x-contract-version": "1.1.1",
+  "x-source": "SPEC §6",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^S[0-9]+$"
+      },
+      "name": {
+        "type": "string"
+      },
+      "lon": {
+        "type": "number",
+        "minimum": -180,
+        "maximum": 360,
+        "description": "longitude, deg east (Mars 2000 planetocentric)"
+      },
+      "lat": {
+        "type": "number",
+        "minimum": -90,
+        "maximum": 90,
+        "description": "latitude, deg (Mars 2000 planetocentric)"
+      },
+      "value": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "F7 science value"
+      },
+      "objective": {
+        "type": "string"
+      },
+      "tasks": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "dwell_min": {
+        "type": "number",
+        "minimum": 0,
+        "description": "min"
+      },
+      "t_home_min": {
+        "type": "object",
+        "additionalProperties": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "description": "scenario id -> min (null = unknown or no access cell); measured from the access cell"
+      },
+      "in_partner_line": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "card": {
+        "type": "string",
+        "description": "path of cards/{id}.json"
+      },
+      "access_radius_m": {
+        "type": "number",
+        "minimum": 0,
+        "description": "access_radius_m used (config/variants.yaml route) (v1.1.1)"
+      },
+      "access_lon": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "access cell longitude in the default scenario; null = none (v1.1.1)"
+      },
+      "access_lat": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "access cell latitude in the default scenario; null = none (v1.1.1)"
+      },
+      "access_dist_m": {
+        "type": [
+          "number",
+          "null"
+        ],
+        "description": "science point to access cell in the default scenario, m (v1.1.1)"
+      },
+      "access_reason": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "why there is no access cell in the default scenario (v1.1.1)"
+      },
+      "access": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "lon": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "access cell longitude, deg east; null = no access cell"
+            },
+            "lat": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "access cell latitude, deg; null = no access cell"
+            },
+            "dist_m": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "access_dist_m: science point to access cell, m; null = no access cell"
+            },
+            "t_home_min": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "walk home from the access cell, min"
+            },
+            "o2_home_L": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "O2 for the walk home from the access cell, L"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "why there is no access cell (null when there is one)"
+            },
+            "walk_in": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "straight-line walk-in from the access cell to the science point; not modelled by the router (null when there is no access cell)",
+              "properties": {
+                "dist_m": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "m"
+                },
+                "modelled": {
+                  "const": false,
+                  "description": "always false: the walk-in leg is not routed"
+                },
+                "rise_m": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "science point minus access cell height, m"
+                },
+                "mean_slope_deg": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "mean along-track slope, deg (3 m samples, bilinear on elev_3m)"
+                },
+                "max_slope_deg": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "max along-track slope, deg"
+                },
+                "max_terrain_slope_deg": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "max WS1 cell max-slope of the cells crossed, deg"
+                }
+              }
+            }
+          },
+          "required": []
+        },
+        "description": "scenario id -> access record {lon, lat, dist_m, t_home_min, o2_home_L, reason, walk_in} (v1.1.1)"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "lon",
+      "lat",
+      "value",
+      "objective",
+      "tasks",
+      "dwell_min",
+      "t_home_min",
+      "in_partner_line",
+      "card"
+    ]
+  }
+}

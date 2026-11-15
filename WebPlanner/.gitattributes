@@ -1,0 +1,4 @@
+# The web planner's sources and map data, kept byte for byte as in the web team's repository:
+# no Git LFS (the LFS quota is for the Unity assets) and no line-ending conversion (the data files
+# are pinned by checksum in web/public/data/manifest.json).
+* -text -filter -diff -merge

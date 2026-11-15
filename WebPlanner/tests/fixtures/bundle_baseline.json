@@ -1,0 +1,11 @@
+{
+  "note": "First-load JS+CSS gzip (-9) sizes of web/dist on main; tools/bundle_budget.ts allows config/design.yaml performance.first_load_added_kb_gz kB over first_load_total_gzip. Rewrite only from a main build: cd web && npm run build && npm run bundle:budget -- --write",
+  "commit": "66e81b1",
+  "first_load_total_gzip": 8254,
+  "first_load_js_gzip": 4533,
+  "first_load_css_gzip": 3721,
+  "first_load_files": [
+    "assets/index.js",
+    "assets/index.css"
+  ]
+}

@@ -1,0 +1,120 @@
+/* Live layer status line (WS13). Colours are the app's tokens from src/style.css. */
+.live-status {
+  margin: 0;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.live-status[hidden] {
+  display: none;
+}
+.live-status[data-tone='warn'] {
+  color: var(--warn);
+}
+
+/* Pad tool panel (F24). */
+.live-pad {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.live-pad h2,
+.live-pad h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+.live-label {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: var(--warn);
+}
+.live-card {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.live-reason,
+.live-failed {
+  color: var(--bad);
+}
+.live-btn {
+  margin-left: 4px;
+}
+.live-errors {
+  color: var(--bad);
+  font-size: 0.85rem;
+}
+.num-screen {
+  text-decoration: underline dashed var(--muted);
+  text-underline-offset: 3px;
+}
+.num-withheld {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Plan routes (#/plan, #/plan/{hash}[/provenance|/play]; F28, F35). */
+.live-plan[hidden] {
+  display: none;
+}
+.live-plan-map {
+  height: 360px;
+  border-bottom: 1px solid var(--line);
+}
+.live-plan-page .live-inputs {
+  max-height: 320px;
+  overflow: auto;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+.live-prov-table th {
+  text-align: left;
+  padding-right: 12px;
+}
+.live-prov-table code {
+  word-break: break-all;
+}
+.live-actions .live-btn {
+  margin-right: 8px;
+}
+.live-notfound,
+.live-offline {
+  color: var(--warn);
+}
+
+/* Crew panel (F26). WS15 tokens (src/ui/tokens.css) when loaded, else the app's own variables. */
+.live-crew {
+  margin: var(--space-3, 12px) 0;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border: 1px solid var(--color-card-border, var(--line));
+  background: var(--color-card, var(--panel));
+}
+.live-crew h2 {
+  margin: 0 0 var(--space-1, 4px);
+  font-size: var(--font-size-body, 1rem);
+}
+.live-crew-fields th {
+  text-align: left;
+  padding-right: var(--space-3, 12px);
+  vertical-align: top;
+}
+.live-crew-fields input {
+  width: 6em;
+}
+.live-crew-fields input[aria-invalid='true'] {
+  border-color: var(--color-caution, var(--warn));
+}
+.live-extrapolation {
+  color: var(--color-caution, var(--warn));
+}
+.live-fixed {
+  color: var(--color-text-muted, var(--muted));
+}
+.live-range-flags-box {
+  margin-top: var(--space-2, 8px);
+}

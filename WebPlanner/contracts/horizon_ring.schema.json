@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/horizon_ring.schema.json",
+  "title": "fp3d/horizon_ring.json",
+  "description": "Far skyline ring for the 3D view (F20, from WS3 pipeline/horizon/cards.py ring_doc; read by WS8 web/src/fp3d/ring.ts). v1.1.1: WS3's layout (one value per azimuth in parallel arrays, all the same length as az_deg; null = unknown). The M0 dummy ring (no distances) is the minimal form.",
+  "x-contract-version": "1.1.1",
+  "x-source": "SPEC §6.1; WS3 STATUS 2026-11-14T11:00Z",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "observer": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "observer id, e.g. pad"
+        },
+        "lon": {
+          "type": "number"
+        },
+        "lat": {
+          "type": "number"
+        },
+        "x": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "analysis CRS easting, m"
+        },
+        "y": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "analysis CRS northing, m"
+        },
+        "eye_height_m": {
+          "type": "number",
+          "minimum": 0
+        },
+        "z_ground_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "ground height (areoid), m"
+        },
+        "z_eye_m": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "eye height (areoid), m"
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "where the pad came from"
+        }
+      },
+      "required": [
+        "lon",
+        "lat",
+        "eye_height_m"
+      ]
+    },
+    "az_step_deg": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "min_range_m": {
+      "type": "number",
+      "minimum": 0,
+      "description": "only terrain at least this far counts (the near mesh covers the rest)"
+    },
+    "max_range_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "crs": {
+      "type": "string",
+      "description": "analysis CRS (PROJ string)"
+    },
+    "azimuth_convention": {
+      "type": "string"
+    },
+    "radius_m": {
+      "type": "number",
+      "description": "Mars radius used for curvature, m"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "az_deg": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 1,
+      "description": "deg clockwise from grid north"
+    },
+    "elev_deg": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "description": "horizon elevation incl. curvature drop d^2/2R, deg"
+    },
+    "dist_m": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "description": "distance to the horizon point, m"
+    },
+    "z_m": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "description": "terrain height of the horizon point (areoid), m"
+    },
+    "east_m": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "description": "horizon point east offset from the observer (analysis CRS), m"
+    },
+    "north_m": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "description": "horizon point north offset from the observer (analysis CRS), m"
+    },
+    "source": {
+      "type": "array",
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "description": "terrain band of the horizon point (dem_1m, ctx_20m, mola_hrsc_200m)"
+    }
+  },
+  "required": [
+    "observer",
+    "az_step_deg",
+    "max_range_m",
+    "az_deg",
+    "elev_deg"
+  ]
+}

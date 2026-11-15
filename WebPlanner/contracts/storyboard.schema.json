@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/storyboard.schema.json",
+  "title": "web/public/story/{id}.json",
+  "description": "Design contracts v1 (family 'design', DESIGN §6; frozen at merge: additive change = minor bump, breaking change = human-gated). Storyboard for the flythrough, descent intro, kiosk loop and capture mode (DESIGN U6): timed steps of camera keyframes, layer changes, clock positions, field mode and collapse value, selection, captions and UI visibility. Hand-authored (WS16) in web/public/story/, outside the data root, so tools/validate_contracts.py SCHEMA_MAP does not map it; tests/test_design_contracts.py validates every web/public/story/*.json.",
+  "x-contract-version": "1.0.0",
+  "x-source": "DESIGN §6.3, §2.2 U6, U3; config/design.yaml capture, collapse",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "= file name without .json; ?capture={id}"
+    },
+    "version": {
+      "const": "1",
+      "description": "file format version (DESIGN §6.3)"
+    },
+    "title": {
+      "type": "string"
+    },
+    "size": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "[width, height] px of the capture frame (config/design.yaml capture.size)"
+    },
+    "fps": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 240,
+      "description": "capture frame rate (fixed frame step 1/fps)"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "one timed step; every key except t is optional and only what is given changes",
+        "properties": {
+          "t": {
+            "type": "number",
+            "minimum": 0,
+            "description": "s from the start of the storyboard; steps are in non-decreasing t (checked by the director)"
+          },
+          "camera": {
+            "type": "object",
+            "description": "camera keyframe: absolute (lon + lat, optional alt_m, bearing, pitch) or relative to a labelled object (target code from labels.json, optional alt_m, bearing, pitch; lon/lat then absent). Between keyframes the camera is eased; every value is deterministic.",
+            "properties": {
+              "lon": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180,
+                "description": "deg, Mars 2000 planetocentric, east positive"
+              },
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90,
+                "description": "deg, Mars 2000 planetocentric"
+              },
+              "alt_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "camera height above the target point, m (true metres, before exaggeration)"
+              },
+              "bearing": {
+                "type": "number",
+                "minimum": -360,
+                "maximum": 360,
+                "description": "deg clockwise from north"
+              },
+              "pitch": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 85,
+                "description": "deg from straight down"
+              },
+              "target": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9]{0,7}$",
+                "description": "short uppercase label code (DESIGN U13), e.g. PAD, P2, S7, U1, MSH"
+              }
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "target"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "lon": {
+                      "type": "null"
+                    },
+                    "lat": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "else": {
+                  "required": [
+                    "lon",
+                    "lat"
+                  ]
+                }
+              }
+            ]
+          },
+          "layers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "layer id -> visible (e.g. {\"homeline\": false})"
+          },
+          "field": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "enum": [
+                  "bands",
+                  "margin"
+                ],
+                "description": "field shader u_mode (DESIGN U2)"
+              },
+              "collapse": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "u_k: 0 = flat circle, 1 = real homeline (U3)"
+              },
+              "duration_s": {
+                "type": "number",
+                "minimum": 0,
+                "description": "ease time to the new values, s (0 = jump); collapse default config/design.yaml collapse.duration_s"
+              },
+              "variant": {
+                "enum": [
+                  "opt",
+                  "nom",
+                  "con"
+                ],
+                "description": "u_variant: optimistic, nominal, conservative"
+              }
+            },
+            "additionalProperties": false
+          },
+          "clock": {
+            "type": "object",
+            "properties": {
+              "t_min": {
+                "type": "number",
+                "minimum": 0,
+                "description": "EVA clock, min since departure"
+              },
+              "playing": {
+                "type": "boolean"
+              },
+              "speed": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "simulated minutes per real second"
+              }
+            },
+            "additionalProperties": false,
+            "description": "mission-state clock (DESIGN §5.2)"
+          },
+          "selection": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Z][A-Z0-9]{0,7}$",
+            "description": "label code to select, null = clear the selection"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "caption text, null = clear"
+          },
+          "ui": {
+            "enum": [
+              "hide",
+              "reveal"
+            ],
+            "description": "UI chrome visibility (capture mode shows none unless a step reveals it)"
+          }
+        },
+        "required": [
+          "t"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "size",
+    "fps",
+    "steps"
+  ]
+}

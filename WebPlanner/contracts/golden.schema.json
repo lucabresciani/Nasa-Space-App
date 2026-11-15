@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/golden.schema.json",
+  "title": "physio/golden.json",
+  "description": "physio/golden.json (v1.1.5): WS2's physiology, speed-governor, O2, haul, margin, turn-back and dose-leash test vectors (pipeline/engine/golden.py). Any port (the simulator's C# port, D41) is accepted when it reproduces every case within the tolerance the file states for that case group (tolerances.{group}: |got - want| <= abs + rel * |want|). Loose by design: the envelope is checked here; each case is {id, inputs, expected} as WS2 documents in the file (units, coords = pad-local metres, conventions, config, formulas). Producer WS2; copied by make web; included in every plan bundle (contracts/bundle/README.md). Extra keys allowed.",
+  "x-contract-version": "1.1.5",
+  "x-source": "SPEC §11 D41 (set A); handover page \"EVA simulation module\" part A (physio/golden.json); WS2 pipeline/engine/golden.py",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "homeline_physio_golden"
+    },
+    "coords": {
+      "type": "object"
+    },
+    "units": {
+      "type": "object"
+    },
+    "tolerances": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "rel": {
+            "type": "number",
+            "minimum": 0
+          },
+          "abs": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rel",
+          "abs"
+        ]
+      }
+    },
+    "cases": {
+      "type": "object",
+      "description": "case group -> list of cases; groups: physio, o2_leg, haul, haul_drag_finding, margin, turn_back, dose_leash, route (WS2 may add groups)",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "inputs": {
+              "type": "object"
+            },
+            "expected": {}
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "description": "the config values the vectors were generated with (crew, variants, derived constants, formulas)"
+    },
+    "conventions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "generator": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string"
+    },
+    "dummy": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "version",
+    "kind",
+    "tolerances",
+    "cases"
+  ]
+}

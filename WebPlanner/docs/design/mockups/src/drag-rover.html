@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drag the rover</title>
+<link rel="stylesheet" href="shell.css">
+</head><body>
+<div class="app" id="app">
+  <aside class="rail" id="rail"></aside>
+  <main class="map" id="map"><canvas></canvas><svg class="ov"></svg>
+    <div class="scalebar" id="scale"></div>
+    <div class="readout" id="readout"></div>
+  </main>
+  <aside class="side" id="side"></aside>
+  <footer class="dock" id="dock"></footer>
+</div>
+<script src="hl.js"></script><script src="shell.js"></script><script src="map-common.js"></script>
+<script>
+(async () => {
+  await HL.load({ variants: true });
+  const m = HL.m, f = HL.fmt;
+  const pad = HL.D.pad.pad;
+  // the user drops the rover on the rank-2 parking option (pad.json alternatives[0]); its numbers are published
+  const alt = HL.D.pad.alternatives.find((a) => a.id === 'rank2');
+  const app = document.getElementById('app');
+  app.insertAdjacentHTML('afterbegin', HL.top('Plan', { live: true }));
+  app.insertAdjacentHTML('beforeend', HL.stamp());
+  document.getElementById('rail').innerHTML = HL.rail();
+  const mapEl = document.getElementById('map');
+  mapEl.insertAdjacentHTML('beforeend', HL.mapctl());
+  const view = HL.fitView(mapEl, 1.12);
+  // old homeline stays, dimmed, until the new fields arrive (cross-fade on completion)
+  HL.paint(mapEl.querySelector('canvas'), view, { mode: 'bands', dim: 0.45 });
+  const svg = mapEl.querySelector('svg');
+  // flat 30-min disc around the new spot (validation.coverage.discs.0.radius_m), drawn as the validity check
+  const [ax, ay] = view.px(alt.lon, alt.lat);
+  HL.svg('circle', { cx: ax, cy: ay, r: m('validation.coverage.discs.0.radius_m') / view.mpp, fill: 'none', stroke: 'var(--color-text-muted)', 'stroke-width': 1.5, 'stroke-dasharray': '2 5' }, svg);
+  HL.drawRoute(svg, view, { opacity: 0.35 });
+  // ghost route (U15): dashed yellow, the old stops re-anchored to the new spot, pending the route job
+  const feats = HL.D.route.features;
+  const s7 = HL.D.stations.find((s) => s.id === 'S7'), s4 = HL.D.stations.find((s) => s.id === 'S4');
+  HL.line(svg, view, [[alt.lon, alt.lat], [s7.lon, s7.lat]], { color: 'var(--color-select)', width: 2, dash: '7 5' });
+  for (const ft of feats.slice(1, 4)) HL.line(svg, view, ft.geometry.coordinates, { color: 'var(--color-select)', width: 2, dash: '7 5', casing: false });
+  HL.line(svg, view, [[s4.lon, s4.lat], [alt.lon, alt.lat]], { color: 'var(--color-select)', width: 2, dash: '7 5' });
+  HL.drawStations(svg, view, { dim: true });
+  HL.pad(svg, view, pad.lon, pad.lat, { ghost: true, label: 'PAD (was)' });
+  HL.pad(svg, view, alt.lon, alt.lat, { selected: true, label: 'PAD' });
+  const mid = view.px((alt.lon + s7.lon) / 2, (alt.lat + s7.lat) / 2);
+  const pill = document.createElement('div');
+  pill.className = 'tip'; pill.style.left = `${mid[0] - 50}px`; pill.style.top = `${mid[1] - 34}px`;
+  pill.style.color = 'var(--color-live)'; pill.style.borderColor = 'color-mix(in srgb, var(--color-live) 55%, transparent)';
+  pill.innerHTML = `${HL.icon('loader-circle', 'sm')} computing… ${HL.chip('live')}`;
+  mapEl.appendChild(pill);
+  // exact values at the dropped cell from the fields in the browser
+  const slope = HL.sample('slope', alt.lon, alt.lat);
+  const cellOk = Math.round(HL.sample('cell', alt.lon, alt.lat)) === 0;
+  let smax = 0; // max slope over 20 x 20 m (4 x 4 cells of the 5 m slope field) around the spot
+  for (let dy = -2; dy <= 1; dy++) for (let dx = -2; dx <= 1; dx++) {
+    const lo = alt.lon + (dx + 0.5) * 5 / (59274.7 * Math.cos(alt.lat * Math.PI / 180)), la = alt.lat + (dy + 0.5) * 5 / 59274.7;
+    smax = Math.max(smax, HL.sample('slope', lo, la));
+  }
+  const tip = document.createElement('div');
+  tip.className = 'tip'; tip.style.right = `${view.W - ax + 24}px`; tip.style.top = `${ay - 64}px`;
+  tip.innerHTML = `<div>${HL.icon(cellOk ? 'check' : 'x', 'sm')} Spot ${cellOk ? 'assessed' : 'blocked'} · slope <b class="mono">${f(slope)}°</b> ${HL.chip('modelled')}</div>
+    <div class="label">max over 20 × 20 m <b class="mono">${f(smax)}°</b> (rule ≤ 5°) · elev <b class="mono">${f(alt.elev_m)} m</b> ${HL.chip('real')}</div>`;
+  mapEl.appendChild(tip);
+  document.getElementById('readout').innerHTML = `<span><b>DRAG</b>PAD</span><span><b>LON</b>${alt.lon.toFixed(4)}°</span><span><b>LAT</b>${alt.lat.toFixed(4)}°</span><span><b>ELEV</b>${f(alt.elev_m)} m</span><span><b>SLOPE</b>${f(slope)}°</span>`;
+  HL.scalebar(document.getElementById('scale'), view);
+
+  document.getElementById('side').innerHTML = `
+  <div class="card sel">
+    <div class="card-title"><span class="code">PAD</span><div style="flex:1"><div class="h-sm">Rover pad · moved</div><div class="label">Released on parking option rank 2 · plan job running</div></div>${HL.chip('live')}</div>
+    <div class="ros">
+      <div class="ro"><div class="l">Spot ${HL.chip('modelled')}</div><div class="v">${HL.icon(cellOk ? "check" : "x")} ${cellOk ? 'valid' : 'blocked'}</div><div class="s">assessed · 30-min disc in grid</div></div>
+      <div class="ro"><div class="l">Elevation ${HL.chip('real')}</div><div class="v">${f(alt.elev_m)}<small>m</small></div><div class="s">was ${f(pad.elev_m)} m</div></div>
+      <div class="ro live ghost"><div class="l">Feasible EVAs ${HL.chip('live')}</div><div class="v">—</div><div class="s">computing… · was ${m('pad.score')}</div></div>
+      <div class="ro live ghost"><div class="l">Reachable 30 min ${HL.chip('live')}</div><div class="v">—<small>%</small></div><div class="s">computing… · was ${f(m('reachable_pct.nom_104.30'))}%</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="label">Plan job ${HL.chip('live')}</div>
+    <div class="stepper">
+      <div class="step done"><span class="ic">${HL.icon('check', 'sm')}</span>Check spot</div>
+      <div class="step run"><span class="ic">${HL.icon('loader-circle', 'sm')}</span>Fields from the new pad · computing…</div>
+      <div class="step wait"><span class="ic"></span>Route through S7 · S6 · S1 · S4</div>
+      <div class="step wait"><span class="ic"></span>Timeline and margins</div>
+    </div>
+    <div class="label faint" style="margin-top:6px">stage names: placeholder until the copy deck (R4)</div>
+  </div>
+  <div class="card" style="border-style:dashed">
+    <div class="label">Change (delta strip)</div>
+    <div class="mono" style="margin-top:4px">EVA — · O₂ — · tightest margin ${f(m('card.S7.margin_min'), 0)} → — min</div>
+    <div class="label faint">filled on completion; nothing estimated while dragging (U15 rule)</div>
+  </div>
+  <div style="display:flex;gap:var(--space-2);margin-top:auto">
+    <button class="btn primary" disabled style="opacity:.5">${HL.icon('check', 'sm')} Keep <kbd class="mono faint">Enter</kbd></button>
+    <button class="btn focus">${HL.icon('x', 'sm')} Discard <kbd class="mono faint">Esc</kbd></button>
+    <button class="btn ghost" style="margin-left:auto">${HL.icon('undo-2', 'sm')}</button><button class="btn ghost">${HL.icon('redo-2', 'sm')}</button>
+  </div>`;
+  HL.dock(document.getElementById('dock'), { t: 0 });
+  HL.ready();
+})();
+</script>
+</body></html>

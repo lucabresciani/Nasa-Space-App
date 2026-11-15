@@ -1,0 +1,23 @@
+/* Selection cards (U14, A5). Tokens only (kit rule 2). Base card layout is components.css. */
+.hl-selection { display: flex; flex-direction: column; gap: var(--space-3); }
+.hl-selection__nav { display: flex; gap: var(--space-1); justify-content: flex-end; }
+.hl-selection .hl-empty { padding: var(--space-2) var(--space-3); }
+.hl-cardx__details { display: flex; flex-direction: column; gap: var(--space-2); }
+.hl-cardx__h {
+  margin: 0; font-size: var(--font-size-label); line-height: var(--line-height-label);
+  font-weight: var(--font-weight-label); color: var(--color-text-muted);
+}
+.hl-cardx__k { color: var(--color-text-muted); }
+.hl-cardx__muted { margin: 0; color: var(--color-text-muted); font-size: var(--font-size-small); line-height: var(--line-height-small); }
+.hl-cardx__list, .hl-cardx__rows { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); }
+.hl-cardx__navcam { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.hl-cardx__photo { position: relative; border-radius: var(--radius-card); overflow: hidden; }
+.hl-cardx__photo img { display: block; width: 100%; height: auto; }
+.hl-cardx__photo .hl-cardx__overlay { position: absolute; inset: 0; height: 100%; }
+/* A readout with a range ("45.42 min (41.6–47.1)") wraps under its value in the 2-column sidebar grid. */
+.hl-selection .hl-readout__value { flex-wrap: wrap; min-width: 0; }
+.hl-selection .hl-readout { min-width: 0; }
+/* "Send to simulator" slot (A5s, D76): download links named from the manifest. */
+.hl-simslot { display: flex; flex-direction: column; gap: var(--space-1); }
+.hl-simslot__file { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-text); font-family: var(--font-mono); font-size: var(--font-size-small); overflow-wrap: anywhere; }
+.hl-simslot__file:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); outline-offset: 2px; }

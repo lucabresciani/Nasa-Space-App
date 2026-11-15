@@ -1,0 +1,66 @@
+formulas:
+  level_slope_a: "a(M) = a_anchor * a_mult + alpha * (M - anchor.carried_kg)"
+  a_anchor: "a_anchor = (anchor.vo2 - V0) / anchor.speed      # mL/kg/min per m/s"
+  alpha: "alpha = ist2.level_increment / (span_kg * anchor.speed)"
+  ist2_span_kg: "span_kg = (g_frac[1] - g_frac[0]) * g_earth_ms2 * (system_kg + subject_kg) / crew.g_mars   # IST-2 weight span (ist2.weight_span) as carried mass at Mars g"
+  uphill_k: "k = (m_b + M) * g * sin(theta) / (eta * m_b) * 60 / 20.1   # theta > 0"
+  vo2_uphill: "VO2 = V0 + a(M) * v + k * v"
+  vo2_downhill: "VO2 = V0 + a(M) * v * clamp(f(i) / f(0), 0.4, 3.0)    # i = tan(theta) < 0"
+  minetti_f: "f(i) = 280.5 i^5 - 58.7 i^4 - 76.8 i^3 + 51.9 i^2 + 19.6 i + 2.5   # Minetti 2002, Earth shape only"
+  governor: "v* = min(v_safe(theta), (effort_cap * VO2max - V0) / (a(M) + k))   # downhill: divide by a(M)*f(i)/f(0)"
+  o2_litres: "O2 = integral(VO2 * m_b dt) / 1000"
+ist2:
+  level_increment_ml_kg_min: 1.9  # lightest -> heaviest weight condition, 0% grade
+  level_span: weight_span         # the 1.9 spans the same IST-2 weight conditions as the uphill check: a gravity change 0.12 -> 0.32 g on 121 + 80.7 kg, not extra mass
+  alpha_encoding:                 # decision 2026-11-14 15:40 (user for S, STATUS Decision log "WS2 Q (alpha encoding, review C-note 1)"): switch to the IST-2 weight-span encoding
+    span_mars_equiv_kg: 106.6     # derived, = (0.32 - 0.12) * 9.80665 * (121 + 80.7) / 3.71 = 395.6 N / 3.71; KAT recomputes (formulas.ist2_span_kg)
+    alpha: 0.01818                # derived, = 1.9 / (106.6 * 0.98) mL/kg/min per m/s per kg; KAT recomputes
+    replaces: "delta_mass_kg: 60 (alpha 0.03231), withdrawn 2026-11-14 15:40"
+    source: "Norcross et al. 2010, IST-2 (NTRS 20110003409); docs/review/2026-11-14-ist2-and-o2-margin.md C-note 1"
+  uphill_check_ml_kg_min: {grade_20pct: 8.7, grade_30pct: 17.0}   # heaviest - lightest WEIGHT condition at a fixed grade (S review 2026-11-14), not level -> grade
+  weight_span:                     # added by WS2 2026-11-14 per docs/review/2026-11-14-ist2-and-o2-margin.md (S, binding); source: Norcross et al. 2010, IST-2 (NTRS 20110003409)
+    g_frac: [0.12, 0.32]           # lightest / heaviest suited-weight condition, fraction of Earth g (series 0.12-0.32 g)
+    system_kg: 121                 # POGO configuration, 265 lb
+    subject_kg: 80.7               # mean subject body mass; IST-2 normalises per kg of subject mass
+    speed_ms: [0.56, 0.97]         # per-subject speeds (lowest ambulation speed from each subject's PTS)
+    speed_sweep_n: 42              # sweep resolution, 0.01 m/s steps (numerical, not a model parameter)
+  g_earth_ms2: 9.80665             # standard gravity (CGPM 1901); converts IST-2 g fractions
+  level_to_grade_validated: false  # level -> 20/30 % increment: no measured reference in hand (S review), report "not validated"
+variants:
+  optimistic:   {eta: 0.25,  V0: 5, a_mult: 1.0, nogo_deg: 25}
+  nominal:      {eta: 0.225, V0: 6, a_mult: 1.0, nogo_deg: 20}
+  conservative: {eta: 0.20,  V0: 7, a_mult: 1.1, nogo_deg: 17}   # D23 (user 2026-11-14 16:20): 17 deg, replaces "20 - v1_rmse_deg"; V1 is a validation, not a margin
+scenarios:
+  ids: [opt_80, opt_104, opt_120, nom_80, nom_104, nom_120, con_80, con_104, con_120]
+  default: nom_104
+  freeze: "Sat 23:00"
+outputs:                           # added 13 Nov (gap found by WS2)
+  isochrone_minutes: {min: 1, max: 60, step: 1}
+  isochrone_fallback_step_min: 2   # if a scenario's isochrones exceed the size budget
+  isochrone_size_budget_mb_gz: 1.5
+  simplify_tolerance_m: 2
+  band_budgets_min: [30, 60]
+  display_min_hole_m2: 100         # C decision 2026-11-14 11:42 (assumed: true): display isochrones fill holes (blocked islands) < 100 m2 (nom_104 2-min: 2.66 -> 1.18 MB gz); routing, bands, edges and T_home unchanged
+  headline_in_data_budgets_min: [60]   # D41 (user 2026-11-14 17:22): at these budgets a flat disc that leaves the terrain data gives the share over its part inside the data, shipped with that part's size ("75.8 % of the circle lies inside the terrain data"); other budgets keep the strict rule (null when the disc leaves the grid)
+route:                             # added by WS2 2026-11-14 (values from SPEC F9)
+  o2_checkpoint_min: 30            # SPEC F9: "O2 checkpoints every 30 min"
+  budget: "crew.eva_h"             # SPEC F9: sum(walk + dwell) <= 6.5 h
+  o2_margin: "crew.o2_margin"      # S review 2026-11-14: margin formula, effort rate, task rate and reserve (sourced there)
+  assumed: true                    # o2_checkpoint_min and budget read from SPEC text
+  eva_term: "crew.eva_h * 60 - t - T_home"   # D28 (user 16:20): turn-back = min over all constraints incl. EVA budget - T_home; binding term "EVA duration"
+  dose_timing: "conditions.storm_replay"     # D39 (user 16:20): dose term tau_dose(t) - T_home with tau_dose(t) = 60 D_allow / Ddot(storm series shifted so the tripwire fires at the route's max-T_home minute)
+  access_radius_m: 50              # added by WS2 2026-11-14 (assumed: true; D27 user 16:20 keeps 50 m, still labelled assumed): user chose the access-cell rule 2026-11-14 11:40. Route to the nearest walkable cell (assessed + reachable) within this radius of the science point; walk-in leg not modelled
+d21:                               # added by WS2 2026-11-14 (D21, user 16:14 + 16:16): official pad = most feasible EVAs, plus the pad picker
+  candidates: "site.siting"        # F8 candidate blocks (block_m, max_slope_deg, require_assessed) plus site.pad_default
+  require_disc_in_grid_min: 30     # D21 16:16: drop candidates whose flat 30-min disc (crew.anchor.speed_ms x 30 min = 1,764 m) leaves the routing grid
+  scenario: nom_104                # D21: nominal, 104 kg (screening, full runs, picker)
+  subset_budget: "crew.eva_h"      # D21: a subset counts if a route through it fits <= 6.5 h incl. dwell
+  top_full_runs: 5                 # D21: exact DP with margin >= 0 on every leg for the top 5
+  tiebreak_budget_min: 30          # D21 tiebreak 1: reachable % of the assessed flat 30-min disc (D25 denominator)
+  picker_n: 3                      # D21: next 3 candidates (+ pad_default if not chosen)
+  screening_order: "feasible-subset count desc, then tiebreak 1 desc, then pad-cell elevation asc"   # WS2 (assumed: true): tiebreak 1 computed in the screening too (30-min bounded return field per candidate) so the top 5 are chosen by the full D21 order
+  elevation: "pad cell (3 m) elevation"   # WS2 (assumed: true): tiebreak 2 uses the elevation of the pad cell (block representative cell)
+  assumed: [screening_order, elevation]
+numerics:                          # added by WS2 2026-11-14; numerical resolution, not a model parameter
+  grade_table_step_deg: 0.01       # router pace/O2 lookup table step (linear interpolation; KAT rel err < 1e-4)
+  assumed: true

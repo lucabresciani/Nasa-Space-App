@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/navcam_frames.schema.json",
+  "title": "navcam_frames.json (pipeline-internal)",
+  "description": "Selected Navcam frames: image id, sol, site/drive, co-registered position, CAHVOR, attitude, LMST, local path. Pipeline-internal (data/interim/horizon/), shared WS3 -> WS4/WS9/WS10. Beyond SPEC §6: named in brief WS3.",
+  "x-contract-version": "1.0.0",
+  "x-source": "briefs/WS3.md",
+  "type": "object",
+  "properties": {
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "image_id": {
+            "type": "string"
+          },
+          "sol": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "image_id",
+          "sol"
+        ]
+      }
+    }
+  },
+  "required": [
+    "frames"
+  ]
+}

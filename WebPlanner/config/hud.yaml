@@ -1,0 +1,20 @@
+playback_speeds: [1, 30, 60, 300]
+default_speed: 60                  # decided (D13)
+default_level: minimal             # decided (D14)
+margin_amber_min: 10
+worst_case_radii_m: [10, 50, 100]
+fallback_drift:                    # the core F19 drift circle (D19; the F21 ellipse is an optional add-on)
+  # D39: circle radius = max(sigma_floor_m, pct_of_distance % of the distance since the last fix)
+  pct_of_distance: 2               # decided (D12, D39)
+  sigma_floor_m: 5                 # decided (D39: "max(5 m, 2 %)")
+fix_sigma_m: {rover: 2, station: 5}
+field_png: {res_m: 5, encoding: "value = R*256 + G; A = 0 unknown"}
+field_scales:
+  t_home: {per_count: 0.1, units: min}
+  o2_home: {per_count: 0.01, units: L}
+  home_bearing: {per_count: 0.01, units: deg}
+  slope: {per_count: 0.01, units: deg}
+  fix_interval: {per_count: 1, units: m}
+labels: {simulated: "Simulated EVA · real terrain and data"}
+eye_height_m: 1.7
+performance: {fps_2d_min: 60, fps_3d_min: 30, fps_3d_fallback_below: 20, budget_3d_mb: 30}

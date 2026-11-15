@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/kats.schema.json",
+  "title": "validation/kats.json",
+  "description": "Known-answer test pass list for the scorecard (F16 'KAT pass list', SPEC §9): one row per test from the pytest (and vitest) run of the published commit. Producer WS6 (pipeline/provenance/kats.py); read by the WS5 /scorecard.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §2.2 F16, §9; briefs/WS5.md (scorecard reads the KAT list)",
+  "type": "object",
+  "required": [
+    "generated_utc",
+    "commit",
+    "runner",
+    "summary",
+    "tests"
+  ],
+  "properties": {
+    "generated_utc": {
+      "type": "string",
+      "description": "UTC, ISO 8601 with Z"
+    },
+    "commit": {
+      "type": "string"
+    },
+    "runner": {
+      "type": "string",
+      "description": "pytest, or pytest+vitest"
+    },
+    "exit_codes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total",
+        "passed",
+        "failed",
+        "skipped"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "area",
+          "features",
+          "outcome",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "pytest node id or 'web/... > describe > title'"
+          },
+          "area": {
+            "type": "string",
+            "description": "SPEC §9 area, 'V1', 'Co-registration', or 'other'"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "outcome": {
+            "enum": [
+              "passed",
+              "failed",
+              "skipped"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "failure or skip reason"
+          },
+          "duration_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

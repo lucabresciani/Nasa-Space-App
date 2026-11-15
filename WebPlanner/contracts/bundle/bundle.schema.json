@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/bundle/bundle.schema.json",
+  "title": "index.json (bundle manifest)",
+  "description": "Entry point of a plan bundle or of the shared world pack (D41): the zip's index.json. It states the coordinate frame and lists every other file in the zip with its media type, size, sha256, units, frame and (for float32 grids) the grid header. index.json itself is not listed. A zip whose files differ from this list in any way (missing, extra, size or sha256) is invalid.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §11 D41 (set A, 17:24); superseded D40 set B (17:22) for the formats; handover page 'EVA simulation module' parts A, B, D; contracts/bundle/README.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "kind": {
+      "enum": ["plan", "world"],
+      "description": "plan = one plan bundle (GET /api/v1/plans/{ref}/bundle); world = the shared world pack (GET /api/v1/world/{version}/...)"
+    },
+    "bundle_id": {"type": "string"},
+    "plan_id": {"type": "string", "description": "kind plan: plan.json plan_id"},
+    "world_version": {
+      "type": "string",
+      "description": "kind world: this pack's version; kind plan: the world pack the plan was built against"
+    },
+    "engine_commit": {"type": "string"},
+    "config_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "contract_version": {"const": "1.0.0"},
+    "created_utc": {"type": "string", "pattern": "Z$"},
+    "generator": {"type": "string", "description": "the tool that wrote the zip"},
+    "label": {
+      "type": "string",
+      "description": "shown on every simulator view: 'Simulated EVA · real terrain and data'"
+    },
+    "frame": {"$ref": "#/$defs/frame"},
+    "bounds_m": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "[x_min, y_min, x_max, y_max] of the gridded content, pad-local metres"
+    },
+    "files": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/file"},
+      "minItems": 1
+    },
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "dummy": {"const": false}
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "bundle_id",
+    "world_version",
+    "engine_commit",
+    "config_hash",
+    "contract_version",
+    "created_utc",
+    "label",
+    "frame",
+    "files",
+    "dummy"
+  ],
+  "allOf": [
+    {
+      "if": {"properties": {"kind": {"const": "plan"}}},
+      "then": {"required": ["plan_id"]}
+    }
+  ],
+  "$defs": {
+    "frame": {
+      "type": "object",
+      "description": "Pad-local frame: metres, origin at the pad, x = east, y = north, z = up (right-handed). x, y = analysis-projection metres minus the pad's projected position; z = height above the areoid minus the pad elevation. Unity position = (x, z, y). Bearings are degrees clockwise from grid north (+y).",
+      "properties": {
+        "name": {"const": "pad-local"},
+        "units": {"const": "m"},
+        "axes": {
+          "type": "object",
+          "properties": {
+            "x": {"const": "east"},
+            "y": {"const": "north"},
+            "z": {"const": "up"}
+          },
+          "required": ["x", "y", "z"]
+        },
+        "handedness": {"const": "right"},
+        "pad": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "string"},
+            "lon": {"type": "number"},
+            "lat": {"type": "number"},
+            "elev_m": {"type": "number", "description": "z = 0, m above the areoid"}
+          },
+          "required": ["id", "lon", "lat", "elev_m"]
+        },
+        "projection": {
+          "type": "object",
+          "properties": {
+            "proj": {"type": "string", "description": "PROJ string of the planner's analysis CRS (config/site.yaml crs.analysis_proj)"},
+            "geographic": {"type": "string", "description": "lon/lat datum (Mars 2000 planetocentric sphere)"},
+            "pad_xy_m": {
+              "type": "array",
+              "items": {"type": "number"},
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "the pad in the analysis CRS; local x, y = X - pad_xy_m[0], Y - pad_xy_m[1]"
+            },
+            "height_datum": {"type": "string"}
+          },
+          "required": ["proj", "geographic", "pad_xy_m", "height_datum"]
+        },
+        "unity": {"type": "string", "description": "the Unity mapping, as text"},
+        "bearing": {"type": "string"}
+      },
+      "required": ["name", "units", "axes", "handedness", "pad", "projection"]
+    },
+    "grid": {
+      "type": "object",
+      "description": "Header of a raw .f32 grid: little-endian IEEE float32, row-major, row 0 = northernmost row, column 0 = westernmost; no file header (bytes = 4 * rows * cols). Value at cell (r, c) applies to the square [x0 + c*cell, x0 + (c+1)*cell] x [y0 - (r+1)*cell, y0 - r*cell]; sample by nearest cell (the planner's rule, so values match the HUD).",
+      "properties": {
+        "dtype": {"const": "float32"},
+        "byte_order": {"const": "little"},
+        "layout": {"const": "row-major, row 0 = north, column 0 = west"},
+        "shape": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 1},
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[rows, cols]"
+        },
+        "cell_m": {"type": "number", "exclusiveMinimum": 0},
+        "origin_m": {
+          "type": "array",
+          "items": {"type": "number"},
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[x, y] of the north-west corner of cell (0, 0), pad-local metres"
+        },
+        "nodata": {
+          "type": ["number", "null"],
+          "description": "value marking unknown cells; null = every cell is valid"
+        },
+        "units": {"type": "string"},
+        "value": {"type": "string", "description": "what the value is (and, for heights, the datum)"},
+        "z_to_frame_m": {
+          "type": "number",
+          "description": "heights only: add this to a stored height to get pad-local z (= -pad elev_m; stored heights stay areoid metres, unscaled)"
+        },
+        "quantum": {"type": "number", "description": "values are multiples of this (encoding step of the source)"}
+      },
+      "required": ["dtype", "byte_order", "layout", "shape", "cell_m", "origin_m", "nodata", "units"]
+    },
+    "file": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*\\.\\./)(?!index\\.json$)[A-Za-z0-9._/-]+$",
+          "description": "zip entry name, '/'-separated, relative"
+        },
+        "media_type": {
+          "enum": [
+            "application/json",
+            "application/geo+json",
+            "application/yaml",
+            "application/octet-stream",
+            "image/png",
+            "image/jpeg"
+          ],
+          "description": "application/octet-stream = raw float32 grid (.f32, with 'grid')"
+        },
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "role": {"type": "string", "description": "what the file is for (README table)"},
+        "frame": {
+          "enum": ["pad-local", "lonlat", "none"],
+          "description": "coordinates inside the file: pad-local metres, lon/lat degrees (planner copies), or no coordinates"
+        },
+        "units": {
+          "description": "units of the values (string), or a map key -> units for structured files",
+          "type": ["string", "object", "null"]
+        },
+        "contract": {
+          "type": ["string", "null"],
+          "description": "schema the file validates against: a file in contracts/ (web contracts, e.g. 'timeline.schema.json') or 'bundle/…' (this family); null = binary file described by 'grid' or the README"
+        },
+        "grid": {"$ref": "#/$defs/grid"},
+        "source": {
+          "type": "object",
+          "description": "the planner file it was copied or derived from (data/interim/... or web/public/data/...)",
+          "properties": {
+            "path": {"type": "string"},
+            "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "transform": {"type": "string", "description": "'copy' or how it was derived"}
+          },
+          "required": ["path", "sha256", "transform"]
+        },
+        "status": {
+          "enum": ["real", "derived", "assumed", "artistic"],
+          "description": "handover part B labelling; 'derived' = computed from real data by a stated rule"
+        },
+        "note": {"type": "string"}
+      },
+      "required": ["path", "media_type", "bytes", "sha256", "role", "frame", "units", "contract"],
+      "allOf": [
+        {
+          "if": {"properties": {"media_type": {"const": "application/octet-stream"}}},
+          "then": {"required": ["grid"], "properties": {"path": {"pattern": "\\.f32$"}}}
+        }
+      ]
+    }
+  }
+}

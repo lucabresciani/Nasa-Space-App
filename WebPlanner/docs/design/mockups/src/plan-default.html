@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan default</title>
+<link rel="stylesheet" href="shell.css">
+</head><body>
+<div class="app no-side" id="app">
+  <aside class="rail" id="rail"></aside>
+  <main class="map" id="map"><canvas></canvas><svg class="ov"></svg>
+    <div class="legend" id="legend"></div>
+    <div class="scalebar" id="scale"></div>
+    <div class="readout" id="readout"></div>
+  </main>
+  <footer class="dock" id="dock"></footer>
+</div>
+<script src="hl.js"></script><script src="shell.js"></script><script src="map-common.js"></script>
+<script>
+(async () => {
+  await HL.load({ variants: true, pointer: true });
+  const app = document.getElementById('app');
+  app.insertAdjacentHTML('afterbegin', HL.top('Plan'));
+  app.insertAdjacentHTML('beforeend', HL.stamp());
+  const tablet = innerWidth < 1280;
+  document.getElementById('rail').innerHTML = HL.rail({ compact: tablet });
+  const mapEl = document.getElementById('map');
+  mapEl.insertAdjacentHTML('beforeend', HL.mapctl());
+  const view = HL.fitView(mapEl, 1.12);
+  HL.paint(mapEl.querySelector('canvas'), view, { mode: 'bands' });
+  const svg = mapEl.querySelector('svg');
+  HL.drawRoute(svg, view);
+  HL.drawStations(svg, view);
+  HL.pad(svg, view, HL.D.pad.pad.lon, HL.D.pad.pad.lat);
+  // hover: a point on the route at the t = 120 min checkpoint (timeline_nom_104.json), thread home from the pointer field
+  HL.hoverAtTimeline(svg, mapEl, view, 120);
+  HL.scalebar(document.getElementById('scale'), view);
+  document.getElementById('legend').innerHTML = HL.legendBands();
+  HL.dock(document.getElementById('dock'), { t: 0 });
+  HL.ready();
+})();
+</script>
+</body></html>

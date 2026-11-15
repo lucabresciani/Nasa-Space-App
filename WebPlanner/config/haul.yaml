@@ -1,0 +1,22 @@
+casualty_kg:
+  suited: "body_mass + suit_mass (179 at the 104 kg suit)"
+  bound: 343                       # NASA 2024 Lunar Rescue System challenge
+cases:
+  cart: {mu_range: [0.1, 0.4], mu_nominal: 0.2}
+  drag: {mu_range: [0.5, 0.7], mu_nominal: 0.6}
+efficiency_eps: {range: [0.20, 0.25], nominal: 0.225}
+rescuer_effort_frac: {range: [0.6, 0.8], nominal: 0.7}
+boot_mu: 0.5
+formulas:
+  force: "F = m_IC * g * (mu * cos(theta) + sin(theta))"
+  p_avail_w: "P = (effort_frac * VO2max - VO2_walk_self) * m_b * 20.1 / 60"
+  speed: "v_haul = min(v_safe(theta), eps * P / F); downhill: min(v_haul, 0.5 * v_safe)"
+  infeasible: "v_haul < 0.1 m/s or F > boot_mu * (m_b + suit + tools) * g * cos(theta)"
+contour_min: 60                    # Scoville, Artemis III 1 h benchmark
+partner_cases: [cart]             # D20 (user 2026-11-14 14:22, SPEC §11): partner line + haul fields are cart only; drag stays in `cases` and is reported as a finding (haul.drag.flat.*), not drawn
+partner_label: "Partner line ({case} haul, {contour_min:g} min)"   # D20 layer label (SPEC F10 Output); filled from partner_cases and contour_min
+partner_caption: "Design question. Every haul parameter is an assumed band."   # SPEC F10 Output caption
+drag_note: "One astronaut cannot drag a suited crewmate on Mars without a cart or sled: the pull needed exceeds boot grip even on flat ground."   # SPEC F10 Output (D20): on the partner layer and the station cards; numbers from manifest haul.drag.flat.*
+mask_ridges: true
+g_moon: 1.62                       # added by WS2 2026-11-14 (assumed: true): standard lunar g, m/s^2; only for the SPEC §9 Mars/Moon = 2.29 KAT
+assumed: true

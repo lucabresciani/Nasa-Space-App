@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/bundle/storm.schema.json",
+  "title": "conditions/storm.json (plan bundle)",
+  "description": "The 20 May 2024 RAD storm series re-timed to the EVA clock by the D39 rule (plan.json storm_replay): eva_min = t_star_min + (utc - tripwire_utc) in minutes (pipeline/conditions/storm_replay.py). Dose rates as in WS4 rad.json (uGy/day; null = no valid sample) plus mGy/h = uGy/day / 24000. Baseline, tripwire and the dose allowance are copied from rad.json.",
+  "x-contract-version": "1.0.0",
+  "x-source": "handover page part A (conditions/storm.json); SPEC §11 D39; WS4 rad.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "t_star_min": {"type": ["number", "null"]},
+    "tripwire_utc": {"type": "string"},
+    "tripwire_eva_min": {"type": ["number", "null"]},
+    "tripwire_threshold_uGy_day": {"type": "number"},
+    "tripwire_rule": {"type": "string"},
+    "baseline_uGy_day": {"type": "number"},
+    "peak_uGy_day": {"type": "number"},
+    "peak_eva_min": {"type": ["number", "null"]},
+    "d_allow_mgy": {"type": "number"},
+    "units": {"type": "object"},
+    "columns": {"const": ["eva_min", "utc", "uGy_day", "mGy_h"]},
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 4,
+        "maxItems": 4,
+        "prefixItems": [{"type": ["number", "null"]}, {"type": "string"}, {"type": ["number", "null"]}, {"type": ["number", "null"]}]
+      }
+    },
+    "source": {"type": "string"}
+  },
+  "required": ["schema_version", "t_star_min", "tripwire_utc", "baseline_uGy_day", "units", "columns", "rows", "source"]
+}

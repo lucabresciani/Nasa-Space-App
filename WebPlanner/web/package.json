@@ -1,0 +1,35 @@
+{
+  "name": "web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:dummy": "VITE_DATA=dummy vite",
+    "build": "tsc && vite build",
+    "build:dummy": "tsc && VITE_DATA=dummy vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint:tokens": "node scripts/lint-tokens.mjs",
+    "values:snapshot": "node ../tools/values_snapshot.ts",
+    "test:visual": "playwright test",
+    "bundle:budget": "node ../tools/bundle_budget.ts",
+    "test:a11y:static": "vitest run -c tests/a11y/vitest.config.ts",
+    "test:a11y-perf": "playwright test -c tests/a11y/playwright.config.ts"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^24.19.2",
+    "playwright": "^1.65.1",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0",
+    "yaml": "^2.9.1"
+  },
+  "dependencies": {
+    "maplibre-gl": "^6.18.0",
+    "preact": "^11.2.0"
+  }
+}

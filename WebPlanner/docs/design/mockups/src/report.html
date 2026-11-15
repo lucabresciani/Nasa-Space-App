@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission report</title>
+<link rel="stylesheet" href="shell.css">
+<style>
+  .main { grid-area: main; overflow: hidden; padding: var(--space-5) var(--space-6); display: grid; grid-template-columns: 560px 1fr; gap: var(--space-5); align-content: start; }
+  .display { font-size: var(--font-size-display); line-height: var(--line-height-display); font-weight: var(--font-weight-heading); }
+  .snap { position: relative; height: 340px; border: 1px solid var(--color-card-border); border-radius: var(--radius-card); overflow: hidden; }
+  .snap canvas, .snap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tl { grid-area: auto; position: relative; height: 120px; border: 1px solid var(--color-card-border); border-radius: var(--radius-card); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--font-size-small); }
+  th { text-align: right; font-weight: var(--font-weight-label); color: var(--color-text-muted); padding: 6px 8px; border-bottom: 1px solid var(--color-card-border); white-space: nowrap; }
+  td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--color-card-border); font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  .bar { position: relative; height: 18px; border-radius: var(--radius-input); background: var(--color-card-border); overflow: hidden; display: flex; }
+  .bar i { display: block; height: 100%; }
+  .col { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  .toolbar { display: flex; gap: var(--space-2); align-items: center; }
+</style>
+</head><body>
+<div class="app doc" id="app"><main class="main" id="main"></main></div>
+<script src="hl.js"></script><script src="shell.js"></script><script src="map-common.js"></script>
+<script>
+(async () => {
+  await HL.load({});
+  const m = HL.m, f = HL.fmt;
+  const app = document.getElementById('app');
+  app.insertAdjacentHTML('afterbegin', HL.top('Report'));
+  app.insertAdjacentHTML('beforeend', HL.stamp());
+  const legs = HL.D.route.features.map((x) => x.properties);
+  const stop = { S7: 'S7', S6: 'S6', S1: 'S1', S4: 'S4' };
+  const o2Start = m('timeline.nom_104.0.o2_left_L'), o2End = m('timeline.nom_104.19.o2_left_L'), budget = m('margin.o2_budget_L'), reserve = m('margin.o2_reserve_L');
+  const walk = legs.reduce((a, l) => a + l.o2_L, 0);
+  const pct = (v) => (100 * v / budget).toFixed(2) + '%';
+  document.getElementById('main').innerHTML = `
+  <div class="col">
+    <div class="toolbar"><span class="label">MISSION REPORT · NOM_104 · official plan</span><span style="flex:1"></span>
+      <button class="btn">${HL.icon('printer', 'sm')} Print A4</button><button class="btn">${HL.icon('link', 'sm')} Copy permalink</button><button class="btn">${HL.icon('download', 'sm')} JSON</button></div>
+    <div class="snap" id="snap"><canvas></canvas><svg></svg></div>
+    <div class="dock tl" id="tl"></div>
+    <div class="label faint">Elevation profile: not yet published for the route — shown here once the pipeline exports it.</div>
+  </div>
+  <div class="col">
+    <div>
+      <div class="label">Verdict ${HL.chip('modelled')}</div>
+      <div class="display">Feasible · tightest margin <span class="mono" style="color:var(--color-safe)">${f(m('route.nom_104.dose.lowest_dose_margin_min'), 0)} min</span> at S7 · bound by ${m('card.S7.margin_binding')}</div>
+      <div class="muted" style="margin-top:6px">EVA ${HL.hhmm(m('route.nom_104.total_min'))} · 4 stops · ${legs.length} legs · ${f(legs.reduce((a, l) => a + l.length_m, 0) / 1000, 2)} km on foot ${HL.chip('modelled')} · reachable in 30 min ${f(m('reachable_pct.nom_104.30'))}% (${f(m('reachable_pct_range.nom_104.30.low'))}–${f(m('reachable_pct_range.nom_104.30.high'))}) ${HL.chip('modelled')}</div>
+    </div>
+    <div class="card">
+      <div class="kv"><span class="k" style="color:var(--color-text)">O₂ budget</span><span class="v">${f(budget)} L ${HL.chip('modelled')}</span></div>
+      <div class="bar" style="margin:8px 0">
+        <i style="width:${pct(walk)};background:var(--color-text-muted)"></i>
+        <i style="width:${pct(o2Start - o2End - walk)};background:color-mix(in srgb, var(--color-science) 55%, transparent)"></i>
+        <i style="flex:1"></i>
+        <i style="width:${pct(reserve)};background:repeating-linear-gradient(135deg, var(--color-limit) 0 2px, transparent 2px 5px)"></i>
+      </div>
+      <div class="kv"><span class="k"><span class="sw" style="display:inline-block;width:10px;height:10px;background:var(--color-text-muted);border-radius:2px"></span> walking (sum of legs)</span><span class="v">${f(walk)} L</span>
+        <span class="k" style="margin-left:16px"><span style="display:inline-block;width:10px;height:10px;background:color-mix(in srgb, var(--color-science) 55%, transparent);border-radius:2px"></span> station tasks</span><span class="v">${f(o2Start - o2End - walk)} L</span>
+        <span class="k" style="margin-left:16px">left at return</span><span class="v">${f(o2End)} L</span><span class="k" style="margin-left:16px">reserve</span><span class="v">${f(reserve)} L</span></div>
+    </div>
+    <div class="card" style="padding:0">
+      <table>
+        <tr><th>Leg</th><th>Distance</th><th>Climb</th><th>Time</th><th>O₂</th><th>Margin at stop</th><th>Binding</th><th></th></tr>
+        ${legs.map((l) => { const s = l.to === 'pad' ? null : l.to; return `<tr><td><span class="code">${l.from === 'pad' ? 'PAD' : l.from}</span> → <span class="code">${l.to === 'pad' ? 'PAD' : l.to}</span></td>
+          <td>${f(l.length_m, 0)} m</td><td>— m</td><td>${f(l.t_min, 0)} min</td><td>${f(l.o2_L)} L</td>
+          <td style="color:var(--color-safe)">${s ? f(m(`card.${s}.margin_min`), 0) + ' min' : '—'}</td><td style="font-family:var(--font-text)">${s ? m(`card.${s}.margin_binding`) : '—'}</td><td>${HL.chip('modelled')}</td></tr>`; }).join('')}
+      </table>
+    </div>
+    <div class="card">
+      <div class="label" style="margin-bottom:4px">Stations · partner line · run record</div>
+      ${['S7', 'S6', 'S1', 'S4'].map((s) => `<div class="kv"><span class="code">${s}</span><span class="k">arrive ${HL.hhmm(m(`card.${s}.timeline.arrive`))} · dwell 30 min · turn-back ${HL.hhmm(m(`card.${s}.timeline.turn_back`))} · objective —</span><span class="v">${m(`in_partner_line.${s}`) ? 'inside' : 'outside'} 60-min partner line ${HL.chip('modelled')}</span></div>`).join('')}
+      <div style="display:flex;gap:var(--space-3);margin-top:8px;align-items:center">
+        <div style="width:56px;height:56px;border:1px dashed var(--color-card-border);border-radius:var(--radius-input);display:flex;align-items:center;justify-content:center">${HL.icon('qr-code')}</div>
+        <div class="label">Run record: commit <span class="mono">${HL.D.manifest['route.nom_104.total_min'].commit.slice(0, 7)}</span> · ${HL.D.manifest['route.nom_104.total_min'].utc} · QR = permalink (placeholder)<br>Assumptions in force: suit 104 kg nominal · no-go slope ${f(m('terrain.nogo_deg.nominal'), 0)}° · O₂ reserve ${f(reserve)} L · EVA 6.5 h</div>
+      </div>
+    </div>
+  </div>`;
+  const snap = document.getElementById('snap');
+  const view = HL.fitView(snap, 1.08);
+  HL.paint(snap.querySelector('canvas'), view, { mode: 'bands' });
+  const svg = snap.querySelector('svg');
+  HL.drawRoute(svg, view);
+  HL.drawStations(svg, view);
+  HL.pad(svg, view, HL.D.pad.pad.lon, HL.D.pad.pad.lat);
+  const tl = document.getElementById('tl');
+  HL.dock(tl, { t: 0 });
+  HL.ready();
+})();
+</script>
+</body></html>

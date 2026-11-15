@@ -1,0 +1,66 @@
+[
+  {
+    "t_min": 0.0,
+    "event": "depart",
+    "station": null,
+    "o2_left_L": 482.0,
+    "t_home_min": 0.0,
+    "margin_min": 360.0
+  },
+  {
+    "t_min": 11.1,
+    "event": "arrive",
+    "station": "S1",
+    "o2_left_L": 479.2,
+    "t_home_min": 11.1,
+    "margin_min": 337.8
+  },
+  {
+    "t_min": 41.1,
+    "event": "leave",
+    "station": "S1",
+    "o2_left_L": 471.7,
+    "t_home_min": 11.1,
+    "margin_min": 307.8
+  },
+  {
+    "t_min": 61.1,
+    "event": "arrive",
+    "station": "S2",
+    "o2_left_L": 466.7,
+    "t_home_min": 16.7,
+    "margin_min": 282.2
+  },
+  {
+    "t_min": 91.1,
+    "event": "leave",
+    "station": "S2",
+    "o2_left_L": 459.2,
+    "t_home_min": 16.7,
+    "margin_min": 252.2
+  },
+  {
+    "t_min": 122.0,
+    "event": "arrive",
+    "station": "S3",
+    "o2_left_L": 451.5,
+    "t_home_min": 25.9,
+    "margin_min": 212.1
+  },
+  {
+    "t_min": 152.0,
+    "event": "leave",
+    "station": "S3",
+    "o2_left_L": 444.0,
+    "t_home_min": 25.9,
+    "margin_min": 182.1
+  },
+  {
+    "t_min": 177.9,
+    "event": "arrive_home",
+    "station": null,
+    "o2_left_L": 437.5,
+    "t_home_min": 0.0,
+    "margin_min": 182.1
+  }
+]

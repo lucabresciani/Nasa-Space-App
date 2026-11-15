@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/bundle/sun.schema.json",
+  "title": "conditions/sun.json (plan bundle)",
+  "description": "Sun azimuth and elevation over the EVA, and time to dark, copied from WS4 conditions/clock.json 'eva' (Mars24 at the pad; nothing recomputed). Azimuth: degrees clockwise from north; elevation: degrees above the flat horizon.",
+  "x-contract-version": "1.0.0",
+  "x-source": "handover page part A (conditions/sun.json); WS4 clock.json",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "start_utc": {"type": "string"},
+    "start_lmst": {"type": "string"},
+    "eva_min": {"type": "number"},
+    "columns": {"const": ["t_eva_min", "lmst_h", "sun_azimuth_deg", "sun_elevation_deg"]},
+    "rows": {
+      "type": "array",
+      "items": {"type": "array", "items": {"type": "number"}, "minItems": 4, "maxItems": 4}
+    },
+    "t_dark_min": {"type": ["number", "null"]},
+    "t_dark_definition": {"type": "string"},
+    "t_dark_min_by_observer": {"type": "object", "additionalProperties": {"type": ["number", "null"]}},
+    "t_dark_by_observer_definition": {"type": "string"},
+    "source": {"type": "string"}
+  },
+  "required": ["schema_version", "start_utc", "columns", "rows", "t_dark_min", "source"]
+}

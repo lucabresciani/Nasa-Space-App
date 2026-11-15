@@ -1,0 +1,96 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "homeline/contracts/backend/telemetry.schema.json",
+ "title": "telemetry (sample batch + state event)",
+ "description": "Live EVA session messages (F31). Two documents: a telemetry batch (#/$defs/batch, body of POST /sessions/{id}/telemetry: samples in the planner frame, pad-local metres, x east, y north, z up, contracts/bundle/README.md; one sample per second of EVA time) and a state event (#/$defs/state_event, the response of a telemetry post with the commands pending for the simulator, and the SSE payload of GET /sessions/{id}/stream). The root accepts either one. Per-session and per-second limits come from config/backend.yaml (limits.telemetry_*, sessions.*), not from this schema.",
+ "x-contract-version": "1.0.0",
+ "x-source": "Backend spec §7 (telemetry sample), F31 (state event, commands); D41 (frame)",
+ "oneOf": [
+  {"$ref": "#/$defs/batch"},
+  {"$ref": "#/$defs/state_event"}
+ ],
+ "$defs": {
+  "utc": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(\\.\\d+)?Z$"
+  },
+  "sample": {
+   "type": "object",
+   "description": "One telemetry sample (spec §7): {t_eva_s, x_m, y_m, z_m, speed_ms, o2_left_L, source}.",
+   "properties": {
+    "t_eva_s": {"type": "number", "minimum": 0, "description": "seconds since EVA start"},
+    "x_m": {"type": "number", "description": "east of the pad, m (planner frame)"},
+    "y_m": {"type": "number", "description": "north of the pad, m"},
+    "z_m": {"type": "number", "description": "up, m"},
+    "speed_ms": {"type": "number", "minimum": 0},
+    "o2_left_L": {"type": "number", "minimum": 0, "description": "the simulator's own O2 state"},
+    "source": {"enum": ["unity", "hud", "replay"], "description": "unity = the simulator; hud = the web HUD; replay = the session replay tool (WS14 task 5)"}
+   },
+   "additionalProperties": false,
+   "required": ["t_eva_s", "x_m", "y_m", "z_m", "speed_ms", "o2_left_L", "source"]
+  },
+  "batch": {
+   "type": "object",
+   "description": "Body of POST /sessions/{id}/telemetry: samples in increasing t_eva_s.",
+   "properties": {
+    "samples": {
+     "type": "array",
+     "minItems": 1,
+     "items": {"$ref": "#/$defs/sample"}
+    }
+   },
+   "additionalProperties": false,
+   "required": ["samples"]
+  },
+  "command": {
+   "type": "object",
+   "description": "A console command for the simulator (POST /sessions/{id}/commands), delivered in the state event of the next telemetry post. Kinds: config/backend.yaml sessions.commands; text length: sessions.message_max_chars.",
+   "properties": {
+    "id": {"type": "string"},
+    "kind": {"enum": ["advise_turn_back", "replan", "message"]},
+    "text": {"type": "string"},
+    "created_utc": {"$ref": "#/$defs/utc"}
+   },
+   "additionalProperties": false,
+   "required": ["id", "kind", "created_utc"]
+  },
+  "command_request": {
+   "type": "object",
+   "description": "Body of POST /sessions/{id}/commands (the server assigns id and created_utc).",
+   "properties": {
+    "kind": {"enum": ["advise_turn_back", "replan", "message"]},
+    "text": {"type": "string"}
+   },
+   "additionalProperties": false,
+   "required": ["kind"]
+  },
+  "state_event": {
+   "type": "object",
+   "description": "Server state after the latest sample: field lookups at the position, reference O2 from physio_core, margin and alarm (F31 step 3), plus pending commands.",
+   "properties": {
+    "t_eva_s": {"type": "number", "minimum": 0},
+    "pos": {
+     "type": "object",
+     "properties": {
+      "x_m": {"type": "number"},
+      "y_m": {"type": "number"},
+      "z_m": {"type": "number"}
+     },
+     "additionalProperties": false,
+     "required": ["x_m", "y_m", "z_m"]
+    },
+    "t_home_min": {"type": ["number", "null"], "description": "time home from the return field; null off the grid or unreachable"},
+    "o2_home_L": {"type": ["number", "null"], "description": "O2 needed to get home"},
+    "sim_o2_left_L": {"type": "number", "description": "as posted by the simulator"},
+    "ref_o2_left_L": {"type": "number", "description": "recomputed with the reference physiology (physio_core)"},
+    "o2_diff_L": {"type": "number", "description": "sim_o2_left_L - ref_o2_left_L"},
+    "margin_min": {"type": ["number", "null"], "description": "minutes at maximum effort (crew.yaml o2_margin)"},
+    "binding": {"enum": ["O2", "daylight", "dose", "EVA duration", null], "description": "the term that sets margin_min (as timeline margin_binding)"},
+    "alarm": {"type": ["string", "null"]},
+    "commands": {"type": "array", "items": {"$ref": "#/$defs/command"}}
+   },
+   "additionalProperties": false,
+   "required": ["t_eva_s", "pos", "t_home_min", "o2_home_L", "ref_o2_left_L", "margin_min", "binding", "alarm", "commands"]
+  }
+ }
+}

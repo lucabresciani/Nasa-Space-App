@@ -1,0 +1,15 @@
+/* I1: the planning map's mouse model (map/input). Left button interacts, right button drags the map:
+   MapLibre's "grab" cursor no longer fits a left press, so the map shows the plain pointer and a
+   grabbing hand only while a right drag pans. M9's pointer cursor over objects (canvas style) stays. */
+.maplibregl-canvas-container.maplibregl-interactive.hl-input,
+.maplibregl-canvas-container.maplibregl-interactive.hl-input:active {
+  cursor: default;
+}
+.maplibregl-canvas-container.maplibregl-interactive.hl-input--pan,
+.maplibregl-canvas-container.hl-input--pan .maplibregl-canvas {
+  cursor: grabbing;
+}
+.maplibregl-canvas-container.maplibregl-interactive.hl-input--rotate,
+.maplibregl-canvas-container.hl-input--rotate .maplibregl-canvas {
+  cursor: move;
+}

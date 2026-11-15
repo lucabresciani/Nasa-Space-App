@@ -1,0 +1,35 @@
+# HOMELINE local reverse proxy (WS12 O1). D69: local stack only. HTTP, no TLS, no public hostname.
+# compose.yaml publishes this listener on 127.0.0.1 only.
+#
+# - CORS: none here. FastAPI's CORSMiddleware (config/backend.yaml api.cors_origins) is the only
+#   CORS source; an origin allowed in two places breaks the browser.
+# - Cache-Control: none here. The app sets "immutable" on /api/v1/results/* itself (WS11 E3) and
+#   "no-store" on its errors; Caddy passes both through unchanged.
+# - Body limit: HL_PROXY_MAX_BODY = config/backend.yaml limits.proxy_max_body_bytes (bytes; exported
+#   by server/ops/up.sh; 2MB fallback without it). A backstop above limits.upload_max_bytes (1 MB
+#   plan_inputs import), which the app enforces exactly.
+# - Client address: no trusted_proxies, so reverse_proxy ignores any client-sent X-Forwarded-For /
+#   -Proto / -Host and sets X-Forwarded-For to the TCP peer address ({remote_host}); it never
+#   appends to a client value. uvicorn trusts it only from this container (FORWARDED_ALLOW_IPS).
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	request_body {
+		max_size {$HL_PROXY_MAX_BODY:2MB}
+	}
+
+	reverse_proxy api:8000 {
+		# a 95 s ceiling per request (jobs are submit + poll)
+		transport http {
+			response_header_timeout 95s
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

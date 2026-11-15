@@ -1,0 +1,75 @@
+/* WS16 task 10 (M10): story mode (intro, kiosk, capture; DESIGN U6). Tokens only. */
+@import '../ui/tokens.css';
+
+/* caption: centred low on the map, above the field and labels */
+.hl-story-caption {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-7);
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: calc(100% - var(--space-7));
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-family: var(--font-text);
+  font-size: var(--font-size-heading);
+  line-height: var(--line-height-heading);
+  font-weight: var(--font-weight-heading);
+  text-align: center;
+  pointer-events: none;
+}
+.hl-story-caption[hidden] { display: none; }
+
+/* M10c warm-up before t = 0: the map draws every story layer once out of sight (story/warm.ts) */
+.hl-story-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--color-bg);
+  pointer-events: none;
+}
+
+/* UI chrome hidden by a storyboard (ui: "hide") or in capture mode; reveal fades it back in.
+   Live (intro, kiosk) the hidden chrome keeps taking the pointer: any input skips the story (attach.ts,
+   a window capture listener), so the first click both skips it and reaches its target (top bar, rail,
+   panel, map controls, dock; D9 / A7b). Only a capture, which takes no input, turns the pointer off. */
+html[data-story] .hl-ui,
+html[data-story] .maplibregl-control-container { transition: opacity var(--motion-panel-max) ease-out; }
+html[data-story-chrome='hide'] .hl-ui,
+html[data-story-chrome='hide'] .maplibregl-control-container,
+html[data-story-chrome='hide'] .console-panel,
+html[data-story-warm] .hl-ui,
+html[data-story-warm] .maplibregl-control-container,
+html[data-story-warm] .console-panel {
+  opacity: 0;
+}
+/* M10d: the warm-up cover (live intro / kiosk only, both start with the chrome hidden) hides the chrome
+   too; html[data-story-chrome] is written only when the clock starts (stage.ts writeChrome). */
+html[data-story-capture][data-story-chrome='hide'] .hl-ui,
+html[data-story-capture][data-story-chrome='hide'] .maplibregl-control-container,
+html[data-story-capture][data-story-chrome='hide'] .console-panel {
+  pointer-events: none;
+}
+
+/* capture mode: the map alone at the storyboard size (1920 x 1080), no wall-clock animation */
+html[data-story-capture] .console-map {
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: var(--hl-capture-w);
+  height: var(--hl-capture-h);
+  z-index: 10;
+}
+html[data-story-capture] *,
+html[data-story-capture] *::before,
+html[data-story-capture] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+/* dummy data is never captured unmarked: the banner stays on top of the capture frame */
+html[data-story-capture] .dummy-banner:not([hidden]) {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 11;
+}

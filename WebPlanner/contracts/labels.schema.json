@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/labels.schema.json",
+  "title": "labels.json",
+  "description": "Design contracts v1 (family 'design', DESIGN §6; frozen at merge: additive change = minor bump, breaking change = human-gated). Geographic label objects for the U13 label system (pads, stations, scored sites, user points, landmarks, overlay labels). Coordinates are filled by the pipeline (pipeline/export/labels.py, WS16) from the referenced files; 6 decimals. Codes are unique within the file (checked by the producer's test; JSON Schema cannot express it).",
+  "x-contract-version": "1.0.0",
+  "x-source": "DESIGN §6.2, §2.2 U13; config/design.yaml labels (priority, minzoom)",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "version": {
+      "const": "1",
+      "description": "file format version (DESIGN §6.2)"
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]{0,7}$",
+            "description": "short uppercase label code (DESIGN U13), e.g. PAD, P2, S7, U1, MSH"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "expanded label (U13), e.g. 'Aeolis Mons (Mount Sharp)'"
+          },
+          "kind": {
+            "enum": [
+              "pad",
+              "route_station",
+              "station",
+              "scored_site",
+              "user_point",
+              "landmark",
+              "overlay"
+            ],
+            "description": "object kind; the placement order is config/design.yaml labels.priority (selected -> pad -> route_station -> station -> scored_site -> user_point -> landmark -> overlay; 'selected' is a runtime state, never a kind). pad = official pad (PAD) and parking options (P2-P4); station = S1, S2, S4 ...; scored_site = S6-S8; route_station = optional, for a station or site on the official route (the app re-ranks route stations from the active plan's route, so station / scored_site are equally valid for them, as in the §6.2 example); user_point = U1-U3 (normally created in the app, same shape); landmark = config/landmarks.yaml (D33: verified coordinates only); overlay = overlay feature labels (shown only when zoomed in)"
+          },
+          "status": {
+            "enum": [
+              "official",
+              "informal",
+              null
+            ],
+            "description": "landmark naming status (IAU official or informal, U13); null for every other kind"
+          },
+          "lon": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "deg, Mars 2000 planetocentric, east positive"
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "deg, Mars 2000 planetocentric"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1 = highest; becomes the symbol sort key (lower draws first and wins collisions)"
+          },
+          "minzoom": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 24,
+            "description": "first zoom at which the label shows (config/design.yaml labels.minzoom: landmark 6, pad 10, station 13, overlay 15)"
+          },
+          "maxzoom": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 24,
+            "description": "optional: last zoom at which the label shows (absent = no limit)"
+          },
+          "ref": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "where the position comes from: a data path relative to the data root, optionally with '#id' (pad.json, stations.json#S7, scenarios/pads/index.json#rank2) or a config file (landmarks.yaml)"
+          },
+          "bearing_deg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360,
+            "description": "optional: bearing from the official pad, deg clockwise from north (landmark hover text)"
+          },
+          "dist_m": {
+            "type": "number",
+            "minimum": 0,
+            "description": "optional: distance from the official pad, m (landmark hover text)"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "kind",
+          "status",
+          "lon",
+          "lat",
+          "priority",
+          "minzoom",
+          "ref"
+        ]
+      }
+    }
+  },
+  "required": [
+    "version",
+    "labels"
+  ]
+}

@@ -1,0 +1,177 @@
+# Design checks (DESIGN §9 tests, §5.4 budgets; design kit rules 1, 2, 11, 12 and R7). Package D5.
+# Runs on PRs to main and design and on pushes to design. ci.yml stays the general gate (tsc, vitest,
+# vite build); these four jobs are independent of each other and of ci.yml.
+#   token-lint        no colour / font-size / radius / duration literal outside the tokens (A1)
+#   value-snapshot    every rendered number equals tests/fixtures/values_baseline.json (D4, rule 1)
+#   visual-regression 2D views + /styleguide at 1440x900 and 1024x768 (web/tests/visual, R7: no 3D)
+#   bundle-budget     first-load JS+CSS gzip <= baseline + 150 kB, fonts <= 120 kB (tools/bundle_budget.ts)
+# How to update a baseline: see the headers of tools/values_snapshot.ts (values),
+# web/tests/visual/screens.spec.ts (screenshots, adopted from the `visual-screenshots` artifact)
+# and tools/bundle_budget.ts (bundle).
+name: design
+
+on:
+  pull_request:
+    branches: [main, design]
+  push:
+    branches: [design]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: design-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash # -eo pipefail
+    working-directory: web
+
+jobs:
+  token-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Token lint (web/scripts/lint-tokens.mjs, no dependencies)
+        run: npm run lint:tokens
+
+  value-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Build (real data)
+        run: npm run build
+      - name: Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium
+      - name: Install Chromium (+ system deps)
+        run: npx playwright install --with-deps chromium
+      - name: Value snapshot --check
+        run: npm run values:snapshot -- --check ../tests/fixtures/values_baseline.json 2>&1 | tee values-diff.txt
+      - name: Upload the value diff
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: values-diff
+          path: web/values-diff.txt
+          if-no-files-found: ignore
+
+  visual-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Build (real data)
+        run: npm run build
+      - name: Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium
+      - name: Install Chromium (+ system deps)
+        run: npx playwright install --with-deps chromium
+      - name: Screenshots (compared where a baseline PNG is committed)
+        run: |
+          n=$(find tests/visual/__screenshots__ -name '*.png' | wc -l)
+          echo "committed baseline screenshots: $n"
+          npm run test:visual
+      - name: Upload current screenshots (adopt as baseline after review)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-screenshots
+          path: web/test-results/visual-current/
+          if-no-files-found: ignore
+      - name: Upload diffs and report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff
+          path: |
+            web/test-results/visual/
+            web/playwright-report/
+          if-no-files-found: ignore
+
+  bundle-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Build (real data)
+        run: npm run build
+      - name: Bundle budget (DESIGN §5.4, config/design.yaml performance)
+        run: npm run bundle:budget
+
+  # Package Q1 (U12, DESIGN §9 Contrast / Colour vision / Accessibility / Performance, §5.4 lazy loading).
+  #   static   token contrast matrix + allow-list, colour-vision ΔE, second cues (web/tests/a11y/*.test.ts)
+  #   browser  keyboard reach, focus ring, no trap, landmarks/names/labels/headings/contrast on 2D routes +
+  #            /styleguide, failing only on violations not in web/tests/a11y/baseline.json; lazy-loading and
+  #            font budget on the production build (web/tests/perf). Frame rate stays with the RR lane.
+  a11y-perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Static checks (contrast, colour vision, second cue)
+        run: npm run test:a11y:static
+      - name: Build (real data, with the Vite manifest for the lazy-loading check)
+        run: npm run build -- --manifest
+      - name: Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium
+      - name: Install Chromium (+ system deps)
+        run: npx playwright install --with-deps chromium
+      - name: Accessibility (keyboard, focus, automated checks) and lazy-loading / font budget
+        run: npm run test:a11y-perf
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-perf-report
+          path: |
+            web/test-results/a11y/
+            web/playwright-report-a11y/
+          if-no-files-found: ignore

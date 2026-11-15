@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/bundle/route_local.schema.json",
+  "title": "route.json (plan bundle)",
+  "description": "The planned route in pad-local metres, resampled every 1 m of horizontal arc length per leg (plus each leg's last vertex). Derived from the planner's route_{scenario}.geojson (WS2): positions and planned EVA times are interpolated linearly between the engine's vertices; z is the terrain under the point (world pack near chunks, bilinear; far grid where no near chunk); slope_deg is the planner's 5 m slope field at the point (nearest cell); grade_deg = atan(dz/ds) to the next sample; speed_ms = ds/dt to the next sample (planned walking speed). Rows are column arrays in 'columns' order.",
+  "x-contract-version": "1.0.0",
+  "x-source": "handover page part A (route.json); contracts/bundle/README.md",
+  "type": "object",
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "frame": {"const": "pad-local"},
+    "scenario": {"type": "string"},
+    "step_m": {"type": "number", "exclusiveMinimum": 0},
+    "columns": {
+      "const": ["leg", "s_m", "x_m", "y_m", "z_m", "t_eva_min", "speed_ms", "grade_deg", "slope_deg"]
+    },
+    "units": {"type": "object"},
+    "legs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "leg": {"type": "integer", "minimum": 1},
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "t_start_min": {"type": "number"},
+          "t_end_min": {"type": "number"},
+          "length_m": {"type": "number"},
+          "first_row": {"type": "integer", "minimum": 0},
+          "n_rows": {"type": "integer", "minimum": 1}
+        },
+        "required": ["leg", "from", "to", "t_start_min", "t_end_min", "first_row", "n_rows"]
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 9,
+        "maxItems": 9,
+        "prefixItems": [
+          {"type": "integer"},
+          {"type": "number"},
+          {"type": "number"},
+          {"type": "number"},
+          {"type": ["number", "null"]},
+          {"type": "number"},
+          {"type": ["number", "null"]},
+          {"type": ["number", "null"]},
+          {"type": ["number", "null"]}
+        ]
+      }
+    },
+    "source": {"type": "string"},
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+  "required": ["schema_version", "frame", "scenario", "step_m", "columns", "units", "legs", "rows"]
+}

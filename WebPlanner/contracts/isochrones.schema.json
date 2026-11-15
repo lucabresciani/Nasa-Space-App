@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/isochrones.schema.json",
+  "title": "scenarios/{scenario}/isochrones.geojson",
+  "description": "Isochrones of time home (F5): Polygon features with properties {minutes: 1..60}.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "Feature"
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "Polygon",
+                  "MultiPolygon"
+                ]
+              },
+              "coordinates": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "minutes": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 60,
+                "description": "min"
+              }
+            },
+            "required": [
+              "minutes"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ]
+      }
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ]
+}

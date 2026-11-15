@@ -1,0 +1,12 @@
+# C (integration): `make web` export settings (tools/make_web.py). Not from the config page:
+# added by C on 2026-11-14 when WS1's basemap came in at 292 MB of PNG tiles (STATUS "C Integration").
+web_export:
+  basemap:
+    format: webp            # WS1 writes XYZ PNG; make web re-encodes (git / Pages size)
+    quality: 80             # WebP quality; sample of 40 tiles per zoom: q80 ~ 32 MB for z13-18
+    method: 4               # libwebp effort 0-6 (4 = Pillow's speed/size middle)
+    maxzoom: 18             # highest zoom copied
+    budget_mb: 50           # basemap total; above it make web drops the top zoom (z18 first)
+    tile_size_px: 256
+    attribution: "HiRISE: NASA/JPL/University of Arizona"
+  assumed: [basemap.format, basemap.quality, basemap.method, basemap.budget_mb]

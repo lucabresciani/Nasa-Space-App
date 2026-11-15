@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/bands.schema.json",
+  "title": "scenarios/bands_{suit}.geojson",
+  "description": "Homeline uncertainty bands (F6): Polygon features with properties {budget: 30|60, variant}.",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "Feature"
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "Polygon",
+                  "MultiPolygon"
+                ]
+              },
+              "coordinates": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "budget": {
+                "enum": [
+                  30,
+                  60
+                ],
+                "description": "min (config/variants.yaml outputs.band_budgets_min)"
+              },
+              "variant": {
+                "enum": [
+                  "optimistic",
+                  "nominal",
+                  "conservative"
+                ]
+              }
+            },
+            "required": [
+              "budget",
+              "variant"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ]
+      }
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ]
+}

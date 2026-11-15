@@ -1,0 +1,101 @@
+# WS8 (F20) 3D first-person view. New file proposed by WS8 (fresh run, 14 Nov); every value here
+# is assumed: true until R/C confirm (STATUS.md WS8 "Assumptions added"). The near/far formats are
+# fixed by contracts/README.md "3D files" (256 x 256 at 1 m; far 8 m) and SPEC F20 (corridor about
+# 300 m wide); they are repeated here so the exporter and the viewer read every number from one
+# place. Rendering-only values never feed a number shown as a result.
+assumed: true
+
+near:
+  chunk_px: 256                    # contracts/README.md (fixed)
+  res_m: 1.0                       # contracts/README.md (fixed)
+  corridor_half_width_m: 150       # SPEC F20 "corridor about 300 m wide around the route"
+far:
+  res_m: 8.0                       # contracts/README.md (fixed)
+  # Half-width of the pad-centred far-mesh square (rounded up to whole 256 m chunks). The route
+  # reaches ~2.5 km from the pad; 6 km keeps the terrain within ~3.5 km of every route point in
+  # the mesh, so the pad-centred skyline ring (WS3) only draws the distant rim, where its
+  # parallax is small. Sources beyond WS1's dem_1m window: ctx_20m, then mola_hrsc_200m. assumed
+  half_extent_m: 6000
+  # Far-mesh sources beyond dem_1m: the canonical bands of config/horizon.yaml `bands` (ctx_20m,
+  # then mola_hrsc_200m; C 14:13: ctx_20m_v2.tif), so the 3D skyline and WS3's reference horizon
+  # read the same CTX band. Not repeated here; `--far-source` overrides for experiments only.
+  texture:
+    # fp3d/far_tex.jpg: one JPEG of WS1's ortho over the far square (each texel the area mean;
+    # texels the ortho does not cover fully = horizon.yaml panorama.ground_rgb, as the near
+    # chunks). 4 m/px over the 12 km square = 3,008 px (< 4,096, the WebGL2 minimum
+    # MAX_TEXTURE_SIZE). assumed (download budget)
+    res_m: 4.0
+    jpeg_quality: 82
+height:
+  # Heights are rounded to a binary step (exact in float32) before gzip: 1/64 m = 1.6 cm, far below
+  # the 1 m DEM's vertical accuracy. assumed
+  quantum_m: 0.015625
+texture:
+  chunk_px: 256                    # 1 m/px over a 256 m chunk = WS1 ortho_lrgb_1m.tif's own pixel. assumed
+  jpeg_quality: 82                 # assumed (download budget)
+  # Texels with no ortho (alpha 0) get config/horizon.yaml panorama.ground_rgb, the colour of the
+  # untextured mesh: no imagery is shown as flat ground colour, never invented detail.
+
+view:
+  fov_deg: 60                      # vertical field of view. assumed
+  near_clip_m: 0.1                 # assumed
+  far_polygon_offset: [1, 1]       # [factor, units]: push the far mesh behind the near chunks
+  ambient_intensity: 0.55          # rendering only
+  sun_intensity: 1.6               # rendering only
+  # Used only when no WS4 sun series is available (the dummy tree has no conditions/clock.json);
+  # labelled on screen. Rendering only.
+  placeholder_sun: {az_deg: 120, el_deg: 35, label: "placeholder sun (no Mars24 series in this data tree)"}
+
+sky:
+  # Mars sky gradient + distance haze (F20 "Look"). Rendering only, never a result. The horizon
+  # (and haze) colour is config/horizon.yaml panorama.sky_rgb, the ground colour panorama.ground_rgb.
+  zenith_rgb: [122, 92, 74]
+  sun_glow_rgb: [238, 226, 205]
+  sun_glow_deg: 12                 # angular radius of the glow around the sun
+  sun_disc_deg: 0.18               # solar disc radius drawn in the sky (~0.35 deg diameter at ~1.5 AU)
+  haze_half_m: 6000                # distance at which terrain colour is 50 % haze (exp2 fog)
+  night_sun_el_deg: -6             # below this sun elevation the sky/lights use the night floor
+  night_floor: 0.25                # sky/light brightness factor at night
+
+ring:
+  # Far-skyline ring (WS3 fp3d/horizon_ring.json): ring points are placed at their true position
+  # (observer + distance along the azimuth, z_m) and drawn as a curtain hanging below the skyline.
+  # Points inside the far-mesh square are skipped (the mesh is the skyline there). Rendering only.
+  skirt_deg: 3                     # curtain depth below the ring top, as an angle seen from the ring observer
+  # Neighbouring ring points are always joined (the top edge between them stands for the terrain
+  # between the two horizon points): seen from a route point away from the ring observer, a
+  # break at a distance jump would open a hole in the skyline (F20 check: 8.8 deg at S2 az 297).
+  max_distance_ratio: null        # null = no limit (always join)
+  # Station rings (fp3d/index.json station_rings: each station's own WS3 horizon beyond the far
+  # square) break where neighbouring points' distances differ by more than this ratio: joined,
+  # the top edge between a 12 km and an 8 km point hangs in the air and stood 0.36 deg above the
+  # pad's horizon (S1 az 141). The break costs one 0.25 deg step at the station itself (its own
+  # horizon points stay exact); WS3's ring and the mesh lie behind it. assumed, rendering only
+  station_max_distance_ratio: 1.25
+  haze_half_m: 15000               # haze of the distant ring (its own pass; terrain uses sky.haze_half_m)
+
+skyline_check:
+  # SPEC F20 acceptance: "the rendered skyline at each station within 0.5 deg of the computed
+  # horizon". The tolerance is SPEC's; the azimuth sampling of the check is assumed.
+  tolerance_deg: 0.5               # SPEC F20 (fixed)
+  az_step_deg: 1.0                 # assumed
+  # vertical FOV of the GPU probe (web/src/fp3d/check/skyline_probe.mjs): wide enough for the
+  # steep near horizons at stations on slopes (S1 reaches ~45 deg); check tool only. assumed
+  probe_fov_deg: 100
+
+loader:
+  concurrency: 6                   # parallel chunk fetches. assumed
+
+fallback:
+  # SPEC F20: fall back to the 2D HUD "if WebGL2 is missing or the frame rate stays under 20 fps"
+  # (threshold: hud.yaml performance.fps_3d_fallback_below). "Stays" = this window. assumed
+  fps_window_s: 5
+  warmup_s: 3                      # ignore the first seconds (shader compile, uploads). assumed
+  hud2d_route: "#/hud"             # WS5 router path of the 2D HUD (F18)
+
+labels:
+  resolution_caption: "1 m terrain: ridges under ~3 m are not resolved"   # SPEC F20 (fixed)
+
+path:
+  look_ahead_m: 15                 # camera heading = direction to the route point this far ahead
+                                   # (smooths 3 m-grid zigzags of the WS2 route). assumed

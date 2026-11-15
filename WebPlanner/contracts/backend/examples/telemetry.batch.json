@@ -1,0 +1,4 @@
+{"samples": [
+ {"t_eva_s": 60, "x_m": 12.5, "y_m": -3.0, "z_m": 0.4, "speed_ms": 0.9, "o2_left_L": 480.1, "source": "replay"},
+ {"t_eva_s": 61, "x_m": 13.4, "y_m": -3.1, "z_m": 0.4, "speed_ms": 0.9, "o2_left_L": 480.08, "source": "replay"}
+]}

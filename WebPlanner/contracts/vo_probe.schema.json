@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/vo_probe.schema.json",
+  "title": "vo/probe.json",
+  "description": "Visual-odometry data probe and go/no-go decision (X8).",
+  "x-contract-version": "1.0.0",
+  "x-source": "SPEC §6.2",
+  "type": "object",
+  "properties": {
+    "drives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sol": {
+            "type": "integer"
+          },
+          "drive": {
+            "type": "integer"
+          },
+          "stereo_pairs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "median_spacing_m": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "has_camera_model": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sol",
+          "drive",
+          "stereo_pairs",
+          "median_spacing_m",
+          "has_camera_model"
+        ]
+      }
+    },
+    "decision": {
+      "enum": [
+        "go",
+        "no-go"
+      ]
+    }
+  },
+  "required": [
+    "drives",
+    "decision"
+  ]
+}

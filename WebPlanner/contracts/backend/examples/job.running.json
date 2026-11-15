@@ -1,0 +1,1 @@
+{"id": "j_01", "type": "plan", "hash": "0123456789abcdef", "status": "running", "stage": "bands", "progress": 0.4, "stages_done": ["nominal"], "queue_position": null, "result_url": "/api/v1/results/0123456789abcdef/", "attached": true, "error": null, "retry_after_s": null}

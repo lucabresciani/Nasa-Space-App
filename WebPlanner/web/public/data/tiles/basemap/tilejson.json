@@ -1,0 +1,42 @@
+{
+ "tilejson": "3.0.0",
+ "name": "HiRISE basemap (WS1)",
+ "scheme": "xyz",
+ "format": "webp",
+ "tileSize": 256,
+ "tiles": [
+  "tiles/basemap/{z}/{x}/{y}.webp"
+ ],
+ "minzoom": 13,
+ "maxzoom": 18,
+ "bounds": [
+  137.307129,
+  -4.877521,
+  137.455444,
+  -4.735201
+ ],
+ "attribution": "HiRISE: NASA/JPL/University of Arizona",
+ "zoom_bounds": {
+  "17": [
+   137.367554,
+   -4.820049,
+   137.422485,
+   -4.768047
+  ],
+  "18": [
+   137.368927,
+   -4.820049,
+   137.421112,
+   -4.769415
+  ]
+ },
+ "tile_count": {
+  "13": 20,
+  "14": 56,
+  "15": 196,
+  "16": 702,
+  "17": 380,
+  "18": 1406
+ },
+ "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars/MSL/MSL_Gale_HiRISE-LRGB_78quads_sharp_cog.tif"
+}

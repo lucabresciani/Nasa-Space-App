@@ -1,0 +1,22 @@
+{
+ "contract_version": "1.2.0",
+ "title": "Ridge loop, my order",
+ "pad": {
+  "lon": 137.393301,
+  "lat": -4.776468
+ },
+ "route": {
+  "mode": "ordered",
+  "stops": [
+   {
+    "station": "S4"
+   },
+   {
+    "station": "S1"
+   },
+   {
+    "station": "S2"
+   }
+  ]
+ }
+}

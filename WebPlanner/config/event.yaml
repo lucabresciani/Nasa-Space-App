@@ -1,0 +1,9 @@
+timezone: Europe/Zurich            # UTC+01:00 on 14-15 Nov 2026
+h0_local: "2026-11-14T09:00:00+01:00"
+h0_utc: "2026-11-14T08:00:00Z"     # the H0 provenance check compares against this
+submit_target_local: "2026-11-15T21:00:00+01:00"
+deadline_local: "2026-11-15T23:59:00+01:00"
+gates_local: {G0: "2026-11-14T11:00:00+01:00", G1: "2026-11-14T19:00:00+01:00", G2: "2026-11-15T08:00:00+01:00", freeze: "2026-11-15T12:00:00+01:00"}
+clock_rules:
+  - "all machines NTP-synced with TZ=Europe/Zurich; check with `timedatectl` / `date -u` at arrival"
+  - "manifest, logs and STATUS.md timestamps in UTC (ISO 8601 with Z)"

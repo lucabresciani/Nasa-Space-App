@@ -1,0 +1,63 @@
+/* WS18 task 2 (H2): drag the rover — rover handle, drag readout, delta strip (DESIGN U15, §3.7). Tokens only. */
+@import '../ui/tokens.css';
+
+/* the rover marker is the drag handle (yellow = selection only: the ring shows while dragging / focused) */
+.hl-edit-rover { cursor: grab; touch-action: none; }
+.hl-edit-rover.is-dragging { cursor: grabbing; outline: var(--line-focus-ring) solid var(--color-select); }
+.hl-edit-rover:focus-visible { outline: var(--line-focus-ring) solid var(--color-select); outline-offset: var(--space-1); }
+
+/* readout under the dragged rover: exact lookups, then ghost rows */
+/* above the U13 label pills (labels.css z 1-4, hover / focus 4): the readout card is never drawn under S4/S6 (D9) */
+.hl-edit-drag-host { pointer-events: none; z-index: 5; }
+.hl-edit-drag {
+  display: grid;
+  gap: var(--space-1);
+  min-width: var(--layout-left-rail-collapsed);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hl-edit-drag__validity { font-weight: var(--font-weight-label); }
+.hl-edit-drag[data-validity='invalid'] .hl-edit-drag__validity { color: var(--color-text-muted); }
+.hl-edit-drag__snap { color: var(--color-text-muted); }
+
+/* ghost: not computed during a drag (purple = live, dashed = not yet a result) */
+.hl-edit-ghost .hl-readout__value {
+  color: var(--color-live);
+  border-bottom: 1px dashed var(--color-live);
+  font-style: italic;
+}
+
+/* delta strip (sidebar, above the selection card) */
+.hl-edit-delta {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+  color: var(--color-text);
+}
+.hl-edit-delta__title { margin: 0; font-size: var(--font-size-heading); line-height: var(--line-height-heading); font-weight: var(--font-weight-heading); }
+.hl-edit-delta__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
+  gap: var(--space-2);
+  align-items: baseline;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  font-variant-numeric: tabular-nums;
+}
+.hl-edit-delta__label { color: var(--color-text-muted); }
+.hl-edit-delta__from { color: var(--color-text-muted); }
+.hl-edit-delta__arrow { color: var(--color-text-muted); }
+.hl-edit-delta__to { font-weight: var(--font-weight-label); }
+.hl-edit-delta__note, .hl-edit-delta__hint { margin: 0; color: var(--color-text-muted); font-size: var(--font-size-small); line-height: var(--line-height-small); }
+.hl-edit-delta__actions { display: flex; gap: var(--space-2); }

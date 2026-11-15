@@ -1,0 +1,25 @@
+{
+  "dummy": true,
+  "image": "terrain/cellstate.png",
+  "bounds": [
+    137.319317,
+    -4.868463,
+    137.444683,
+    -4.743537
+  ],
+  "width": 1481,
+  "height": 1481,
+  "res_m": 5,
+  "variant": "nominal",
+  "codes": {
+    "0": "assessed",
+    "1": "blocked",
+    "2": "unknown"
+  },
+  "pct": {
+    "assessed": 95.83,
+    "blocked": 0.01,
+    "unknown": 4.16
+  },
+  "source": "tools/make_dummy.py (synthetic world)"
+}

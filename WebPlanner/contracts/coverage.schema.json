@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/coverage.schema.json",
+  "title": "validation/coverage.json",
+  "description": "Coverage (F1, F16): assessed / unknown fractions of the flat 30- and 60-min discs around the pad. Beyond SPEC §6: file named in brief WS1 and read by the WS5 scorecard (SPEC §2 F16).",
+  "x-contract-version": "1.0.0",
+  "x-source": "briefs/WS1.md; SPEC §2 F16",
+  "type": "object"
+}

@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "homeline/contracts/partner.schema.json",
+  "title": "scenarios/{scenario}/partner.geojson",
+  "description": "Partner line: where one astronaut can still haul the other home (F10). SPEC §6 names the file but not its properties; properties are free until the producer (WS2) proposes them to C. v1.1.0: feature properties proposed by WS2 (pipeline/engine/haul.py partner()); all optional. v1.1.2 (D20, user 2026-11-14 14:22: cart only; dragging is a finding, not a line): optional feature properties label, drag_note and the top-level drag_finding (WS2 haul.py, flat ground, default suit).",
+  "x-contract-version": "1.1.2",
+  "x-source": "SPEC §6 (scenarios/index.json files.partner), F10",
+  "type": "object",
+  "properties": {
+    "dummy": {
+      "type": "boolean",
+      "description": "optional; true only in data-dummy/"
+    },
+    "type": {
+      "const": "FeatureCollection"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "const": "Feature"
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "Polygon",
+                  "MultiPolygon",
+                  "LineString",
+                  "MultiLineString"
+                ]
+              },
+              "coordinates": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "case": {
+                "type": "string",
+                "description": "haul case from config/haul.yaml (e.g. cart, drag)"
+              },
+              "casualty_kg": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "suited casualty mass, kg"
+              },
+              "contour_min": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "haul time of the contour, min (haul.yaml contour_min)"
+              },
+              "style": {
+                "const": "dashed",
+                "description": "brief WS2: never drawn solid"
+              },
+              "default_visible": {
+                "const": false,
+                "description": "brief WS2: never on by default"
+              },
+              "label": {
+                "type": "string",
+                "description": "legend label, e.g. 'Partner line (cart haul, 60 min)' (haul.yaml partner_label) (v1.1.2)"
+              },
+              "caption": {
+                "type": "string"
+              },
+              "drag_note": {
+                "type": "string",
+                "description": "why there is no drag line: dragging a suited crewmate exceeds boot traction even on flat ground (haul.yaml drag_note; D20) (v1.1.2)"
+              },
+              "feasible": {
+                "type": "boolean",
+                "description": "false = the haul is infeasible everywhere (only the pad cell reached)"
+              },
+              "area_km2": {
+                "type": "number",
+                "minimum": 0,
+                "description": "area inside the contour, km2"
+              }
+            },
+            "required": []
+          }
+        },
+        "required": [
+          "type",
+          "geometry",
+          "properties"
+        ]
+      }
+    },
+    "drag_finding": {
+      "type": "object",
+      "description": "D20 drag finding on flat ground at the default suit (WS2 haul.drag_flat, from config/haul.yaml): force needed vs boot traction limit; shown as text, never drawn. Manifest keys haul.drag.flat.* (v1.1.2)",
+      "properties": {
+        "case": {
+          "type": "string",
+          "description": "haul case (drag)"
+        },
+        "theta_deg": {
+          "type": "number",
+          "description": "ground slope, deg (0 = flat)"
+        },
+        "suit_kg": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "suit mass, kg"
+        },
+        "casualty_kg": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "suited casualty mass, kg"
+        },
+        "rescuer_system_kg": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "rescuer + suit mass, kg"
+        },
+        "mu": {
+          "type": "number",
+          "minimum": 0,
+          "description": "drag friction coefficient (haul.yaml)"
+        },
+        "boot_mu": {
+          "type": "number",
+          "minimum": 0,
+          "description": "boot traction coefficient (haul.yaml)"
+        },
+        "g_ms2": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Mars g, m/s2"
+        },
+        "force_N": {
+          "type": "number",
+          "minimum": 0,
+          "description": "pull needed, N"
+        },
+        "traction_limit_N": {
+          "type": "number",
+          "minimum": 0,
+          "description": "boot traction limit, N"
+        },
+        "max_mass_kg": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "largest draggable mass, kg"
+        },
+        "feasible": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "why infeasible, e.g. traction"
+        },
+        "note": {
+          "type": "string",
+          "description": "plain-language finding (haul.yaml drag_note)"
+        }
+      },
+      "required": []
+    }
+  },
+  "required": [
+    "type",
+    "features"
+  ]
+}

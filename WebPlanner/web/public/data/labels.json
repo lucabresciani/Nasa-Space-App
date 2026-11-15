@@ -1,0 +1,178 @@
+{
+ "version": "1",
+ "labels": [
+  {
+   "code": "PAD",
+   "name": "Rover pad",
+   "kind": "pad",
+   "status": null,
+   "lon": 137.401783,
+   "lat": -4.77748,
+   "priority": 1,
+   "minzoom": 10,
+   "ref": "pad.json"
+  },
+  {
+   "code": "P2",
+   "name": "Parking option 2",
+   "kind": "pad",
+   "status": null,
+   "lon": 137.393301,
+   "lat": -4.776468,
+   "priority": 1,
+   "minzoom": 10,
+   "ref": "scenarios/pads/index.json#rank2"
+  },
+  {
+   "code": "P3",
+   "name": "Parking option 3",
+   "kind": "pad",
+   "status": null,
+   "lon": 137.393301,
+   "lat": -4.776114,
+   "priority": 1,
+   "minzoom": 10,
+   "ref": "scenarios/pads/index.json#rank3"
+  },
+  {
+   "code": "P4",
+   "name": "Parking option 4",
+   "kind": "pad",
+   "status": null,
+   "lon": 137.387206,
+   "lat": -4.781529,
+   "priority": 1,
+   "minzoom": 10,
+   "ref": "scenarios/pads/index.json#rank4"
+  },
+  {
+   "code": "P5",
+   "name": "Parking option 5",
+   "kind": "pad",
+   "status": null,
+   "lon": 137.382,
+   "lat": -4.806,
+   "priority": 1,
+   "minzoom": 10,
+   "ref": "scenarios/pads/index.json#pad_default"
+  },
+  {
+   "code": "S7",
+   "name": "dense ridge network + high SINDEX2 sulfate signal (south-west, farther)",
+   "kind": "route_station",
+   "status": null,
+   "lon": 137.373323,
+   "lat": -4.789762,
+   "priority": 2,
+   "minzoom": 13,
+   "ref": "stations.json#S7"
+  },
+  {
+   "code": "S6",
+   "name": "dense ridge network + high SINDEX2 sulfate signal (south-west, nearer)",
+   "kind": "route_station",
+   "status": null,
+   "lon": 137.383481,
+   "lat": -4.788919,
+   "priority": 2,
+   "minzoom": 13,
+   "ref": "stations.json#S6"
+  },
+  {
+   "code": "S1",
+   "name": "Boxwork ridge-hollow transect",
+   "kind": "route_station",
+   "status": null,
+   "lon": 137.379249,
+   "lat": -4.80832,
+   "priority": 2,
+   "minzoom": 13,
+   "ref": "stations.json#S1"
+  },
+  {
+   "code": "S4",
+   "name": "Gediz Vallis sulfur field",
+   "kind": "route_station",
+   "status": null,
+   "lon": 137.408931,
+   "lat": -4.785832,
+   "priority": 2,
+   "minzoom": 13,
+   "ref": "stations.json#S4"
+  },
+  {
+   "code": "S2",
+   "name": "Fracture-network survey",
+   "kind": "station",
+   "status": null,
+   "lon": 137.37544,
+   "lat": -4.778796,
+   "priority": 3,
+   "minzoom": 13,
+   "ref": "stations.json#S2"
+  },
+  {
+   "code": "S8",
+   "name": "dense ridge network + high D2300 clay signal",
+   "kind": "scored_site",
+   "status": null,
+   "lon": 137.386021,
+   "lat": -4.770783,
+   "priority": 4,
+   "minzoom": 13,
+   "ref": "stations.json#S8"
+  },
+  {
+   "code": "MSH",
+   "name": "Aeolis Mons (Mount Sharp)",
+   "kind": "landmark",
+   "status": "official",
+   "lon": 137.8453,
+   "lat": -5.0834,
+   "priority": 6,
+   "minzoom": 6,
+   "ref": "landmarks.yaml",
+   "bearing_deg": 124.71,
+   "dist_m": 31857
+  },
+  {
+   "code": "APL",
+   "name": "Aeolis Palus",
+   "kind": "landmark",
+   "status": "official",
+   "lon": 137.4215,
+   "lat": -4.4652,
+   "priority": 6,
+   "minzoom": 6,
+   "ref": "landmarks.yaml",
+   "bearing_deg": 3.6,
+   "dist_m": 18547
+  },
+  {
+   "code": "GDV",
+   "name": "Gediz Vallis",
+   "kind": "landmark",
+   "status": "official",
+   "lon": 137.4362,
+   "lat": -4.8537,
+   "priority": 6,
+   "minzoom": 6,
+   "ref": "landmarks.yaml",
+   "bearing_deg": 155.78,
+   "dist_m": 4954
+  },
+  {
+   "code": "PCV",
+   "name": "Peace Vallis",
+   "kind": "landmark",
+   "status": "official",
+   "lon": 137.2273,
+   "lat": -4.2057,
+   "priority": 6,
+   "minzoom": 6,
+   "ref": "landmarks.yaml",
+   "bearing_deg": 343.07,
+   "dist_m": 35426
+  }
+ ]
+}
