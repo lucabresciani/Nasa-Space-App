@@ -7,25 +7,30 @@ using UnityEngine.UI;
 namespace NasaSpaceApp.Menu
 {
     /// <summary>
-    /// SETTINGS panel: a GENERAL / CONTROLS tab bar over two pages. GENERAL holds the grouped settings rows of
-    /// <see cref="MenuSettings"/> and RESET TO DEFAULTS; CONTROLS is a read-only two-column key reference from
-    /// <see cref="KeybindCatalog"/>, rebuilt when the bindings change.
+    /// SETTINGS panel: a GENERAL / SIMULATION / CONTROLS tab bar over three pages. GENERAL holds the grouped settings
+    /// rows of <see cref="MenuSettings"/> and RESET TO DEFAULTS (which resets every page's settings); SIMULATION holds
+    /// the random weather events switch with a line on what it does; CONTROLS is a read-only two-column key reference
+    /// from <see cref="KeybindCatalog"/>, rebuilt when the bindings change.
     /// </summary>
     public sealed class SettingsPanel : MenuPanel
     {
         /// <summary>Tab indices for <see cref="SelectTab"/>.</summary>
-        public const int TabGeneral = 0, TabControls = 1;
+        public const int TabGeneral = 0, TabSimulation = 1, TabControls = 2;
 
         // ---- layout (px, inside the content rect)
         private const float PageTop = MenuWidgets.TabHeight + 8f;              // tab bar + gap
         private const float PageHeight = MenuTokens.ContentHeight - PageTop;   // 508
         private const float GroupGap = 8f;                                     // above every group header but the first
+        private const float NoteGap = 4f;                                      // between a row and the note under it
         private const float KeyHeaderGap = 4f, KeyGroupGap = 16f, ColumnGap = 24f, KeysAfterName = 16f, MinKeysX = 96f;
+
+        private const string WeatherNote = "The weather changes on its own during the simulation. The first event arrives about "
+                                           + "20 seconds after the start. M still changes it by hand.";
 
         private MenuContext m_Ctx;
         private MenuTabBar m_Tabs;
-        private RectTransform m_General, m_Controls;
-        private CanvasGroup m_GeneralGroup, m_ControlsGroup;
+        private RectTransform m_General, m_Simulation, m_Controls;
+        private CanvasGroup m_GeneralGroup, m_SimulationGroup, m_ControlsGroup;
         private int m_PendingTab = TabGeneral;
         private float m_PageT = 1f;
         private CanvasGroup m_FadingPage;
@@ -33,6 +38,7 @@ namespace NasaSpaceApp.Menu
         private readonly List<MenuRowControl> m_Rows = new List<MenuRowControl>(8);
         private MenuSlider m_Sensitivity, m_Fov;
         private MenuSwitch m_InvertY, m_Fullscreen;
+        private MenuSwitch m_WeatherEvents;   // the SIMULATION page's only row: not in m_Rows, which is GENERAL's chain
         private MenuStepper m_Quality;
         private MenuButton m_Reset;
         private string m_KeySignature;
@@ -47,10 +53,11 @@ namespace NasaSpaceApp.Menu
         /// <summary>The active tab (the host focuses it when the panel opens).</summary>
         public override Selectable DefaultSelection => m_Tabs != null ? m_Tabs.CurrentTab : null;
 
-        /// <summary>Shows tab <paramref name="index"/> (<see cref="TabGeneral"/> or <see cref="TabControls"/>); may be called before Build.</summary>
+        /// <summary>Shows tab <paramref name="index"/> (<see cref="TabGeneral"/>, <see cref="TabSimulation"/> or
+        /// <see cref="TabControls"/>); may be called before Build.</summary>
         public void SelectTab(int index)
         {
-            m_PendingTab = Mathf.Clamp(index, TabGeneral, TabControls);
+            m_PendingTab = Mathf.Clamp(index, TabGeneral, TabControls); // TabControls is the last tab
             if (m_Tabs != null)
             {
                 m_Tabs.Activate(m_PendingTab, false);
@@ -62,11 +69,14 @@ namespace NasaSpaceApp.Menu
             m_Ctx = ctx;
             float width = MenuTokens.ContentWidth;
 
-            m_Tabs = MenuWidgets.TabBar(ctx, content, new[] { "GENERAL", "CONTROLS" }, width);
+            // In the order of the Tab* constants.
+            m_Tabs = MenuWidgets.TabBar(ctx, content, new[] { "GENERAL", "SIMULATION", "CONTROLS" }, width);
 
             m_General = Page("General", content, width, out m_GeneralGroup);
+            m_Simulation = Page("Simulation", content, width, out m_SimulationGroup);
             m_Controls = Page("Controls", content, width, out m_ControlsGroup);
             BuildGeneral(ctx, m_General, width);
+            BuildSimulation(ctx, m_Simulation, width);
 
             m_Tabs.Changed = OnTabChanged;
             m_Tabs.Activate(m_PendingTab, true);
@@ -127,10 +137,12 @@ namespace NasaSpaceApp.Menu
 
         private void ShowPage(int index, bool fade)
         {
-            bool general = index == TabGeneral;
-            m_General.gameObject.SetActive(general);
-            m_Controls.gameObject.SetActive(!general);
-            m_FadingPage = general ? m_GeneralGroup : m_ControlsGroup;
+            m_General.gameObject.SetActive(index == TabGeneral);
+            m_Simulation.gameObject.SetActive(index == TabSimulation);
+            m_Controls.gameObject.SetActive(index == TabControls);
+            m_FadingPage = index == TabGeneral ? m_GeneralGroup
+                         : index == TabSimulation ? m_SimulationGroup
+                         : m_ControlsGroup;
             if (fade)
             {
                 m_FadingPage.alpha = 0f;
@@ -194,6 +206,27 @@ namespace NasaSpaceApp.Menu
                                         new Vector2(1f, 0f), new Vector2(1f, 0f), Vector2.zero, OnReset);
         }
 
+        // ---------------------------------------------------------------- simulation
+
+        // One switch and a line on what it does. It has its own page because GENERAL is full (see its page budget).
+        private void BuildSimulation(MenuContext ctx, RectTransform page, float width)
+        {
+            float textWidth = width - 2f * MenuWidgets.RowPadX;
+            float y = Header(ctx, page, "WEATHER", 0f, textWidth, true);
+            m_WeatherEvents = MenuWidgets.Switch(ctx, page, "Random weather events", y, width,
+                                                 () => MenuSettings.WeatherEvents, v => MenuSettings.WeatherEvents = v);
+            y += MenuTokens.RowHeight + NoteGap;
+
+            Font regular = ctx != null && ctx.Assets != null ? ctx.Assets.Regular : null;
+            var topLeft = new Vector2(0f, 1f);
+            Text note = MenuUi.Paragraph("Weather note", page, regular, MenuTokens.SizeSmall, MenuTokens.SandDim,
+                                         TextAnchor.UpperLeft, topLeft, topLeft, new Vector2(MenuWidgets.RowPadX, -y),
+                                         new Vector2(textWidth, MenuTokens.SizeSmall), WeatherNote);
+            note.rectTransform.sizeDelta = new Vector2(textWidth, Mathf.Ceil(note.preferredHeight));
+        }
+
+        // ---------------------------------------------------------------- shared
+
         private static float Header(MenuContext ctx, RectTransform page, string text, float y, float ruleWidth, bool first)
         {
             if (!first)
@@ -236,16 +269,23 @@ namespace NasaSpaceApp.Menu
             {
                 m_Rows[i].Refresh();
             }
+            if (m_WeatherEvents != null)
+            {
+                // Off limits without a weather system in the scene and in runs that block weather events (tests).
+                m_WeatherEvents.SetInteractable(MenuSettings.WeatherEventsAvailable);
+                m_WeatherEvents.Refresh();
+            }
         }
 
-        // Explicit vertical chain: current tab -> interactable rows of the visible page -> RESET TO DEFAULTS.
+        // Explicit vertical chain: current tab -> interactable rows of the visible page -> on GENERAL, RESET TO DEFAULTS
+        // -> whatever is below the page. SIMULATION has one row; CONTROLS has none, so its tab goes straight below.
         private void UpdateNavigation()
         {
             if (m_Tabs == null)
             {
                 return;
             }
-            bool general = m_Tabs.Current == TabGeneral;
+            int tab = m_Tabs.Current;
             Selectable previous = m_Tabs.CurrentTab;
             Selectable first = null;
             MenuRowControl last = null;
@@ -290,7 +330,39 @@ namespace NasaSpaceApp.Menu
                     first = m_Reset;
                 }
             }
-            m_Tabs.SetNavigation(general ? first : BelowPage(m_Tabs.CurrentTab));
+
+            Selectable simulationFirst = null;
+            if (m_WeatherEvents != null)
+            {
+                if (m_WeatherEvents.IsInteractable())
+                {
+                    var switchNav = new Navigation { mode = Navigation.Mode.Explicit, selectOnUp = m_Tabs.CurrentTab };
+                    m_WeatherEvents.navigation = switchNav;
+                    // Null while the page is hidden; the links are set again when its tab is shown.
+                    switchNav.selectOnDown = BelowPage(m_WeatherEvents);
+                    m_WeatherEvents.navigation = switchNav;
+                    simulationFirst = m_WeatherEvents;
+                }
+                else
+                {
+                    m_WeatherEvents.navigation = new Navigation { mode = Navigation.Mode.None };
+                }
+            }
+
+            Selectable belowTab;
+            if (tab == TabGeneral)
+            {
+                belowTab = first;
+            }
+            else if (tab == TabSimulation && simulationFirst != null)
+            {
+                belowTab = simulationFirst;
+            }
+            else
+            {
+                belowTab = BelowPage(m_Tabs.CurrentTab);
+            }
+            m_Tabs.SetNavigation(belowTab);
         }
 
         // The nearest selectable below, unless it is one of this panel's (explicit links handle those).
@@ -301,8 +373,8 @@ namespace NasaSpaceApp.Menu
                 return null;
             }
             Selectable below = from.FindSelectable(Vector3.down);
-            if (below == null || below.transform.IsChildOf(m_General) || below.transform.IsChildOf(m_Controls)
-                || below is MenuTab)
+            if (below == null || below.transform.IsChildOf(m_General) || below.transform.IsChildOf(m_Simulation)
+                || below.transform.IsChildOf(m_Controls) || below is MenuTab)
             {
                 return null;
             }

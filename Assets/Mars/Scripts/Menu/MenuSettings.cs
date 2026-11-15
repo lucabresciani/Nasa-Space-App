@@ -7,8 +7,9 @@ namespace NasaSpaceApp.Menu
     /// <summary>
     /// Player settings of the MARVIS menu, stored in PlayerPrefs ("marvis.settings.&lt;name&gt;"; reduced motion uses
     /// <see cref="HudTokens.ReducedMotionPrefKey"/>). A setting without a stored key keeps its default: a fixed value for
-    /// volume and reduced motion, otherwise what the scene / engine had before the menu touched it. Property setters save
-    /// the key and apply only their own setting; call <see cref="Save"/> to flush PlayerPrefs to disk.
+    /// volume, reduced motion and random weather events (on), otherwise what the scene / engine had before the menu
+    /// touched it. Property setters save the key and apply only their own setting; call <see cref="Save"/> to flush
+    /// PlayerPrefs to disk.
     /// </summary>
     public static class MenuSettings
     {
@@ -20,6 +21,7 @@ namespace NasaSpaceApp.Menu
         private const string KeyQuality = Prefix + "QualityLevel";
         private const string KeyFullscreen = Prefix + "Fullscreen";
         private const string KeyVSync = Prefix + "VSync";
+        private const string KeyWeatherEvents = Prefix + "WeatherEvents";
 
         /// <summary>Master volume default (0..1).</summary>
         public const float VolumeDefault = 0.8f;
@@ -40,6 +42,8 @@ namespace NasaSpaceApp.Menu
         private static bool s_Fullscreen;
         private static bool s_VSync;
         private static bool s_ReducedMotion;
+        private static bool s_WeatherEvents = true;
+        private static bool s_WeatherEventsBlocked; // this run never gets random weather (automated tests, -noWeatherEvents)
 
         // Defaults: engine-wide ones once per session, scene ones once per player / camera instance (= per scene load).
         private static bool s_EngineDefaultsCaptured;
@@ -50,12 +54,16 @@ namespace NasaSpaceApp.Menu
 
         private static FirstPersonController s_Player, s_DefaultsPlayer;
         private static Camera s_Camera, s_DefaultsCamera;
+        private static MarsWeather s_Weather;
         private static FieldInfo s_SensitivityField, s_InvertYField;
         private static bool s_FieldsLooked;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
+            s_WeatherEvents = true;
+            s_WeatherEventsBlocked = false;
+            s_Weather = null;
             s_Volume = VolumeDefault;
             s_Sensitivity = SensitivityFallback;
             s_InvertY = false;
@@ -94,6 +102,15 @@ namespace NasaSpaceApp.Menu
 
         /// <summary>False in the editor, where the game view cannot go fullscreen.</summary>
         public static bool FullscreenAvailable => !Application.isEditor;
+
+        /// <summary>True when the scene has a <see cref="MarsWeather"/> and this run does not block weather events.</summary>
+        public static bool WeatherEventsAvailable => s_Weather != null && !s_WeatherEventsBlocked;
+
+        /// <summary>
+        /// Whether random weather events run now: the stored choice, unless this run blocks them (batch mode,
+        /// -homelineSelfTest, -marvisWebTest or -noWeatherEvents: an automated test must not get a random storm).
+        /// </summary>
+        public static bool WeatherEventsActive => s_WeatherEvents && !s_WeatherEventsBlocked;
 
         // ---------------------------------------------------------------- values
 
@@ -193,6 +210,21 @@ namespace NasaSpaceApp.Menu
             }
         }
 
+        /// <summary>
+        /// Random weather events: the weather changes on its own during the simulation (MarsWeather.AutoEvolve). On by
+        /// default. What is in effect for this run is <see cref="WeatherEventsActive"/>.
+        /// </summary>
+        public static bool WeatherEvents
+        {
+            get => s_WeatherEvents;
+            set
+            {
+                s_WeatherEvents = value;
+                PlayerPrefs.SetInt(KeyWeatherEvents, value ? 1 : 0);
+                ApplyWeatherEvents();
+            }
+        }
+
         // ---------------------------------------------------------------- load, apply, reset
 
         /// <summary>
@@ -201,6 +233,11 @@ namespace NasaSpaceApp.Menu
         /// </summary>
         public static void Load()
         {
+            // First, and from nothing but the command line: the mission code reads WeatherEventsActive, and a test run
+            // must stay blocked even if a later line here fails.
+            s_WeatherEventsBlocked = WeatherEventsBlockedThisRun();
+            s_WeatherEvents = GetBool(KeyWeatherEvents, true);
+
             CaptureEngineDefaults();
             ResolveTargets();
 
@@ -214,10 +251,14 @@ namespace NasaSpaceApp.Menu
             s_ReducedMotion = GetBool(HudTokens.ReducedMotionPrefKey, false);
         }
 
-        /// <summary>Pushes every setting to the engine and the scene. Settings without a stored key are left alone.</summary>
+        /// <summary>
+        /// Pushes every setting to the engine and the scene. Settings without a stored key are left alone, except the
+        /// ones with a fixed default (volume, reduced motion, weather events).
+        /// </summary>
         public static void ApplyAll()
         {
             ResolveTargets();
+            ApplyWeatherEvents();
             ApplyVolume();
             ApplyLook(false);
             ApplyFov(false);
@@ -252,8 +293,11 @@ namespace NasaSpaceApp.Menu
             PlayerPrefs.DeleteKey(KeyFullscreen);
             PlayerPrefs.DeleteKey(KeyVSync);
             PlayerPrefs.DeleteKey(HudTokens.ReducedMotionPrefKey);
+            PlayerPrefs.DeleteKey(KeyWeatherEvents);
 
             ResolveTargets();
+            s_WeatherEvents = true;
+            ApplyWeatherEvents();
             s_Volume = VolumeDefault;
             s_Sensitivity = Mathf.Clamp(s_SensitivityDefault, SensitivityMin, SensitivityMax);
             s_InvertY = s_InvertYDefault;
@@ -297,6 +341,12 @@ namespace NasaSpaceApp.Menu
         {
             LookUpFields();
             bool changed = false;
+
+            // The weather has no defaults to capture, so a new instance does not count as a change.
+            if (s_Weather == null)
+            {
+                s_Weather = Object.FindAnyObjectByType<MarsWeather>();
+            }
 
             if (s_Player == null)
             {
@@ -374,6 +424,34 @@ namespace NasaSpaceApp.Menu
         private static void ApplyVolume()
         {
             AudioListener.volume = s_Volume;
+        }
+
+        // Random weather events are MarsWeather's automatic evolution. Only the flag is written: the time to the next
+        // change and a pending first event stay as the weather has them, so switching it on in the menu does not fire a
+        // storm that second. In historical mode MarsWeather keeps evolution paused (the measured sky must not turn into
+        // a random state) and takes this value up when that mode ends.
+        private static void ApplyWeatherEvents()
+        {
+            if (s_Weather == null)
+            {
+                s_Weather = Object.FindAnyObjectByType<MarsWeather>();
+            }
+            if (s_Weather != null)
+            {
+                s_Weather.AutoEvolve = WeatherEventsActive;
+            }
+        }
+
+        private static bool WeatherEventsBlockedThisRun()
+        {
+            if (Application.isBatchMode)
+            {
+                return true;
+            }
+            string[] args = System.Environment.GetCommandLineArgs();
+            return System.Array.IndexOf(args, "-noWeatherEvents") >= 0
+                || System.Array.IndexOf(args, "-homelineSelfTest") >= 0
+                || System.Array.IndexOf(args, "-marvisWebTest") >= 0;
         }
 
         private static void ApplyLook(bool force)

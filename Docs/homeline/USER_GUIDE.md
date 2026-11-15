@@ -18,6 +18,10 @@ data and from the planner; the crew, the EVA and the suit are simulated.
 The planner window needs the Microsoft Edge WebView2 Runtime, which is part of Windows 11 and of an up-to-date
 Windows 10. Without it **MISSION PLAN** opens the built-in planning screen described further down.
 
+When MARVIS opens, a **QUICK GUIDE** window comes up over the title menu: the main keys, each with a picture and
+one line. **GOT IT** (or `Esc`) closes it; `F2` opens it again whenever the menu is up. It is shown once per
+launch. `-noQuickGuide` on the command line starts without it.
+
 ## Flow
 
 | Step | What you do |
@@ -165,6 +169,24 @@ amber line that fades out at both ends) and the posts within 70 m (white at the 
 amber posts at navigation points). Nothing of it is visible from far away. The whole route is on the helmet's maps: on the full-screen
 map (`G`) as an amber line with the stations as labelled diamonds, the navigation points as beads and a ring around
 HOME (the rover); on the bottom-left dial as an amber line with a ring for each station in range.
+
+## Weather events
+
+The weather changes on its own while the simulation runs, to show how the helmet reacts to an event nobody planned.
+
+- The first event comes about 20 seconds after the simulation or an EVA starts (between 16 and 24 seconds, different
+  at every launch): a dust storm or a dust haze builds up within about 12 seconds. A line at the top of the screen
+  names it.
+- After that the weather changes every few minutes, as before. The time counts only while the simulation runs, not
+  under the menu or the planner.
+- On the helmet the weather read-out follows it, and the heart rate and the oxygen uptake rise with the wind and the
+  dust (see "Heart rate and oxygen"). The planner knows nothing of this weather: its oxygen and margin have no
+  weather term.
+- `M` still changes the weather by hand (`Shift`+`M` goes back); a weather chosen by hand is kept for a few minutes.
+- To switch the events off: **SETTINGS**, tab **SIMULATION**, **Random weather events**. The choice is remembered.
+  `-noWeatherEvents` on the command line switches them off for one run.
+
+Which event comes is a random choice of the simulator, not a forecast and not a measurement.
 
 ## Where each number comes from
 

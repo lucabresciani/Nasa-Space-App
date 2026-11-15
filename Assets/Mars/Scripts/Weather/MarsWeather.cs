@@ -16,7 +16,11 @@ namespace NasaSpaceApp
     /// Press <see cref="cycleKey"/> (M) for the next state after the one already being headed for, Shift+M for the
     /// previous one. Every value runs through two critically damped springs in series, the same as DayNightCycle's
     /// N key: it starts and lands softly, and a press mid-glide bends the curve instead of restarting it.
-    /// With <see cref="autoEvolve"/> the weather also changes on its own, deterministically from <see cref="seed"/>.
+    /// With <see cref="autoEvolve"/> the weather also changes on its own (the menu's "Random weather events"). The
+    /// first event comes about <see cref="firstEventDelay"/> seconds into a run and goes from Clear straight to a dust
+    /// storm or haze, so it is seen happening; later changes come every <see cref="meanDwell"/> seconds or so. The
+    /// sequence differs on every run (<see cref="randomEachRun"/>) or, with that off, is reproducible from
+    /// <see cref="seed"/>. Every automatic change is announced on screen.
     ///
     /// In edit mode the component only previews <see cref="startState"/> (a snap, like DayNightCycle's Time Of Day
     /// slider): no clock, key or scheduler, so the saved scene never drifts.
@@ -41,7 +45,15 @@ namespace NasaSpaceApp
         float meanDwell = 300f;
         [SerializeField, Min(0.5f), Tooltip("How long an automatic change takes to settle, in seconds. Slower than a key press: storms build slowly.")]
         float autoTransitionDuration = 45f;
-        [SerializeField, Tooltip("Same seed and same key presses give the same weather and dust-devil sequence. Matches the scene builder's seed.")]
+        [SerializeField, Min(0f), Tooltip("Seconds of simulation until the first automatic change of a run, so it is seen soon after the start. From Clear it goes to a dust storm or haze. 0 = no forced first event: the first change comes after a normal dwell.")]
+        float firstEventDelay = 20f;
+        [SerializeField, Min(0f), Tooltip("The first event comes up to this many seconds earlier or later, at random.")]
+        float firstEventJitter = 4f;
+        [SerializeField, Min(0.5f), Tooltip("How long the first event takes to settle, in seconds. Faster than a normal automatic change, so the change is seen at once.")]
+        float firstEventTransitionDuration = 12f;
+        [SerializeField, Tooltip("A different sequence of automatic changes on every run. Off: reproducible from the seed (for captures).")]
+        bool randomEachRun = true;
+        [SerializeField, Tooltip("Same seed and same key presses give the same dust-devil and gust sequence and, with Random Each Run off, the same weather sequence. Matches the scene builder's seed.")]
         int seed = 1977;
 
         [Header("Atmosphere")]
@@ -69,7 +81,7 @@ namespace NasaSpaceApp
         TextAsset tauData;
         [SerializeField, Min(0f), Tooltip("0: the season's median tau (REMS window). Otherwise a mission sol: the nearest Mastcam measurement in the whole record (33-3953). Try 2086: the 2018 global dust storm, tau 8.6.")]
         float historicalSol;
-        [SerializeField, Tooltip("Briefly shows the new weather on screen when M or H is pressed.")]
+        [SerializeField, Tooltip("Briefly shows the new weather on screen when M or H is pressed and when the weather changes on its own.")]
         bool showChangeLabel = true;
 
         [Header("Presets (Indexed By WeatherKind)")]
@@ -84,7 +96,8 @@ namespace NasaSpaceApp
         public WeatherKind Target => targetKind;
 
         /// <summary>Historical mode: the dust (tau) comes from Curiosity's measurements, see <see cref="Climate"/>.
-        /// Turning it on pauses automatic evolution, so the measured sky is not replaced by a random state.</summary>
+        /// Turning it on pauses automatic evolution, so the measured sky is not replaced by a random state; turning it
+        /// off resumes it as it was (or as <see cref="AutoEvolve"/> was set meanwhile).</summary>
         public bool Historical
         {
             get => historical;
@@ -92,7 +105,15 @@ namespace NasaSpaceApp
             {
                 if (historical == value) return;
                 historical = value;
-                if (value) autoEvolve = false;
+                if (value)
+                {
+                    evolveAfterHistorical = autoEvolve;
+                    autoEvolve = false;
+                }
+                else
+                {
+                    autoEvolve = evolveAfterHistorical;
+                }
                 activeDuration = transitionDuration; // glide like a key press
             }
         }
@@ -142,11 +163,19 @@ namespace NasaSpaceApp
         /// <summary>Wind speed now in m/s, gusts included.</summary>
         public float WindSpeed => frame.windSpeed;
 
-        /// <summary>Whether the weather changes on its own. Pausing keeps the time left until the next change.</summary>
+        /// <summary>Whether the weather changes on its own (random weather events: the first one about
+        /// <see cref="firstEventDelay"/> seconds into a run, then one every dwell). The menu's switch drives it through
+        /// MenuSettings. Only the flag changes: pausing keeps the time left until the next change and a first event
+        /// that is still pending, so turning it back on never fires a change at once. In historical mode evolution
+        /// stays paused and the value set here takes effect when that mode ends.</summary>
         public bool AutoEvolve
         {
             get => autoEvolve;
-            set => autoEvolve = value;
+            set
+            {
+                if (historical) evolveAfterHistorical = value;
+                else autoEvolve = value;
+            }
         }
 
         // Channels: springs run in perceptual spaces. ln tau because perceived light goes as exp(-tau), so equal
@@ -163,7 +192,13 @@ namespace NasaSpaceApp
         const float MinDuration = 0.05f;
 
         // MarsAtmosphere.Hash streams (3 is the dust-devil spawner's).
-        const uint SchedulerStream = 1, DwellStream = 2, GustStream = 4, WobbleStream = 5;
+        const uint SchedulerStream = 1, DwellStream = 2, GustStream = 4, WobbleStream = 5, FirstDelayStream = 6, FirstKindStream = 7;
+
+        // The first event from Clear is a dust storm this often, else dusty haze: both show within seconds (sky, fog,
+        // blown dust, sound). A pacing choice for the demo, not a statistic.
+        const float FirstEventStormChance = 0.55f;
+        const float MinFirstEventDelay = 1f;   // never the very frame the simulation starts
+        const float KeyLabelSeconds = 4f, EventLabelSeconds = 6f;
 
         // Gusts: speed x (1 + 0.35 gust n), heading +/- 8 deg x gust. Tuned for the look, not measured: the gust
         // spectrum at the site is unknown. The 2 octaves (4 s and 1.1 s periods) make the motes surge rather than
@@ -196,22 +231,48 @@ namespace NasaSpaceApp
         double cloudX, cloudZ;         // integrated cloud drift in km, never wrapped
         uint epoch;                    // automatic changes so far: indexes the scheduler's hashes
         float autoRemaining;           // seconds until the next automatic change
+        uint runSalt;                  // 0, or this run's random salt for the scheduler (randomEachRun)
+        uint armCount;                 // first events armed so far: indexes their hashes, so no two get the same delay
+        bool firstEventPending;        // the next automatic change is the first event of a run
+        bool evolveAfterHistorical;    // automatic evolution to go back to when historical mode ends
         bool snapPending;
         WeatherFrame frame;            // last published
 
         uint Seed => unchecked((uint)seed);
 
+        // Seed of the scheduler only (when and what the automatic changes are). Dust devils, gusts and the published
+        // frame keep the plain Seed, so they do not depend on randomEachRun.
+        uint SchedulerSeed => Seed ^ runSalt;
+
         void OnEnable()
         {
             // Everything is re-derived from serialized inputs (never read back), so domain-reload-free play
-            // sessions and edit/play switches always start from the same state.
+            // sessions and edit/play switches always start from the same state. The run salt is the one exception:
+            // with randomEachRun it is what makes each run's weather different.
             activeDuration = transitionDuration;
+            runSalt = Application.isPlaying && randomEachRun ? NewRunSalt() : 0u;
+            armCount = 0;
+            firstEventPending = false;
+            evolveAfterHistorical = autoEvolve;
             epoch = 0;
             autoRemaining = Dwell(0);
             appliedStartState = startState;
             snapPending = false;
             SnapInternal(Valid(startState));
+            if (Application.isPlaying) ArmFirstEvent(); // never in edit mode: there is no scheduler there
             PublishNow(); // before DayNightCycle's first Apply (execution order -20): no first-frame flash
+        }
+
+        // The wall clock mixed with the high-resolution timer, so two runs do not share a salt in practice. Hashed so
+        // the salt's bits are spread before it is XORed into the seed.
+        static uint NewRunSalt()
+        {
+            unchecked
+            {
+                long ticks = DateTime.UtcNow.Ticks;
+                long stamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                return MarsAtmosphere.Hash((uint)ticks ^ (uint)(ticks >> 32), (uint)stamp, (uint)(stamp >> 32));
+            }
         }
 
         void OnDisable()
@@ -288,12 +349,33 @@ namespace NasaSpaceApp
             Retarget(kind, duration < 0f ? transitionDuration : duration, manual: true);
         }
 
+        /// <summary>
+        /// Schedules the first weather event: the next automatic change comes about <see cref="firstEventDelay"/>
+        /// seconds of simulation from now (plus or minus <see cref="firstEventJitter"/>) and, if the weather is still
+        /// Clear then, goes to a dust storm or dusty haze. Called when play starts and when a planner mission starts.
+        /// A manual choice (key, <see cref="SetWeather"/>, <see cref="SnapTo"/>) cancels it, so call this after a snap.
+        /// With a delay of 0 nothing is forced and the time to the next change is left alone.
+        /// </summary>
+        public void ArmFirstEvent()
+        {
+            if (firstEventDelay <= 0f)
+            {
+                firstEventPending = false;
+                return;
+            }
+            armCount++; // a fresh hash index per arming: two EVAs in one run get different delays and events
+            float jitter = firstEventJitter * (2f * MarsAtmosphere.Hash01(SchedulerSeed, FirstDelayStream, armCount) - 1f);
+            autoRemaining = Mathf.Max(MinFirstEventDelay, firstEventDelay + jitter);
+            firstEventPending = true;
+        }
+
         /// <summary>Jumps to <paramref name="kind"/> at once (no glide) and publishes it. Counts as a manual choice.</summary>
         public void SnapTo(WeatherKind kind)
         {
             kind = Valid(kind);
             bool changed = kind != targetKind;
             autoRemaining = meanDwell;
+            firstEventPending = false; // the caller took over
             SnapInternal(kind);
             if (isActiveAndEnabled) PublishNow(); // a disabled component must not own the hub
             if (changed) NotifyTargetChanged(kind);
@@ -402,15 +484,36 @@ namespace NasaSpaceApp
 
         // Each epoch lasts meanDwell x 0.6-1.4. Stateless hashes of (seed, stream, epoch), not UnityEngine.Random
         // (shared global state) or System.Random (allocates, differs between runtimes): reproducible everywhere.
+        // The seed is SchedulerSeed: the plain seed, or with randomEachRun the seed mixed with this run's salt.
         void AutoAdvance()
         {
-            WeatherKind next = PickNext(epoch);
+            WeatherKind previous = targetKind;
+            WeatherKind next;
+            float duration = autoTransitionDuration;
+            if (firstEventPending && targetKind == WeatherKind.Clear)
+            {
+                // The first event of a run: from Clear straight to a state that is seen within seconds, and faster
+                // than a normal change, so whoever is watching sees the weather turn.
+                next = MarsAtmosphere.Hash01(SchedulerSeed, FirstKindStream, armCount) < FirstEventStormChance
+                    ? WeatherKind.DustStorm
+                    : WeatherKind.DustyHaze;
+                duration = firstEventTransitionDuration;
+            }
+            else
+            {
+                next = PickNext(epoch); // also the first event when the weather is no longer Clear
+            }
+            firstEventPending = false;
             epoch++;
             autoRemaining += Dwell(epoch);
-            if (next != targetKind) Retarget(next, autoTransitionDuration, manual: false);
+            if (next != targetKind)
+            {
+                Retarget(next, duration, manual: false);
+                ShowEventLabel(previous, next);
+            }
         }
 
-        float Dwell(uint index) => meanDwell * Mathf.Lerp(0.6f, 1.4f, MarsAtmosphere.Hash01(Seed, DwellStream, index));
+        float Dwell(uint index) => meanDwell * Mathf.Lerp(0.6f, 1.4f, MarsAtmosphere.Hash01(SchedulerSeed, DwellStream, index));
 
         // A weighted pick by autoWeight, excluding the current target.
         WeatherKind PickNext(uint index)
@@ -426,7 +529,7 @@ namespace NasaSpaceApp
             }
             if (total <= 0f) return targetKind;
 
-            float r = MarsAtmosphere.Hash01(Seed, SchedulerStream, index) * total;
+            float r = MarsAtmosphere.Hash01(SchedulerSeed, SchedulerStream, index) * total;
             WeatherKind picked = targetKind;
             for (int k = 0; k < KindCount; k++)
             {
@@ -442,7 +545,11 @@ namespace NasaSpaceApp
 
         void Retarget(WeatherKind kind, float duration, bool manual)
         {
-            if (manual) autoRemaining = meanDwell; // the player's choice holds for a full dwell
+            if (manual)
+            {
+                autoRemaining = meanDwell;  // the player's choice holds for a full dwell
+                firstEventPending = false;  // and replaces the first event: the player took over
+            }
             activeDuration = Mathf.Max(duration, MinDuration);
             if (kind == targetKind) return;
             targetKind = kind;
@@ -621,7 +728,26 @@ namespace NasaSpaceApp
             else if (historical)
                 label = $"Historical weather: Gale, Ls {measured.LsWindowDeg.x:0}-{measured.LsWindowDeg.y:0}, tau {measured.Tau.median:0.00} (median of {measured.Tau.count}, Mastcam 880 nm)";
             else label = $"Weather: {targetKind}";
-            labelUntil = Time.unscaledTime + 4f;
+            labelUntil = Time.unscaledTime + KeyLabelSeconds;
+        }
+
+        // An automatic change says what is coming, so a sky that turns on its own is read as weather, not as a fault.
+        // It stays a little longer than a key press's label: nobody asked for it, so it has to be noticed first.
+        void ShowEventLabel(WeatherKind from, WeatherKind to)
+        {
+            if (!showChangeLabel || !Application.isPlaying) return;
+            switch (to)
+            {
+                case WeatherKind.DustStorm: label = "Weather event: dust storm moving in"; break;
+                // Out of a storm the haze is the storm decaying, not dust building up.
+                case WeatherKind.DustyHaze:
+                    label = from == WeatherKind.DustStorm ? "Weather event: dust storm easing" : "Weather event: dust haze building";
+                    break;
+                case WeatherKind.DustDevils: label = "Weather event: dust devils active"; break;
+                case WeatherKind.IceClouds: label = "Weather event: ice clouds"; break;
+                default: label = "Weather event: clearing"; break;
+            }
+            labelUntil = Time.unscaledTime + EventLabelSeconds;
         }
 
         void OnGUI()

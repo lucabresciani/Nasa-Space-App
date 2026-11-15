@@ -14,6 +14,7 @@ namespace NasaSpaceApp.Menu
     /// Root of the MARVIS title / pause screen: one overlay canvas (backdrop, planet, logo, main list, panel host,
     /// footer, boot fade) and the Hidden / Title / Pause state machine. While open the simulation is suspended
     /// (timeScale 0, audio paused, Player map off, cursor free, gameplay keys masked by <see cref="MenuInputGate"/>).
+    /// The first title of an app run opens the <see cref="QuickGuidePanel"/> after the boot intro; F2 opens it again.
     /// Built at runtime by <see cref="MenuBootstrap"/>; lives in the active scene and dies with it.
     /// </summary>
     [DefaultExecutionOrder(-100)]
@@ -70,6 +71,7 @@ namespace NasaSpaceApp.Menu
         public static Action PlanRequested;
 
         private static bool skipTitleOnce;
+        private static bool guideOffered;   // the quick guide opens by itself once per app run, not after RESTART
 
         // Domain reload is off: everything static starts clean each play session (others re-register at BeforeSceneLoad).
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -82,6 +84,7 @@ namespace NasaSpaceApp.Menu
             StartInterceptor = null;
             PlanRequested = null;
             skipTitleOnce = false;
+            guideOffered = false;
         }
 
         /// <summary>
@@ -138,13 +141,15 @@ namespace NasaSpaceApp.Menu
         private readonly Dictionary<MenuPanel, RectTransform> panelRects = new Dictionary<MenuPanel, RectTransform>();
         private SettingsPanel settings;
         private CreditsPanel credits;
+        private QuickGuidePanel guide;
+        private bool guidePending;          // set at the first title, applied in LateUpdate once the boot intro is over
         private MenuButton returnSelection;
 
         private CanvasGroup footerGroup;
         private Image overlay;
 
         private FirstPersonController player;
-        private InputAction pauseAction, backAction, controlsAction;
+        private InputAction pauseAction, backAction, controlsAction, guideAction;
 
         private bool built;
         private State state;
@@ -170,6 +175,7 @@ namespace NasaSpaceApp.Menu
 
         private SettingsPanel Settings => settings ??= new SettingsPanel();
         private CreditsPanel Credits => credits ??= new CreditsPanel();
+        private QuickGuidePanel Guide => guide ??= new QuickGuidePanel();
 
         /// <summary>
         /// Builds the menu (title state, unless the title is skipped once after RESTART or by the editor pref). A build
@@ -280,7 +286,25 @@ namespace NasaSpaceApp.Menu
             BeginIntro();
             Suspend();
             Select(entries[EStart]);
+            // Not opened here: the title is seen first, the guide comes in once the boot intro is over (LateUpdate).
+            if (!guideOffered)
+            {
+                guideOffered = true;
+                guidePending = GuideOpensAtLaunch();
+            }
             Raise(Opened);
+        }
+
+        // False in batch mode and under the flags of the automated tests, which drive the title menu themselves.
+        private static bool GuideOpensAtLaunch()
+        {
+            if (Application.isBatchMode)
+            {
+                return false;
+            }
+            string[] args = Environment.GetCommandLineArgs();
+            return Array.IndexOf(args, "-noQuickGuide") < 0 && Array.IndexOf(args, "-homelineSelfTest") < 0
+                   && Array.IndexOf(args, "-marvisWebTest") < 0;
         }
 
         // ---------------------------------------------------------------- build
@@ -358,7 +382,9 @@ namespace NasaSpaceApp.Menu
             x = Key(footer, x, "ESC");
             x = HintLabel(footer, x, "BACK") + FooterGroupGap;
             x = Key(footer, x, "F1");
-            HintLabel(footer, x, "CONTROLS");
+            x = HintLabel(footer, x, "CONTROLS") + FooterGroupGap;
+            x = Key(footer, x, "F2");
+            HintLabel(footer, x, "QUICK GUIDE");
 
             MenuUi.Label("Attribution", footer, ctx.Assets.Regular, MenuTokens.SizeFine, MenuTokens.SandFaint,
                          TextAnchor.MiddleRight, new Vector2(1f, 0f), new Vector2(1f, 0f),
@@ -419,9 +445,11 @@ namespace NasaSpaceApp.Menu
             backAction.AddBinding("<Keyboard>/escape");
             backAction.AddBinding("<Gamepad>/buttonEast");
             controlsAction = new InputAction("MenuControls", InputActionType.Button, "<Keyboard>/f1");
+            guideAction = new InputAction("MenuGuide", InputActionType.Button, "<Keyboard>/f2");
             pauseAction.Enable();
             backAction.Enable();
             controlsAction.Enable();
+            guideAction.Enable();
         }
 
         private void DisposeInput()
@@ -429,6 +457,7 @@ namespace NasaSpaceApp.Menu
             DisposeAction(ref pauseAction);
             DisposeAction(ref backAction);
             DisposeAction(ref controlsAction);
+            DisposeAction(ref guideAction);
         }
 
         private static void DisposeAction(ref InputAction action)
@@ -470,6 +499,7 @@ namespace NasaSpaceApp.Menu
             bool pause = pauseAction.WasPressedThisFrame();
             bool back = backAction.WasPressedThisFrame();
             bool controls = controlsAction.WasPressedThisFrame();
+            bool guideKey = guideAction.WasPressedThisFrame();
 
             if (state == State.Hidden)
             {
@@ -486,6 +516,11 @@ namespace NasaSpaceApp.Menu
             if (controls)
             {
                 ShowControls();
+                return;
+            }
+            if (guideKey)
+            {
+                ShowPanel(Guide);
                 return;
             }
             if (activePanel != null)
@@ -534,6 +569,16 @@ namespace NasaSpaceApp.Menu
                 if (state == State.Hidden && !restarting)
                 {
                     ApplyOpen(now);
+                }
+            }
+            // The launch guide waits for the boot intro (it ends by itself or on any press). It is dropped, not kept
+            // for later, when the user got ahead of it: simulation started, a close pending, or a panel already open.
+            if (guidePending && !introRunning)
+            {
+                guidePending = false;
+                if (state == State.Title && activePanel == null && !pendingClose)
+                {
+                    ShowPanel(Guide);
                 }
             }
 
@@ -1015,6 +1060,7 @@ namespace NasaSpaceApp.Menu
             }
             activePanel = panel;
             panelTitle.text = panel.Title;
+            backButton.SetLabel(panel.BackLabel);
 
             mainGroup.interactable = false;
             mainGroup.blocksRaycasts = false;

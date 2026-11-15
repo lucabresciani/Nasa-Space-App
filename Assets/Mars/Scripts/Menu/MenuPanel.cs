@@ -24,7 +24,7 @@ namespace NasaSpaceApp.Menu
     }
 
     /// <summary>
-    /// A sub-screen of the menu (settings, credits). The host (<see cref="MarvisMenu"/>) draws the panel box, the
+    /// A sub-screen of the menu (settings, credits, quick guide). The host (<see cref="MarvisMenu"/>) draws the panel box, the
     /// header with <see cref="Title"/> and the Back button; the panel only fills the content rect, which is
     /// <see cref="MenuTokens.ContentWidth"/> x <see cref="MenuTokens.ContentHeight"/> px with its pivot at the top-left.
     /// </summary>
@@ -53,5 +53,8 @@ namespace NasaSpaceApp.Menu
 
         /// <summary>The control that gets keyboard / gamepad focus when the panel opens; null = the Back button.</summary>
         public virtual Selectable DefaultSelection => null;
+
+        /// <summary>Label of the host's close button while this panel is shown, upper case.</summary>
+        public virtual string BackLabel => "BACK";
     }
 }

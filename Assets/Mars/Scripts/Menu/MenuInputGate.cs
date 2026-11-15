@@ -9,7 +9,7 @@ namespace NasaSpaceApp.Menu
 {
     /// <summary>
     /// Masks gameplay keys at the input layer while the menu is open: every keyboard state event has all keys zeroed
-    /// except a small allow-list (menu navigation, Esc, F1, Shift). Scripts that poll <see cref="Keyboard.current"/>
+    /// except a small allow-list (menu navigation, Esc, F1, F2, Shift). Scripts that poll <see cref="Keyboard.current"/>
     /// for hotkeys (N, M, H, L, K, P, F3, X, Tab, E, ...) therefore see nothing under the menu.
     /// </summary>
     public static class MenuInputGate
@@ -18,7 +18,7 @@ namespace NasaSpaceApp.Menu
         {
             Key.Escape, Key.Enter, Key.NumpadEnter, Key.Space,
             Key.UpArrow, Key.DownArrow, Key.LeftArrow, Key.RightArrow,
-            Key.W, Key.A, Key.S, Key.D, Key.F1,
+            Key.W, Key.A, Key.S, Key.D, Key.F1, Key.F2,
             Key.PageUp, Key.PageDown, Key.Home, Key.End, Key.LeftShift, Key.RightShift,
         };
 

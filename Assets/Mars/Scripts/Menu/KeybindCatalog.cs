@@ -170,7 +170,8 @@ namespace NasaSpaceApp.Menu
 
             Group system = new Group { Title = "SYSTEM" };
             system.Rows.Add(new Binding { Action = "PAUSE / MENU", Keys = new[] { "ESC" }, Gamepad = "START" });
-            system.Rows.Add(new Binding { Action = "CONTROLS", Keys = new[] { "F1" } });
+            // One row for both pages: the two columns of the Controls page are exactly full.
+            system.Rows.Add(new Binding { Action = "CONTROLS / QUICK GUIDE", Keys = new[] { "F1", "F2" } });
             system.Rows.Add(new Binding { Action = "DEBUG OVERLAY", Keys = new[] { "F3" } });
             Add(groups, system);
 

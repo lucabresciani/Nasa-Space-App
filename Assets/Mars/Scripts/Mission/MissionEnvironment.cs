@@ -12,15 +12,17 @@ namespace NasaSpaceApp.Mission
     /// then runs in real time (<see cref="MarsClock.SolSeconds"/> per sol instead of the scene's sped-up 1200 s), so EVA
     /// minute t in the simulator is the plan's minute t and the sun sets when the plan's t_dark says.</para>
     ///
-    /// <para><b>Weather.</b> The planner assumes today's clear sky: the weather snaps to Clear and stops evolving on its own
-    /// (M still works). With the D39 storm switch on, the radiation storm is replayed on the suit's dose rate
-    /// (<see cref="DoseRateMsvH"/>); the dust weather is not part of it (it was a solar particle event).</para>
+    /// <para><b>Weather.</b> The planner assumes today's clear sky, so the EVA starts on Clear. With the menu's random
+    /// weather events on (the default) the weather then changes on its own, the first time about 20 s in; the plan's
+    /// numbers do not follow it. With them off, or in an automated test run, it stays Clear. M works either way. With
+    /// the D39 storm switch on, the radiation storm is replayed on the suit's dose rate (<see cref="DoseRateMsvH"/>);
+    /// the dust weather is not part of it (it was a solar particle event).</para>
     /// </summary>
     public static class MissionEnvironment
     {
         private static bool saved;
         private static float savedSolDuration;
-        private static bool savedAutoEvolve, savedHistorical;
+        private static bool savedHistorical;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -38,7 +40,6 @@ namespace NasaSpaceApp.Mission
             {
                 saved = true;
                 savedSolDuration = sky != null ? sky.SolDuration : 0f;
-                savedAutoEvolve = weather != null && weather.AutoEvolve;
                 savedHistorical = weather != null && weather.Historical;
             }
 
@@ -62,9 +63,18 @@ namespace NasaSpaceApp.Mission
             if (weather != null)
             {
                 weather.Historical = false;
-                weather.AutoEvolve = false;
                 weather.SnapTo(WeatherKind.Clear);
-                wx = "weather Clear, fixed (the plan assumes today's clear sky; M still changes it)";
+                if (NasaSpaceApp.Menu.MenuSettings.WeatherEventsActive)
+                {
+                    weather.AutoEvolve = true;
+                    weather.ArmFirstEvent(); // after SnapTo: a snap is a manual choice and cancels a pending first event
+                    wx = "weather Clear at the start, random weather events on (first one about 20 s in; M still changes it)";
+                }
+                else
+                {
+                    weather.AutoEvolve = false;
+                    wx = "weather Clear, fixed (the plan assumes today's clear sky; M still changes it)";
+                }
             }
             string dose = plan.Dose != null
                 ? string.Format(CultureInfo.InvariantCulture, "storm replay: dose series {0} knots, D_allow {1} mGy", plan.Dose.EvaMin.Length, plan.Dose.DAllowMgy)
@@ -85,7 +95,9 @@ namespace NasaSpaceApp.Mission
             MarsWeather weather = UnityEngine.Object.FindAnyObjectByType<MarsWeather>();
             if (weather != null)
             {
-                weather.AutoEvolve = savedAutoEvolve;
+                // Evolution follows the menu setting, not what it was before the mission: the player may have changed
+                // it meanwhile. Historical goes back last, because its setter turns evolution off again when true.
+                weather.AutoEvolve = NasaSpaceApp.Menu.MenuSettings.WeatherEventsActive;
                 weather.Historical = savedHistorical;
             }
         }
