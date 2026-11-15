@@ -1,0 +1,642 @@
+diff --git a/web/src/main.ts b/web/src/main.ts
+index eaeedef..5015d95 100644
+--- a/web/src/main.ts
++++ b/web/src/main.ts
+@@ -1,6 +1,7 @@
+ // HOMELINE web app entry point (WS5 owns web/ except src/hud, src/fp3d, src/nav).
+ import './style.css'
+ import { DATA_MODE, IS_DEV } from './env'
++import { closePlanner, detect } from './martis/bridge'
+ import { clearUnbacked, onUnbackedChange, unbackedNumbers } from './prov/store'
+ import { href, NAV_ITEMS, parseRoute, type Route } from './router'
+ import { VIEWS } from './views'
+@@ -41,6 +42,18 @@ if (IS_DEV) {
+   })
+ }
+ 
++// Embedded in the MARTIS simulator (martis/bridge.ts): a way back to its own menu, on every page.
++void detect().then((embedded) => {
++  if (!embedded) return
++  const back = document.createElement('button')
++  back.type = 'button'
++  back.className = 'martis-back'
++  back.textContent = '← Back to MARTIS'
++  back.title = 'Close the planner and return to the MARTIS menu'
++  back.addEventListener('click', () => void closePlanner())
++  app.querySelector('.topbar')!.append(back)
++})
++
+ const outlet = app.querySelector<HTMLElement>('.outlet')!
+ let cleanup: (() => void) | undefined
+ let renderSeq = 0
+diff --git a/web/src/martis/bridge.test.ts b/web/src/martis/bridge.test.ts
+new file mode 100644
+index 0000000..17d38da
+--- /dev/null
++++ b/web/src/martis/bridge.test.ts
+@@ -0,0 +1,111 @@
++// MARTIS bridge: detection is silent off the loopback address and on plain static hosts; the
++// mission hand-over reports the simulator's reason; the walked track is read by column name.
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import type { EvaLog } from './bridge'
++
++const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
++
++/** A fresh copy of the module (detect() caches), with the page at `hostname`. */
++async function bridgeAt(hostname: string, fetchImpl: (url: string, init?: RequestInit) => Promise<Response>) {
++  vi.resetModules()
++  vi.stubGlobal('location', { hostname })
++  const fetchMock = vi.fn(fetchImpl)
++  vi.stubGlobal('fetch', fetchMock)
++  return { b: await import('./bridge'), fetchMock }
++}
++
++afterEach(() => vi.unstubAllGlobals())
++
++describe('detect', () => {
++  it('does not ask at all on a public host', async () => {
++    const { b, fetchMock } = await bridgeAt('luxkaiwalker.github.io', async () => json({ app: 'MARTIS' }))
++    expect(await b.detect()).toBe(false)
++    expect(fetchMock).not.toHaveBeenCalled()
++  })
++
++  it('is true when hello says MARTIS, and asks once', async () => {
++    const { b, fetchMock } = await bridgeAt('127.0.0.1', async () => json({ app: 'MARTIS', bridge: 1, version: '1.0' }))
++    expect(await b.detect()).toBe(true)
++    expect(await b.detect()).toBe(true)
++    expect(fetchMock).toHaveBeenCalledTimes(1)
++    expect(fetchMock.mock.calls[0][0]).toBe('/martis/api/hello')
++  })
++
++  it('is false on a plain static host: 404, an HTML fallback page, another app', async () => {
++    expect(await (await bridgeAt('localhost', async () => new Response('Not found', { status: 404 }))).b.detect()).toBe(false)
++    expect(await (await bridgeAt('localhost', async () => new Response('<!doctype html>', { status: 200 }))).b.detect()).toBe(false)
++    expect(await (await bridgeAt('localhost', async () => json({ app: 'other' }))).b.detect()).toBe(false)
++  })
++
++  it('is false when the request fails', async () => {
++    const { b } = await bridgeAt('127.0.0.1', async () => {
++      throw new TypeError('Failed to fetch')
++    })
++    expect(await b.detect()).toBe(false)
++  })
++
++  it('tries again after a timeout', async () => {
++    let n = 0
++    const { b, fetchMock } = await bridgeAt('127.0.0.1', async () => {
++      if (n++ === 0) throw new DOMException('timed out', 'TimeoutError')
++      return json({ app: 'MARTIS' })
++    })
++    expect(await b.detect()).toBe(true)
++    expect(fetchMock).toHaveBeenCalledTimes(2)
++  })
++})
++
++describe('sendMission', () => {
++  it('posts the document with the X-Martis header', async () => {
++    const { b, fetchMock } = await bridgeAt('127.0.0.1', async () => json({ ok: true, mission_id: 'm-1' }))
++    expect(await b.sendMission({ kind: 'homeline_mission' })).toEqual({ ok: true })
++    const [url, init] = fetchMock.mock.calls[0]
++    expect(url).toBe('/martis/api/mission')
++    expect(init?.method).toBe('POST')
++    expect(init?.headers).toMatchObject({ 'X-Martis': '1', 'Content-Type': 'application/json' })
++    expect(JSON.parse(init?.body as string)).toEqual({ kind: 'homeline_mission' })
++  })
++
++  it("returns the simulator's reason on 422", async () => {
++    const { b } = await bridgeAt('127.0.0.1', async () => json({ ok: false, error: 'pad mismatch' }, 422))
++    expect(await b.sendMission({})).toEqual({ ok: false, error: 'pad mismatch' })
++  })
++
++  it('reports a refusal without a reason, and no answer', async () => {
++    expect(await (await bridgeAt('127.0.0.1', async () => new Response('', { status: 403 }))).b.sendMission({})).toEqual({ ok: false, error: 'HTTP 403' })
++    const { b } = await bridgeAt('127.0.0.1', async () => {
++      throw new TypeError('Failed to fetch')
++    })
++    expect(await b.sendMission({})).toEqual({ ok: false, error: 'MARTIS did not answer' })
++  })
++})
++
++describe('fetchEvaLog and trackLonLat', () => {
++  const log = {
++    kind: 'homeline_eva_log',
++    summary: { complete: true },
++    track: {
++      columns: ['t_min', 'lon', 'lat', 'elev_m', 'cross_track_m', 'schedule_delta_min', 'o2_used_l', 'o2_delta_l', 'margin_min', 'status'],
++      rows: [
++        [0, 137.4, -4.6, -4400, 0, 0, 0, 0, 60, 'ON PLAN'],
++        [0.083, null, null, null, null, null, 0.1, 0, 60, 'ON PLAN'],
++        [0.167, 137.401, -4.601, -4400, 1, 0, 0.2, 0, 60, 'ON PLAN'],
++      ],
++    },
++  } as unknown as EvaLog
++
++  it('returns the log, or null when there is none or it is another document', async () => {
++    expect(await (await bridgeAt('127.0.0.1', async () => json(log))).b.fetchEvaLog()).toEqual(log)
++    expect(await (await bridgeAt('127.0.0.1', async () => json({ ok: false, error: 'no log' }, 404))).b.fetchEvaLog()).toBeNull()
++    expect(await (await bridgeAt('127.0.0.1', async () => json({ kind: 'homeline_mission' }))).b.fetchEvaLog()).toBeNull()
++  })
++
++  it('reads lon and lat by column name and leaves unknown positions out', async () => {
++    const { b } = await bridgeAt('127.0.0.1', async () => json({}))
++    expect(b.trackLonLat(log)).toEqual([
++      [137.4, -4.6],
++      [137.401, -4.601],
++    ])
++    expect(b.trackLonLat({ ...log, track: { columns: ['t_min'], rows: [[0]] } })).toEqual([])
++  })
++})
+diff --git a/web/src/martis/bridge.ts b/web/src/martis/bridge.ts
+new file mode 100644
+index 0000000..9e6c0c2
+--- /dev/null
++++ b/web/src/martis/bridge.ts
+@@ -0,0 +1,145 @@
++// MARTIS bridge: the page side of the small HTTP API the MARTIS simulator (Unity) serves next to
++// this app when it embeds it. Page and API share one origin (http://127.0.0.1:<port>/), so plain
++// fetch works. Everything here is inert on the public site and on any plain static host:
++// detect() answers false and nothing else is called.
++//   GET  /martis/api/hello    {"app":"MARTIS","bridge":1,"version":"..."}
++//   GET  /martis/api/state    {"seq","planner_visible","eva","mission_id","eva_log_seq","last_error"}
++//   POST /martis/api/mission  mission.json text (header X-Martis: 1) -> {"ok":true,"mission_id"} | 422 {"ok":false,"error"}
++//   GET  /martis/api/eva-log  the latest eva_log document (contracts/bundle/eva_log.schema.json) | 404
++//   POST /martis/api/close    (header X-Martis: 1) -> {"ok":true}
++const API = '/martis/api'
++const POST_HEADERS = { 'Content-Type': 'application/json', 'X-Martis': '1' }
++
++export interface MartisState {
++  /** increases on every change */
++  seq: number
++  planner_visible: boolean
++  /** idle = no web mission loaded; running = loaded, no log yet; complete / ended = its log is in */
++  eva: 'idle' | 'running' | 'complete' | 'ended'
++  mission_id: string | null
++  /** 0 = no log yet; increases with each new log */
++  eva_log_seq: number
++  last_error: string | null
++}
++
++/** The parts of eva_log.json the debrief shows (contracts/bundle/eva_log.schema.json). */
++export interface EvaLog {
++  kind: 'homeline_eva_log'
++  mission_id: string | null
++  title: string
++  label: string
++  /** where the log comes from, in words (the simulator, or a test tool that says so) */
++  origin_label?: string
++  o2_model: string
++  summary: {
++    complete: boolean
++    eva_min: number | null
++    planned_eva_min: number | null
++    waypoints_done: number
++    waypoints_skipped: number
++    stops_left_early: number
++    lowest_margin_min: number | null
++    lowest_binding: string | null
++    max_cross_track_m: number | null
++    o2_used_l: number | null
++    planned_o2_used_l: number | null
++  }
++  events: { t_min: number; kind: string; wp: number | null; detail?: string }[]
++  track: { columns: string[]; rows: (number | string | null)[][] }
++}
++
++let detected: Promise<boolean> | undefined
++
++async function probe(): Promise<boolean> {
++  // MARTIS serves the app on the loopback address only: anywhere else, do not even ask.
++  if (typeof location === 'undefined' || !/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return false
++  // Any answer is final. Only a timeout is tried again, with more patience: the simulator can be
++  // busy while it starts, and a wrong "no" would hide its controls for the whole session.
++  for (const ms of [800, 2000, 5000]) {
++    try {
++      const res = await fetch(`${API}/hello`, { cache: 'no-store', signal: AbortSignal.timeout(ms) })
++      if (!res.ok) return false
++      return ((await res.json()) as { app?: unknown } | null)?.app === 'MARTIS'
++    } catch (e) {
++      if (!(e instanceof Error && e.name === 'TimeoutError')) return false
++    }
++  }
++  return false
++}
++
++/** True when this page is served by MARTIS. Asked once, then cached; never throws. */
++export function detect(): Promise<boolean> {
++  return (detected ??= probe())
++}
++
++/** Hand a finalized mission document to the simulator; it then hides the planner and starts the EVA. */
++export async function sendMission(doc: unknown): Promise<{ ok: boolean; error?: string }> {
++  try {
++    const res = await fetch(`${API}/mission`, { method: 'POST', headers: POST_HEADERS, body: JSON.stringify(doc) })
++    const j = (await res.json().catch(() => null)) as { ok?: unknown; error?: unknown } | null
++    if (res.ok && j?.ok === true) return { ok: true }
++    return { ok: false, error: typeof j?.error === 'string' && j.error ? j.error : `HTTP ${res.status}` }
++  } catch {
++    return { ok: false, error: 'MARTIS did not answer' }
++  }
++}
++
++/** Hide the planner and return to the simulator's own menu. False when MARTIS did not answer. */
++export async function closePlanner(): Promise<boolean> {
++  try {
++    return (await fetch(`${API}/close`, { method: 'POST', headers: POST_HEADERS })).ok
++  } catch {
++    return false
++  }
++}
++
++/** Call `cb` with the simulator state about once per second while the page is visible. Returns the unsubscribe function. */
++export function watchState(cb: (s: MartisState) => void): () => void {
++  let stopped = false
++  let timer: ReturnType<typeof setTimeout> | undefined
++  const tick = async () => {
++    clearTimeout(timer)
++    if (stopped || document.hidden) return // a hidden page starts again on visibilitychange
++    try {
++      const res = await fetch(`${API}/state`, { cache: 'no-store' })
++      if (res.ok && !stopped) cb((await res.json()) as MartisState)
++    } catch {
++      /* no answer this time: the next tick asks again */
++    }
++    if (!stopped) timer = setTimeout(() => void tick(), 1000)
++  }
++  const onVisible = () => void tick()
++  document.addEventListener('visibilitychange', onVisible)
++  void tick()
++  return () => {
++    stopped = true
++    clearTimeout(timer)
++    document.removeEventListener('visibilitychange', onVisible)
++  }
++}
++
++/** The latest EVA log, or null when there is none (404) or it is not an eva_log document. */
++export async function fetchEvaLog(): Promise<EvaLog | null> {
++  try {
++    const res = await fetch(`${API}/eva-log`, { cache: 'no-store' })
++    if (!res.ok) return null
++    const j = (await res.json()) as EvaLog | null
++    return j?.kind === 'homeline_eva_log' && !!j.summary && Array.isArray(j.track?.rows) ? j : null
++  } catch {
++    return null
++  }
++}
++
++/** The walked track as [lon, lat] points: track.rows by its "lon" and "lat" columns, unknown positions left out. */
++export function trackLonLat(log: EvaLog): [number, number][] {
++  const iLon = log.track.columns.indexOf('lon')
++  const iLat = log.track.columns.indexOf('lat')
++  if (iLon < 0 || iLat < 0) return []
++  const out: [number, number][] = []
++  for (const r of log.track.rows) {
++    const lon = r[iLon]
++    const lat = r[iLat]
++    if (typeof lon === 'number' && typeof lat === 'number') out.push([lon, lat])
++  }
++  return out
++}
+diff --git a/web/src/mission/mission.css b/web/src/mission/mission.css
+index 7296b6b..33049ad 100644
+--- a/web/src/mission/mission.css
++++ b/web/src/mission/mission.css
+@@ -79,3 +79,25 @@
+ .mp-st-pop button:disabled { opacity: 0.5; cursor: default; }
+ .mp-st-pop a { color: #8a3b12; font-weight: 600; }
+ .mp-st-link { margin-left: 0.5rem; font-size: 0.78rem; white-space: nowrap; }
++/* Embedded in MARTIS (martis/bridge.ts): start the EVA in the simulator; the EVA debrief card */
++.mp-start { display: block; width: 100%; min-height: 40px; margin-bottom: 0.5rem; padding: 0.45rem 0.9rem; background: var(--accent); color: #1a120e; border: 1px solid var(--accent); border-radius: 8px; font: inherit; font-weight: 700; cursor: pointer; }
++.mp-start:hover:not(:disabled) { background: #f0a472; border-color: #f0a472; }
++.mp-start:active:not(:disabled) { transform: translateY(1px); }
++.mp-start:disabled { opacity: 0.45; cursor: default; }
++.mp-start[aria-busy='true'] { opacity: 0.8; cursor: progress; }
++.mp-start:focus-visible, .mp-download:focus-visible, .mp-debrief .mp-clear:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
++.mp-start-err { margin: 0 0 0.5rem; padding: 4px 8px; border: 1px solid var(--bad); border-radius: 6px; font-size: 0.85rem; overflow-wrap: anywhere; }
++.mp-download { min-height: 28px; padding: 3px 10px; }
++.mp-download:disabled { opacity: 0.45; cursor: default; }
++.mp-download + .muted { display: block; margin-top: 0.35rem; }
++.mp-debrief { border-color: var(--accent); }
++.mp-debrief-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
++.mp-debrief-head h3 { margin: 0.1rem 0; color: var(--ink); }
++.mp-debrief .mp-clear { min-height: 28px; padding: 2px 10px; }
++.mp-debrief-label { margin: 0.3rem 0 0.5rem; }
++.mp-debrief-origin { display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
++.mp-row.mp-warn b { color: var(--warn); }
++.mp-debrief-legend { margin-top: 0.5rem; border-top: 1px solid var(--line); padding-top: 0.4rem; }
++@media (prefers-reduced-motion: no-preference) {
++  .mp-start { transition: transform 80ms ease-out; }
++}
+diff --git a/web/src/mission/missionMap.ts b/web/src/mission/missionMap.ts
+index 367049a..0aea218 100644
+--- a/web/src/mission/missionMap.ts
++++ b/web/src/mission/missionMap.ts
+@@ -1,6 +1,7 @@
+ // Mission Planer map (plain TS + MapLibre, offline like the Plan page): HiRISE basemap, the chosen
+ // reachable-area boundary, planned legs (solid), the way home from the last waypoint (dashed),
+-// the pad, and numbered draggable waypoints. Click adds a waypoint.
++// the pad, and numbered draggable waypoints. Click adds a waypoint. Embedded in MARTIS, the track
++// walked in the simulator is drawn over the plan (EVA debrief).
+ import { LngLatBounds, Map as MlMap, Marker, NavigationControl, Popup, setWorkerUrl, type GeoJSONSource, type MapMouseEvent } from 'maplibre-gl'
+ import type { FilterSpecification } from '@maplibre/maplibre-gl-style-spec'
+ import 'maplibre-gl/dist/maplibre-gl.css'
+@@ -66,7 +67,7 @@ export class MissionMap {
+ 
+   private init(): void {
+     const m = this.map
+-    for (const id of ['band', 'iso', 'edges', 'legs', 'home']) m.addSource(id, { type: 'geojson', data: EMPTY })
++    for (const id of ['band', 'iso', 'edges', 'legs', 'home', 'walked']) m.addSource(id, { type: 'geojson', data: EMPTY })
+     m.addLayer({ id: 'band-fill', type: 'fill', source: 'band', filter: NOTHING, paint: { 'fill-color': THEME.variant.nominal, 'fill-opacity': 0.18 } })
+     m.addLayer({ id: 'band-line', type: 'line', source: 'band', filter: NOTHING, paint: { 'line-color': THEME.variant.nominal, 'line-width': 2.5 } })
+     m.addLayer({ id: 'iso-fill', type: 'fill', source: 'iso', filter: NOTHING, paint: { 'fill-color': THEME.variant.nominal, 'fill-opacity': 0.15 } })
+@@ -91,6 +92,8 @@ export class MissionMap {
+     })
+     m.addLayer({ id: 'legs-casing', type: 'line', source: 'legs', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a120e', 'line-width': 5 } })
+     m.addLayer({ id: 'legs-line', type: 'line', source: 'legs', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': THEME.route, 'line-width': 3 } })
++    m.addLayer({ id: 'walked-casing', type: 'line', source: 'walked', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#1a120e', 'line-width': 5 } })
++    m.addLayer({ id: 'walked-line', type: 'line', source: 'walked', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': THEME.walked, 'line-width': 3 } })
+     m.on('click', (e: MapMouseEvent) => this.h.onAdd(e.lngLat.lng, e.lngLat.lat))
+   }
+ 
+@@ -239,6 +242,14 @@ export class MissionMap {
+     )
+   }
+ 
++  /** EVA debrief: the track walked in the simulator (eva_log track), or null to remove it. */
++  async setWalked(coords: LonLat[] | null): Promise<void> {
++    await this.ready
++    ;(this.map.getSource('walked') as GeoJSONSource).setData(
++      coords && coords.length > 1 ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } }] } : EMPTY,
++    )
++  }
++
+   fitTo(points: LonLat[]): void {
+     if (!points.length) return
+     const b = new LngLatBounds(points[0], points[0])
+diff --git a/web/src/style.css b/web/src/style.css
+index a40963b..347833d 100644
+--- a/web/src/style.css
++++ b/web/src/style.css
+@@ -22,6 +22,10 @@ code { font-size: 0.9em; }
+ .topnav { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+ .topnav a { color: var(--muted); text-decoration: none; padding: 0.25rem 0.55rem; border-radius: 4px; }
+ .topnav a.active, .topnav a:hover { color: var(--ink); background: var(--panel-2); }
++/* Embedded in MARTIS (martis/bridge.ts): the way back to the simulator's own menu, on every page */
++.martis-back { margin-left: auto; min-height: 32px; padding: 0.25rem 0.8rem; background: transparent; color: var(--ink); border: 1px solid var(--muted); border-radius: 6px; font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; }
++.martis-back:hover { border-color: var(--accent); background: var(--panel-2); }
++.martis-back:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+ .dummy-banner { background: repeating-linear-gradient(45deg, #6b1d1d 0 12px, #7e2626 12px 24px); color: #fff; text-align: center; font-weight: 700; padding: 0.2rem; letter-spacing: 0.05em; }
+ .outlet { flex: 1; min-height: 0; position: relative; overflow: auto; }
+ .page { max-width: 1000px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+diff --git a/web/src/theme.ts b/web/src/theme.ts
+index 276c28b..1f6ad22 100644
+--- a/web/src/theme.ts
++++ b/web/src/theme.ts
+@@ -19,6 +19,7 @@ export const THEME = {
+   isoRamp: ['#fff3b0', '#ffd27a', '#f9a65a', '#e8774a', '#c4503d', '#8f2f3a'],
+   isoFillOpacity: 0.35,
+   route: '#ffffff',
++  walked: '#ff6ad5', // EVA debrief: the track walked in the simulator (apart from the white legs, the blue way home, the orange bands)
+   partner: '#d4b3ff',
+   station: '#ffd166',
+   pad: '#ffffff',
+diff --git a/web/src/views/mission.tsx b/web/src/views/mission.tsx
+index c2b2e77..f763612 100644
+--- a/web/src/views/mission.tsx
++++ b/web/src/views/mission.tsx
+@@ -7,6 +7,8 @@
+ // The plan lives in the address (#/mission?plan=…, mission/share.ts) and in this browser, so it can be
+ // shared as a link and survives a reload.
+ // Later (PDF "Mission Planer"): O2 / radiation budget dropdown, reachable foundries.
++// Embedded in the MARTIS simulator (martis/bridge.ts) the export card also starts the EVA there, and
++// the simulator's EVA log comes back as a debrief card with the walked track on the map.
+ import '../mission/mission.css'
+ import { render } from 'preact'
+ import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+@@ -27,6 +29,8 @@ import type { Station } from '../data/types'
+ import { href, type Route } from '../router'
+ import { buildTrack, legProfile, missionMargin } from '../mission/margin'
+ import { buildMission, downloadJson, finalizeMission } from '../mission/export'
++import { detect, fetchEvaLog, sendMission, trackLonLat, watchState, type EvaLog } from '../martis/bridge'
++import { THEME } from '../theme'
+ import { ensureManifest } from './common'
+ import type { View } from './types'
+ 
+@@ -76,6 +80,12 @@ function save(plan: string): void {
+ 
+ type Initial = { plan?: string; add?: string }
+ 
++/** MARTIS eva_log_seq of the last debrief the user dismissed: it stays away while the app is open. */
++let dismissedLogSeq = 0
++
++/** The last mission MARTIS accepted from this page: its id and the plan string (mission/share.ts) it was built from. */
++let sent: { id: unknown; plan: string } | null = null
++
+ function MissionPanel({ mmap, handlers, mapsEl, initial }: { mmap: MissionMap; handlers: Handlers; mapsEl: HTMLElement; initial: Initial }) {
+   const [d, setD] = useState<MissionData | null>(null)
+   const [error, setError] = useState<unknown>(null)
+@@ -92,6 +102,51 @@ function MissionPanel({ mmap, handlers, mapsEl, initial }: { mmap: MissionMap; h
+   const [copied, setCopied] = useState(false)
+   /** D39 storm switch: replay the 20 May 2024 RAD storm on this EVA's clock (dose term in the margin and the export) */
+   const [storm, setStorm] = useState(false)
++  /** served by the MARTIS simulator: the EVA can be started there and its log comes back */
++  const [martis, setMartis] = useState(false)
++  const [starting, setStarting] = useState(false)
++  const [startError, setStartError] = useState<string | null>(null)
++  const [debrief, setDebrief] = useState<{ seq: number; log: EvaLog } | null>(null)
++  const debriefEl = useRef<HTMLElement>(null)
++
++  useEffect(() => {
++    let alive = true
++    void detect().then((yes) => alive && setMartis(yes))
++    return () => {
++      alive = false
++    }
++  }, [])
++
++  // A new EVA log in the simulator becomes the debrief, unless the user dismissed that one already.
++  useEffect(() => {
++    if (!martis) return
++    let alive = true
++    let asked = 0
++    const stop = watchState((s) => {
++      const seq = Number(s.eva_log_seq) || 0
++      if (seq <= dismissedLogSeq || seq === asked) return
++      asked = seq
++      void fetchEvaLog().then((log) => {
++        if (!alive) return
++        if (log) setDebrief({ seq, log })
++        else asked = 0 // not there yet: ask again on the next state
++      })
++    })
++    return () => {
++      alive = false
++      stop()
++    }
++  }, [martis])
++
++  const dismissDebrief = () => {
++    if (debrief) dismissedLogSeq = debrief.seq
++    setDebrief(null)
++  }
++
++  useEffect(() => {
++    void mmap.setWalked(debrief ? trackLonLat(debrief.log) : null)
++    if (debrief) debriefEl.current?.scrollIntoView({ block: 'nearest' })
++  }, [debrief])
+ 
+   // Load once.
+   useEffect(() => {
+@@ -273,8 +328,9 @@ function MissionPanel({ mmap, handlers, mapsEl, initial }: { mmap: MissionMap; h
+     return missionMargin(track, { tDarkMin: d.tDarkMin, rad: d.rad, storm })
+   }, [d, legs, wps, storm])
+ 
+-  const exportMission = async () => {
+-    if (!d || !wps.length) return
++  /** The finalized mission document of the current plan (mission.schema.json), or null without waypoints. */
++  const missionDoc = async () => {
++    if (!d || !wps.length) return null
+     const w = d.tHome.width
+     const elevAt = (lon: number, lat: number) => {
+       const p = d.tHome.pixelOf(lon, lat)
+@@ -300,8 +356,32 @@ function MissionPanel({ mmap, handlers, mapsEl, initial }: { mmap: MissionMap; h
+       label: CONFIG.simulatedLabel,
+       dummy: DATA_MODE === 'dummy',
+     })
+-    const fin = await finalizeMission(doc)
+-    downloadJson(fin, `mission_${fin.mission_id}.json`)
++    return finalizeMission(doc)
++  }
++
++  const exportMission = async () => {
++    const fin = await missionDoc()
++    if (fin) downloadJson(fin, `mission_${fin.mission_id}.json`)
++  }
++
++  /** Embedded in MARTIS: hand the same document to the simulator, which hides this planner and starts the EVA. */
++  const startEva = async () => {
++    setStarting(true)
++    setStartError(null)
++    const plan = planStr
++    try {
++      const fin = await missionDoc()
++      if (!fin) return
++      const r = await sendMission(fin)
++      if (r.ok) {
++        sent = { id: fin.mission_id, plan }
++        dismissDebrief() // a debrief on screen belongs to the EVA before this one
++      } else setStartError(r.error ?? 'no reason given')
++    } catch (e) {
++      setStartError(e instanceof Error ? e.message : String(e))
++    } finally {
++      setStarting(false)
++    }
+   }
+ 
+   // Draw.
+@@ -337,6 +417,19 @@ function MissionPanel({ mmap, handlers, mapsEl, initial }: { mmap: MissionMap; h
+     <div class="panel-body mp-body">
+       <h2>Mission Planer</h2>
+       <DummyNote />
++      {martis && (
++        <div aria-live="polite">
++          {debrief && (
++            <Debrief
++              log={debrief.log}
++              // The newest log can be of an earlier mission, and the plan can have been edited since it was sent.
++              samePlan={sent !== null && debrief.log.mission_id === sent.id && planStr === sent.plan}
++              onDismiss={dismissDebrief}
++              elRef={debriefEl}
++            />
++          )}
++        </div>
++      )}
+       <p class="caption">
+         Click the map to add a waypoint. Each leg is the fastest walk on the {d.grid.resM} m grid for <code>{d.scenario.id}</code>; the dashed line is the way home from the last waypoint.
+       </p>
+@@ -348,7 +441,19 @@ function MissionPanel({ mmap, handlers, mapsEl, initial }: { mmap: MissionMap; h
+       </section>
+ 
+       <section class="mp-card mp-export">
+-        <button type="button" disabled={!wps.length} onClick={() => void exportMission()} title="mission.json for the EVA simulator (contracts/bundle/mission.schema.json)">
++        {martis && (
++          <>
++            <button type="button" class="mp-start" disabled={!wps.length || starting} aria-busy={starting} onClick={() => void startEva()} title={wps.length ? 'Send this plan to the MARTIS simulator and walk it there' : 'Add a waypoint first'}>
++              {starting ? 'Starting the EVA…' : 'Start EVA in MARTIS'}
++            </button>
++            {startError && (
++              <p class="mp-start-err" role="alert">
++                <b>MARTIS did not start the EVA.</b> {startError}
++              </p>
++            )}
++          </>
++        )}
++        <button type="button" class={martis ? 'mp-clear mp-download' : undefined} disabled={!wps.length} onClick={() => void exportMission()} title="mission.json for the EVA simulator (contracts/bundle/mission.schema.json)">
+           Download mission.json
+         </button>
+         {margin && (
+@@ -368,7 +473,8 @@ function MissionPanel({ mmap, handlers, mapsEl, initial }: { mmap: MissionMap; h
+             Waypoints <span class="muted">({wps.length})</span>
+           </summary>
+           <WaypointList wps={wps} legs={legs} setWps={setWps} />
+-          {wps.length > 0 && (
++          {/* Not inside MARTIS: the address there is the simulator's own (127.0.0.1) and opens nowhere else. */}
++          {wps.length > 0 && !martis && (
+             <div class="mp-share">
+               <button type="button" class="mp-clear" onClick={copyLink}>
+                 {copied ? 'Link copied ✓' : 'Copy link to this plan'}
+@@ -447,6 +553,54 @@ function Estimates({ b, n }: { b: MissionBudget; n: number }) {
+   )
+ }
+ 
++/** A logged value with its unit (non-breaking space between them), '–' when unknown. */
++const fmtNum = (v: number | null, digits: number, unit: string) => (typeof v !== 'number' ? '–' : `${v.toFixed(digits)}\u00a0${unit}`)
++
++/**
++ * EVA debrief (embedded in MARTIS): the simulator's own numbers from its eva_log, shown as they are. Nothing is computed here.
++ * samePlan: the plan drawn on the map is the one this EVA was started with.
++ */
++function Debrief({ log, samePlan, onDismiss, elRef }: { log: EvaLog; samePlan: boolean; onDismiss: () => void; elRef: { current: HTMLElement | null } }) {
++  const s = log.summary
++  const endReason = s.complete ? undefined : log.events?.find((e) => e.kind === 'end')?.detail
++  return (
++    <section class="mp-card mp-debrief" ref={elRef} aria-labelledby="mp-debrief-title">
++      <div class="mp-debrief-head">
++        <h3 id="mp-debrief-title">EVA debrief</h3>
++        <button type="button" class="mp-clear" onClick={onDismiss} title="Remove this card and the walked track from the map">
++          Dismiss
++        </button>
++      </div>
++      <p class="mp-debrief-label">
++        <span class="tag tag-simulated">{log.label}</span>
++        {log.origin_label && <span class="mp-debrief-origin">{log.origin_label}</span>}
++      </p>
++      <div class="mp-est">
++        <Row k="Outcome" v={s.complete ? 'Completed' : 'Ended early'} cls={s.complete ? 'mp-ok' : 'mp-warn'} title={s.complete ? 'Back at the pad with every waypoint done or skipped' : endReason} />
++        <Row k="EVA time" v={`${fmtNum(s.eva_min, 1, 'min')}, planned ${fmtNum(s.planned_eva_min, 1, 'min')}`} />
++        <Row k="O₂ used" v={`${fmtNum(s.o2_used_l, 1, 'L')}, planned ${fmtNum(s.planned_o2_used_l, 1, 'L')}`} title={log.o2_model} />
++        <Row k="Lowest margin" v={`${fmtNum(s.lowest_margin_min, 1, 'min')}${typeof s.lowest_margin_min === 'number' && s.lowest_binding ? `, bound by ${s.lowest_binding}` : ''}`} cls={sign(s.lowest_margin_min ?? null)} />
++        <Row k="Waypoints" v={`${s.waypoints_done} done, ${s.waypoints_skipped} skipped${s.stops_left_early ? `, ${s.stops_left_early} left early` : ''}`} />
++        <Row k="Largest cross-track distance" v={fmtNum(s.max_cross_track_m, 1, 'm')} title="Farthest the walk was from the route planned for this EVA" />
++      </div>
++      <div class="legend mp-debrief-legend">
++        <ul>
++          <li>
++            <span class="sw sw-line" style={`--c:${THEME.route}`} aria-hidden="true" /> {samePlan ? 'Planned route' : 'Plan on the map now (may differ from the plan of this EVA)'}
++          </li>
++          <li>
++            <span class="sw sw-line" style={`--c:${THEME.walked}`} aria-hidden="true" /> Walked in the simulator
++          </li>
++        </ul>
++      </div>
++      <p class="caption">
++        {log.title ? `${log.title}. ` : ''}
++        {endReason ? `Ended: ${endReason}. ` : ''}O₂ used is from the {log.o2_model}.
++      </p>
++    </section>
++  )
++}
++
+ function WaypointList({ wps, legs, setWps }: { wps: Waypoint[]; legs: (Leg | null)[]; setWps: (f: (w: Waypoint[]) => Waypoint[]) => void }) {
+   if (!wps.length) return <p class="muted mp-empty">No waypoints yet: click the map.</p>
+   return (

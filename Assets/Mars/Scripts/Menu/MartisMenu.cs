@@ -98,6 +98,20 @@ namespace NasaSpaceApp.Menu
             m.pendingClose = true;
         }
 
+        /// <summary>
+        /// Opens the pause screen as the Esc key does, when a menu exists and is closed; otherwise no-op. Main thread;
+        /// safe at any time (applied in the menu's next LateUpdate).
+        /// </summary>
+        public static void OpenNow()
+        {
+            MartisMenu m = Instance;
+            if (m == null || !m.built || IsOpen || m.state != State.Hidden)
+            {
+                return;
+            }
+            m.pendingOpen = true;
+        }
+
         /// <summary>True once the simulation has been started in this scene.</summary>
         public bool SessionStarted => sessionStarted;
 
