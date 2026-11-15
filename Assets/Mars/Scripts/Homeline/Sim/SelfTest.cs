@@ -225,6 +225,8 @@ namespace NasaSpaceApp.Homeline.Sim
             double nextSample = 0;
             bool shotS7 = false, shotMid = false;
             float hrWalk = 0f, hrStation = 0f, radPeak = 0f;
+            int frames = 0;
+            float frameSum = 0f, frameWorst = 0f;
             bool alarmOnOfficial = false;
             waitUntil = Time.realtimeSinceStartup + 110f;
             while (!app.Driver.ReplayFinished && Time.realtimeSinceStartup < waitUntil)
@@ -262,8 +264,12 @@ namespace NasaSpaceApp.Homeline.Sim
                     shotMid = true;
                     yield return Shot("eva_leg3");
                 }
+                frames++;
+                frameSum += Time.unscaledDeltaTime;
+                if (Time.unscaledDeltaTime > frameWorst) frameWorst = Time.unscaledDeltaTime;
                 yield return null;
             }
+            if (frames > 0) Note("frame time during the replay: average " + F(1000f * frameSum / frames) + " ms (" + F(frames / frameSum) + " fps), worst " + F(1000f * frameWorst) + " ms, " + frames + " frames");
             Check(app.Driver.ReplayFinished, "replay reached the planned return (t = " + F(app.Driver.TMin) + " min)");
             Note("heart rate in the replay: " + F(hrWalk) + " bpm walking to S7, " + F(hrStation) + " bpm working at S7 (rest " + F(SuitTelemetry.HeartRateRest) + ")");
             Check(radPeak > 1.0f, "helmet RAD follows the planner's storm (" + F(radPeak) + " mSv/h near its peak; quiet level " + F(SuitTelemetry.DoseRateGaleMsvH) + ")");
