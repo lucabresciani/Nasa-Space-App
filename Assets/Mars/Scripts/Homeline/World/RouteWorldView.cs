@@ -84,11 +84,14 @@ namespace NasaSpaceApp.Homeline.World
 
             foreach (RouteLeg leg in plan.Track.Legs)
             {
+                // The route follows the cells of a 3 m grid, so it is a fine sawtooth: the drawn line is smoothed
+                // (a few metres of running mean, ends kept), which moves it by well under a metre.
+                double[] sx = Smooth(Smooth(leg.X)), sy = Smooth(Smooth(leg.Y));
                 var points = new Vector3[leg.X.Length];
                 for (int i = 0; i < points.Length; i++)
                 {
                     double wx, wz;
-                    plan.Frame.LocalToWorld(leg.X[i], leg.Y[i], out wx, out wz);
+                    plan.Frame.LocalToWorld(sx[i], sy[i], out wx, out wz);
                     points[i] = ground.OnGround(wx, wz, RibbonLift);
                 }
                 legs.Add(points);
@@ -203,6 +206,21 @@ namespace NasaSpaceApp.Homeline.World
             ShownPoints = shown;
             ShownPosts = shownPosts;
             drawn = shown > 0 || shownPosts > 0;
+        }
+
+        /// <summary>Running mean over five vertices; the window shrinks towards the two ends, which stay in place.</summary>
+        static double[] Smooth(double[] v)
+        {
+            int n = v.Length;
+            var o = new double[n];
+            for (int i = 0; i < n; i++)
+            {
+                int r = System.Math.Min(2, System.Math.Min(i, n - 1 - i));
+                double sum = 0;
+                for (int k = i - r; k <= i + r; k++) sum += v[k];
+                o[i] = sum / (2 * r + 1);
+            }
+            return o;
         }
 
         LineRenderer NewLine(string name, Color color, float width)

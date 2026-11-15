@@ -207,6 +207,7 @@ namespace NasaSpaceApp.Homeline.Sim
             TMin = System.Math.Max(Plan.Track.StartMin, System.Math.Min(Plan.EndMin, tMin));
             ReplayFinished = TMin >= Plan.EndMin;
             skyForce = true;
+            hasEasedY = false; // a jump: no easing across it
             if (probe != null) probe.Reset(TMin, 0, null); // a jump is not a walk
         }
 
@@ -489,6 +490,7 @@ namespace NasaSpaceApp.Homeline.Sim
 
         void ReadKeys()
         {
+            if (SelfTest.Requested) return; // the unattended check must not react to keys typed by someone at the PC
             Keyboard k = Keyboard.current;
             if (k == null) return;
             if (k.vKey.wasPressedThisFrame) SetMode(Mode == EvaMode.Replay ? EvaMode.FreeWalk : EvaMode.Replay);
@@ -518,10 +520,24 @@ namespace NasaSpaceApp.Homeline.Sim
             OnDetailedTerrain = detailed;
             LocalX = localX;
             LocalY = localY;
-            var p = new Vector3((float)wx, groundY + FeetLift, (float)wz);
+            // In a replay faster than real time the ground passes several metres per frame: the eye would shake over
+            // every bump. The height is eased there (never more than BumpDipM below the ground); at 1x it is exact.
+            float y = groundY;
+            if (Mode == EvaMode.Replay && Speed > 1.5 && Playing && !ReplayFinished && hasEasedY)
+            {
+                easedY += (groundY - easedY) * (1f - Mathf.Exp(-Time.unscaledDeltaTime / BumpEaseSeconds));
+                y = Mathf.Max(groundY - BumpDipM, easedY);
+            }
+            easedY = y;
+            hasEasedY = true;
+            var p = new Vector3((float)wx, y + FeetLift, (float)wz);
             MoveBody(p);
             lastSafe = p;
         }
+
+        const float YawSmoothSeconds = 0.30f, BumpEaseSeconds = 0.12f, BumpDipM = 0.25f;
+        float yawVelocity, easedY;
+        bool hasEasedY;
 
         void MoveBody(Vector3 p)
         {
@@ -546,7 +562,8 @@ namespace NasaSpaceApp.Homeline.Sim
             if (Time.unscaledTime >= lookHeldUntil)
             {
                 // Unscaled: at 300x the route turns faster than a comfortable camera could follow in scaled time.
-                yaw = Mathf.MoveTowardsAngle(yaw, bearingDeg, YawRateDegPerSec * Time.unscaledDeltaTime);
+                // Eased (critically damped): the view starts and stops turning gently, and never faster than the rate cap.
+                yaw = Mathf.SmoothDampAngle(yaw, bearingDeg, ref yawVelocity, YawSmoothSeconds, YawRateDegPerSec, Time.unscaledDeltaTime);
                 player.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             }
             lastSetYaw = player.transform.eulerAngles.y;
