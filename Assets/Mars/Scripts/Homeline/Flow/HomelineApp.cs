@@ -95,7 +95,7 @@ namespace NasaSpaceApp.Homeline.Flow
 
             if (Catalog.Plans.Count > 0)
             {
-                MartisMenu.StartInterceptor = OnStartRequested;
+                // START SIMULATION goes straight to free exploration; MISSION PLAN (title and pause) opens the planning.
                 MartisMenu.PlanRequested = OpenPlanning;
                 MartisMenu.Closed += OnMenuClosed;
             }
@@ -155,6 +155,7 @@ namespace NasaSpaceApp.Homeline.Flow
         {
             // RESTART SIMULATION reloads the scene: the player, the terrain and the menu are new objects.
             frame = null;
+            boundsSet = false;
             planCache.Clear();
             panel = null;
             panelOwner = null;
@@ -226,6 +227,40 @@ namespace NasaSpaceApp.Homeline.Flow
         readonly Dictionary<string, RoutedLeg> legCache = new Dictionary<string, RoutedLeg>(StringComparer.Ordinal);
         GridRouter router;
         bool routerTried;
+        bool boundsSet;
+
+        /// <summary>Metres kept between an edited route and the edge of the detailed terrain.</summary>
+        public const double DetailedTerrainInsetM = 6.0;
+
+        /// <summary>
+        /// Keeps edited routes on the scene's high-definition terrain: the router may only use the box of that
+        /// terrain, and a station cannot be dropped outside it. Done once per scene.
+        /// </summary>
+        void EnsureRouterBounds(MissionPlan plan)
+        {
+            if (boundsSet || plan == null || Router == null) return;
+            float minX, minZ, maxX, maxZ;
+            if (!new GroundSampler().DetailedRect(out minX, out minZ, out maxX, out maxZ)) return;
+            double x0, y0, x1, y1, x2, y2, x3, y3;
+            plan.Frame.WorldToLocal(minX, minZ, out x0, out y0);
+            plan.Frame.WorldToLocal(maxX, minZ, out x1, out y1);
+            plan.Frame.WorldToLocal(minX, maxZ, out x2, out y2);
+            plan.Frame.WorldToLocal(maxX, maxZ, out x3, out y3);
+            double d = DetailedTerrainInsetM;
+            Router.SetAllowedRect(Math.Max(x0, x2) + d, Math.Max(y0, y1) + d, Math.Min(x1, x3) - d, Math.Min(y2, y3) - d);
+            boundsSet = true;
+            legCache.Clear();
+            Debug.Log("[HOMELINE] edited routes kept on the detailed terrain: x " + HlJson.F(Math.Max(x0, x2) + d, 0) + ".." + HlJson.F(Math.Min(x1, x3) - d, 0) +
+                      " m, y " + HlJson.F(Math.Max(y0, y1) + d, 0) + ".." + HlJson.F(Math.Min(y2, y3) - d, 0) + " m of the pad");
+        }
+
+        /// <summary>True where a station may stand: reachable in the plan's way-home map and on the detailed terrain.</summary>
+        public bool CanPlaceStation(MissionPlan plan, double x, double y)
+        {
+            if (plan == null || !plan.THomeAt(x, y).HasValue) return false;
+            EnsureRouterBounds(plan);
+            return Router == null || Router.InAllowed(x, y);
+        }
 
         /// <summary>The simulator's re-router (HomelineData/router); null when its data is not there.</summary>
         public GridRouter Router
@@ -261,9 +296,11 @@ namespace NasaSpaceApp.Homeline.Flow
         public string ProbeStationPoint(MissionPlan plan, double x, double y)
         {
             if (!CanEdit(plan)) return null;
+            EnsureRouterBounds(plan);
             int r, c;
             if (!Router.NearestPassable(x, y, StationSnapM, out r, out c)) return null;
             Router.CentreOf(r, c, out x, out y);
+            if (!Router.InAllowed(x, y)) return null;
             double? th = plan.THomeAt(x, y), o2 = plan.O2HomeAt(x, y);
             if (!th.HasValue || !o2.HasValue) return null;
             return "way home " + HlJson.F(th.Value, 0) + "\u00a0min, " + HlJson.F(o2.Value, 0) + "\u00a0L O2";
@@ -292,9 +329,15 @@ namespace NasaSpaceApp.Homeline.Flow
                 return null;
             }
             Router.CentreOf(r, c, out x, out y);
+            EnsureRouterBounds(plan);
+            if (!Router.InAllowed(x, y))
+            {
+                problem = "that point is off the high-definition terrain.";
+                return null;
+            }
             if (!plan.THomeAt(x, y).HasValue)
             {
-                problem = "that point is outside the planner's way-home map.";
+                problem = "that point cannot be reached from the rover (outside the way-home map).";
                 return null;
             }
             List<EditStop> stops = plan.StopsOf();
@@ -323,6 +366,7 @@ namespace NasaSpaceApp.Homeline.Flow
                 problem = "this plan has no way-home map yet.";
                 return null;
             }
+            EnsureRouterBounds(plan);
             try
             {
                 var ctx = new EditContext
@@ -334,7 +378,7 @@ namespace NasaSpaceApp.Homeline.Flow
                 EditedPlanData data = PlanEditor.Build(ctx, plan.Frame, stops);
                 if (data == null)
                 {
-                    problem = "no walkable route reaches that point.";
+                    problem = "no walkable route on the high-definition terrain reaches that point.";
                     return null;
                 }
                 MissionPlan edited = MissionPlan.FromEdited(plan, data, WaypointPlan.AssumedNavToleranceM);

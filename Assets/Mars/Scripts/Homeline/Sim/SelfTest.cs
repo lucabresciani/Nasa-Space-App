@@ -28,6 +28,7 @@ namespace NasaSpaceApp.Homeline.Sim
         }
 
         string dir;
+        bool expectMenu = true; // false once the first EVA has started: from then on an open menu is a lost focus
         readonly StringBuilder log = new StringBuilder();
         readonly StringBuilder trace = new StringBuilder();
         int failures;
@@ -55,6 +56,10 @@ namespace NasaSpaceApp.Homeline.Sim
             float waitUntil = Time.realtimeSinceStartup + 40f;
             while ((MartisMenu.Instance == null || !MartisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
             Check(MartisMenu.Instance != null && MartisMenu.IsOpen, "title screen is up");
+            Check(MartisMenu.StartInterceptor == null && MartisMenu.PlanRequested != null,
+                  "START SIMULATION goes straight to free exploration; MISSION PLAN opens the planning");
+            Check(EvaDriver.MissionStress(90, 200) == 0f && Math.Abs(EvaDriver.MissionStress(0, 200) - 12f) < 0.01f && EvaDriver.MissionStress(-5, 0) >= 22f,
+                  "mission stress: none with a wide margin, +12 bpm at zero margin, capped at +22 bpm with a broken limit and no O2 above the reserve");
             yield return new WaitForSecondsRealtime(4f); // title intro animation
             yield return Shot("title");
 
@@ -104,6 +109,29 @@ namespace NasaSpaceApp.Homeline.Sim
                     yield return new WaitForSecondsRealtime(0.5f);
                     yield return Shot("planning_edited");
                     Check(!app.Panel.MoveStation("S6", s6.X + 4000, s6.Y), "a move onto unreachable ground is refused");
+                    // The high-definition terrain bounds every edited route.
+                    var hd = new GroundSampler();
+                    float hx0, hz0, hx1, hz1;
+                    if (hd.DetailedRect(out hx0, out hz0, out hx1, out hz1))
+                    {
+                        int outside = 0, vertices = 0;
+                        foreach (RouteLeg leg in editedPlan.Track.Legs)
+                        {
+                            for (int i = 0; i < leg.X.Length; i++)
+                            {
+                                double vx, vz;
+                                editedPlan.Frame.LocalToWorld(leg.X[i], leg.Y[i], out vx, out vz);
+                                vertices++;
+                                if (!hd.IsDetailed((float)vx, (float)vz)) outside++;
+                            }
+                        }
+                        Check(outside == 0, "the edited route stays on the high-definition terrain (" + outside + " of " + vertices + " vertices outside)");
+                        double ox, oy;
+                        editedPlan.Frame.WorldToLocal(hx1 + 40f, 0.5f * (hz0 + hz1), out ox, out oy);
+                        Check(app.ProbeStationPoint(editedPlan, ox, oy) == null && !app.Panel.MoveStation("S6", ox, oy),
+                              "a station cannot be dropped off the high-definition terrain");
+                    }
+                    else Check(false, "the scene reports its high-definition terrain");
                     Check(app.Panel.Generated == editedPlan, "a refused move leaves the plan as it was");
 
                     // Limits: the edited plan respects them, so START and SAVE are offered; it is saved.
@@ -113,14 +141,19 @@ namespace NasaSpaceApp.Homeline.Sim
                     Check(app.SavedRoutes().Count == 1, "one saved route on disk (" + app.SavedRoutes().Count + ")");
 
                     // A station pushed too far breaks the limits: the plan is shown, START and SAVE are refused.
-                    Waypoint s7 = null;
-                    foreach (Waypoint w in plan.Waypoints.Main) if (w.Id == "S7") s7 = w;
-                    if (s7 != null && app.Panel.MoveStation("S7", s7.X - 300, s7.Y - 200))
+                    // A plan that breaks the limits whatever the terrain: the same route with half an hour more work at
+                    // every station (longer than the EVA budget, and the O2 at the return falls below the reserve).
+                    var longStops = editedPlan.StopsOf();
+                    foreach (EditStop st in longStops) st.DwellMin += 30;
+                    string whyLong;
+                    MissionPlan tooLong = app.BuildEdited(editedPlan, longStops, out whyLong);
+                    if (tooLong != null) app.Panel.ShowEdited(tooLong);
+                    if (tooLong != null && !app.Panel.Generated.EditData.Feasible)
                     {
                         MissionPlan broken = app.Panel.Generated;
-                        Note("S7 moved 300 m west and 200 m south: " + F(broken.EndMin) + " min, margin " + F(broken.EditData.MinMarginMin) + " min (" +
+                        Note("30 min more work at every station: " + F(broken.EndMin) + " min, margin " + F(broken.EditData.MinMarginMin) + " min (" +
                              broken.EditData.MinMarginBinding + "), oxygen margin " + F(broken.EditData.MinO2MarginMin) + " min, O2 at return " + F(broken.EditData.O2AtReturnL) + " L");
-                        Check(!broken.EditData.Feasible && !broken.EditData.OxygenOk, "a station moved too far is found to break the oxygen limit");
+                        Check(!broken.EditData.Feasible, "a plan that is too long is found to break a limit (" + broken.EditData.MinMarginBinding + ")");
                         Check(!app.Panel.StartAllowed, "START is refused for a plan that breaks the limits");
                         Check(!app.Panel.SaveRoute(), "a plan that breaks the limits cannot be saved");
                         app.Panel.Begin(EvaMode.Replay);
@@ -129,7 +162,7 @@ namespace NasaSpaceApp.Homeline.Sim
                         yield return new WaitForSecondsRealtime(0.4f);
                         yield return Shot("planning_limits_broken");
                     }
-                    else Check(false, "S7 could be moved 300 m west and 200 m south for the limits check");
+                    else Check(false, "a plan that breaks the limits could be built for the limits check");
 
                     // MY ROUTES: the saved route is listed, re-builds to the same plan, and the planner list comes back.
                     app.Panel.ShowSavedRoutes(true);
@@ -148,6 +181,7 @@ namespace NasaSpaceApp.Homeline.Sim
                 }
             }
 
+            expectMenu = false;
             app.Begin(plan, EvaMode.Replay);
             waitUntil = Time.realtimeSinceStartup + 10f;
             while (!app.Driver.Active && Time.realtimeSinceStartup < waitUntil) yield return null;
@@ -167,6 +201,7 @@ namespace NasaSpaceApp.Homeline.Sim
             trace.Append("t_min,world_x,world_y,world_z,local_x,local_y,plan_o2_L,plan_margin_min,binding,hud_o2_L,hud_met_min,hud_home_m,detailed_terrain\n");
             double nextSample = 0;
             bool shotS7 = false, shotMid = false;
+            float hrWalk = 0f, hrStation = 0f;
             waitUntil = Time.realtimeSinceStartup + 110f;
             while (!app.Driver.ReplayFinished && Time.realtimeSinceStartup < waitUntil)
             {
@@ -175,6 +210,17 @@ namespace NasaSpaceApp.Homeline.Sim
                 {
                     Sample(app, plan, player);
                     nextSample += 5;
+                }
+                // Heart rate of the helmet's model: walking toward S7, then late in the work at S7.
+                if (hrWalk == 0f && t >= 38)
+                {
+                    SuitTelemetry th = Telemetry();
+                    if (th != null) hrWalk = th.HeartRate;
+                }
+                if (hrStation == 0f && t >= 72)
+                {
+                    SuitTelemetry th = Telemetry();
+                    if (th != null) hrStation = th.HeartRate;
                 }
                 if (!shotS7 && t >= 50)
                 {
@@ -189,6 +235,9 @@ namespace NasaSpaceApp.Homeline.Sim
                 yield return null;
             }
             Check(app.Driver.ReplayFinished, "replay reached the planned return (t = " + F(app.Driver.TMin) + " min)");
+            Note("heart rate in the replay: " + F(hrWalk) + " bpm walking to S7, " + F(hrStation) + " bpm working at S7 (rest " + F(SuitTelemetry.HeartRateRest) + ")");
+            Check(hrWalk > 100f && hrWalk < 150f, "heart rate follows the planned walk in the replay (" + F(hrWalk) + " bpm on the way to S7)");
+            Check(hrStation > 82f && hrStation < hrWalk - 8f, "heart rate comes down while working at a station (" + F(hrStation) + " bpm)");
             yield return null;
             Sample(app, plan, player);
             Check(Math.Abs(app.Driver.TMin - plan.EndMin) < 0.01, "EVA clock ends at the planned " + F(plan.EndMin) + " min");
@@ -327,14 +376,11 @@ namespace NasaSpaceApp.Homeline.Sim
             {
                 restart.Invoke(oldMenu, null);
                 waitUntil = Time.realtimeSinceStartup + 30f;
-                while ((MartisMenu.Instance == null || MartisMenu.Instance == oldMenu || !MartisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
+                while ((MartisMenu.Instance == null || MartisMenu.Instance == oldMenu) && Time.realtimeSinceStartup < waitUntil) yield return null;
                 yield return new WaitForSecondsRealtime(2.0f);
-                Check(MartisMenu.Instance != null && MartisMenu.Instance != oldMenu && MartisMenu.IsOpen, "title screen is back after RESTART SIMULATION");
+                Check(MartisMenu.Instance != null && MartisMenu.Instance != oldMenu && !MartisMenu.IsOpen,
+                      "RESTART SIMULATION reloads the scene into free exploration (no title, no planning screen)");
                 Check(!app.Driver.Active, "no mission running after the restart");
-
-                app.OpenPlanning();
-                yield return new WaitForSecondsRealtime(0.5f);
-                Check(app.Panel != null, "planning panel opens on the reloaded scene");
                 MissionPlan again = app.Generate(app.Catalog.Find("rank1"));
                 Check(again != null, "official plan generates again after the restart");
                 if (again != null)
@@ -352,11 +398,13 @@ namespace NasaSpaceApp.Homeline.Sim
                     CharacterController body = player != null ? player.GetComponent<CharacterController>() : null;
                     if (live != null && body != null)
                     {
-                        // Walk for four seconds at 0.8 m/s: the planner model must see the motion.
+                        // Walk for eight seconds at 0.8 m/s: the planner model must see the motion.
                         double before = live.O2LeftL;
                         Vector3 from = player.position;
                         Vector3 ahead = Vector3.ProjectOnPlane(player.forward, Vector3.up).normalized;
-                        float until = Time.time + 4f;
+                        SuitTelemetry telW = Telemetry();
+                        float hr0 = telW != null ? telW.HeartRate : 0f;
+                        float until = Time.time + 8f;
                         double peakRate = 0;
                         while (Time.time < until)
                         {
@@ -366,7 +414,9 @@ namespace NasaSpaceApp.Homeline.Sim
                         }
                         float walked = Dist(player.position, from.x, from.z);
                         Note("walked " + F(walked) + " m; O2 " + F(before) + " -> " + F(live.O2LeftL) + " L; peak rate " + F(peakRate) + " L/min; slope " + F(live.GradeDeg) + " deg");
-                        Check(walked > 1.5f, "the crew member can walk in free walk (" + F(walked) + " m in 4 s)");
+                        Check(walked > 3f, "the crew member can walk in free walk (" + F(walked) + " m in 8 s)");
+                        Check(telW != null && telW.HeartRate > hr0 + 3f, "heart rate rises when the crew member starts walking (" + F(hr0) + " -> " +
+                              (telW != null ? F(telW.HeartRate) : "?") + " bpm in 8 s)");
                         Check(peakRate > 0.55, "walking raises the planner O2 rate above resting (" + F(peakRate) + " L/min)");
                         Check(live.O2LeftL < before, "walking consumes planner O2");
                     }
@@ -390,7 +440,7 @@ namespace NasaSpaceApp.Homeline.Sim
             // The window may lose focus while the test runs (someone is using the PC): the menu then opens its
             // pause screen and the EVA clock stops. The test never wants the pause screen during a mission.
             HomelineApp running = HomelineApp.Instance;
-            if (!finished && running != null && running.Driver != null && running.Driver.Active && MartisMenu.IsOpen) MartisMenu.StartNow();
+            if (!finished && !expectMenu && running != null && MartisMenu.IsOpen) MartisMenu.StartNow();
             if (!finished && Time.realtimeSinceStartup - startedAt > WatchdogSeconds)
             {
                 Check(false, "watchdog: the self-test did not finish in " + WatchdogSeconds + " s");

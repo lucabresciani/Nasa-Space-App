@@ -84,6 +84,18 @@ namespace NasaSpaceApp.Homeline.Sim
             return new Vector3((float)x, y + lift, (float)z);
         }
 
+        /// <summary>World X/Z box of the finest terrain (the high-definition play area); false when there is none.</summary>
+        public bool DetailedRect(out float minX, out float minZ, out float maxX, out float maxZ)
+        {
+            minX = minZ = maxX = maxZ = 0f;
+            if (patches == null || patches.Length == 0) return false;
+            minX = patches[0].MinX;
+            minZ = patches[0].MinZ;
+            maxX = patches[0].MaxX;
+            maxZ = patches[0].MaxZ;
+            return maxX > minX && maxZ > minZ;
+        }
+
         public bool IsDetailed(float x, float z)
         {
             float y;

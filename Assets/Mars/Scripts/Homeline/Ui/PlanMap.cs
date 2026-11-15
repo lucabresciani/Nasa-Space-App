@@ -44,6 +44,8 @@ namespace NasaSpaceApp.Homeline.Ui
         public Action<string, double, double> StationMoved;
         /// <summary>Read-out for a point of the frame ("way home 41 min, 52 L O2"); null = a station cannot stand there.</summary>
         public Func<double, double, string> Probe;
+        /// <summary>True where a station may stand (drawn bright); elsewhere the ground is drawn dark. Null = the way-home map alone decides.</summary>
+        public Func<double, double, bool> Placeable;
         /// <summary>True when stations of the shown plan may be dragged.</summary>
         public bool Editable;
 
@@ -206,10 +208,10 @@ namespace NasaSpaceApp.Homeline.Ui
             if (dragId != null)
                 caption.text = dragValid
                     ? "Moving " + dragId + ": " + dragReadout + "\nRelease to re-route the plan through this point."
-                    : "Moving " + dragId + ": a station cannot stand here (not walkable, or outside the planner's way-home map).\nRelease to put it back.";
+                    : "Moving " + dragId + ": a station cannot stand here (not walkable, not reachable, or off the detailed terrain).\nRelease to put it back.";
             else if (Editable)
                 caption.text = "North up · scale bar " + HlJson.F(barM, 0) + " m · square: rover, diamond: station, dot: navigation point\n" +
-                               "Drag a station with the mouse to move it. Dark ground is outside the planner's way-home map.";
+                               "Drag a station with the mouse to move it. Dark ground: not reachable, or off the detailed terrain.";
             else
                 caption.text = "North up · scale bar " + HlJson.F(barM, 0) + " m · terrain relief: this simulator\n" +
                                "Square: rover · diamond: station · dot: navigation point";
@@ -367,7 +369,8 @@ namespace NasaSpaceApp.Homeline.Ui
                     {
                         double x, y;
                         plan.Frame.WorldToLocal(cx - half + (i + 0.5) * step, cz - half + (j + 0.5) * step, out x, out y);
-                        if (!plan.THomeAt(x, y).HasValue) c = new Color(c.r * UnreachableShade, c.g * UnreachableShade, c.b * UnreachableShade, 1f);
+                        bool placeable = Placeable != null ? Placeable(x, y) : plan.THomeAt(x, y).HasValue;
+                        if (!placeable) c = new Color(c.r * UnreachableShade, c.g * UnreachableShade, c.b * UnreachableShade, 1f);
                     }
                     pixels[j * n + i] = c;
                 }

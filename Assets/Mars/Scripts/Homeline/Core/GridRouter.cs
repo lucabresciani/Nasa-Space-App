@@ -137,6 +137,31 @@ namespace NasaSpaceApp.Homeline
                                   HlJson.Num(m, "grade_step_deg"), HlJson.Num(m, "min_pace_s_per_m"));
         }
 
+        int allowR0, allowR1 = int.MaxValue, allowC0, allowC1 = int.MaxValue;
+
+        /// <summary>
+        /// Restricts routes to a box of the frame (x east, y north, metres): legs are searched inside it only and a
+        /// leg with an end outside it has no route. Used to keep edited routes on the simulator's detailed terrain.
+        /// </summary>
+        public void SetAllowedRect(double minX, double minY, double maxX, double maxY)
+        {
+            int rTop, cLeft, rBottom, cRight;
+            CellOf(minX, maxY, out rTop, out cLeft);
+            CellOf(maxX, minY, out rBottom, out cRight);
+            allowR0 = Math.Max(0, rTop);
+            allowR1 = Math.Min(Rows, rBottom + 1);
+            allowC0 = Math.Max(0, cLeft);
+            allowC1 = Math.Min(Cols, cRight + 1);
+        }
+
+        /// <summary>True when the point lies inside the box set by <see cref="SetAllowedRect"/> (always, if none was set).</summary>
+        public bool InAllowed(double x, double y)
+        {
+            int r, c;
+            CellOf(x, y, out r, out c);
+            return r >= allowR0 && r < allowR1 && c >= allowC0 && c < allowC1;
+        }
+
         public void CellOf(double x, double y, out int row, out int col)
         {
             row = (int)Math.Floor((OriginY - y) / CellM);
@@ -317,6 +342,12 @@ namespace NasaSpaceApp.Homeline
                 c0 = Math.Max(0, Math.Min(sc, tc) - m);
                 c1 = Math.Min(Cols, Math.Max(sc, tc) + m + 1);
             }
+            // Routes stay inside the allowed box (the simulator's detailed terrain), whatever the search window.
+            r0 = Math.Max(r0, allowR0);
+            r1 = Math.Min(r1, allowR1);
+            c0 = Math.Max(c0, allowC0);
+            c1 = Math.Min(c1, allowC1);
+            if (sr < r0 || sr >= r1 || sc < c0 || sc >= c1 || tr < r0 || tr >= r1 || tc < c0 || tc >= c1) return null;
             int h = r1 - r0, w = c1 - c0;
             var time = new double[h * w];
             var o2 = new float[h * w];

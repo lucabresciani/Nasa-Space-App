@@ -131,6 +131,12 @@ namespace NasaSpaceApp.Homeline.Sim
                         stations.Add(new LiveStation { Id = w.Id, X = w.X, Y = w.Y, DwellMin = w.LeaveMin.Value - w.ArriveMin });
                 Live = new LiveState(app.Physio, app.Config.O2CapacityL, app.Config.TaskRateLMin, stations);
                 ResetLiveFromPlan();
+                // A second tracker follows the replay: it gives the planner's metabolic rate of the planned walk
+                // (slope and pace under the crew, work at the stations) for the helmet's physiology.
+                var probeStations = new List<LiveStation>();
+                foreach (LiveStation st in stations) probeStations.Add(new LiveStation { Id = st.Id, X = st.X, Y = st.Y, DwellMin = st.DwellMin });
+                probe = new LiveState(app.Physio, app.Config.O2CapacityL, app.Config.TaskRateLMin, probeStations);
+                probe.Reset(TMin, 0, null);
             }
 
             RoutePose pose = plan.Track.PoseAt(TMin);
@@ -142,6 +148,10 @@ namespace NasaSpaceApp.Homeline.Sim
             plan.Frame.LocalToWorld(plan.Route.PadX, plan.Route.PadY, out hx, out hz);
             SuitTelemetry.HomeXZ = new Vector2((float)hx, (float)hz);
             SuitTelemetry.AfterTick = FeedHelmet;
+            SuitTelemetry.MissionActivityVo2 = ActivityVo2;
+            SuitTelemetry.MissionTimeScale = 1f;
+            SuitTelemetry.MissionStressBpm = 0f;
+            ExtraWeatherLpm = ExtraStressLpm = 0;
             skyForce = true;
             Debug.Log("[HOMELINE] EVA started: plan " + plan.Entry.Id + ", mode " + mode + ", live O2 model " + (Live != null ? "yes" : "no"));
         }
@@ -154,7 +164,11 @@ namespace NasaSpaceApp.Homeline.Sim
                 sky.Release();
                 SuitTelemetry.AfterTick = null;
                 SuitTelemetry.HomeXZ = Vector2.zero;
+                SuitTelemetry.MissionActivityVo2 = null;
+                SuitTelemetry.MissionTimeScale = 1f;
+                SuitTelemetry.MissionStressBpm = 0f;
             }
+            probe = null;
             Plan = null;
             Mode = EvaMode.None;
             Live = null;
@@ -172,6 +186,7 @@ namespace NasaSpaceApp.Homeline.Sim
             Playing = true;
             if (mode == EvaMode.FreeWalk) ResetLiveFromPlan();
             else RestoreSpeeds();
+            if (probe != null) probe.Reset(TMin, 0, null);
         }
 
         public void SetSpeed(double speed)
@@ -185,6 +200,7 @@ namespace NasaSpaceApp.Homeline.Sim
             TMin = System.Math.Max(Plan.Track.StartMin, System.Math.Min(Plan.EndMin, tMin));
             ReplayFinished = TMin >= Plan.EndMin;
             skyForce = true;
+            if (probe != null) probe.Reset(TMin, 0, null); // a jump is not a walk
         }
 
         /// <summary>The sun of this minute of the plan: the scene's sky follows the EVA clock, at the EVA's speed.</summary>
@@ -258,6 +274,12 @@ namespace NasaSpaceApp.Homeline.Sim
                 O2HomeL = Plan.O2HomeAt(LocalX, LocalY);
                 LiveMarginMin = null;
                 LiveBinding = null;
+                bool running = Playing && !ReplayFinished;
+                // The helmet's physiology runs on the EVA clock: at 60x a minute of effort passes every second.
+                SuitTelemetry.MissionTimeScale = MartisMenu.IsOpen ? 1f : (running ? (float)Speed : (ReplayFinished ? 1f : 0f));
+                if (probe != null && !MartisMenu.IsOpen && Time.deltaTime > 0f && (running || ReplayFinished))
+                    probe.Step(Time.deltaTime * (running ? Speed : 1.0), pose.X, pose.Y, player.transform.position.y);
+                SuitTelemetry.MissionStressBpm = MissionStress(Plan.MarginAt(TMin), MinutesToReserve());
                 return;
             }
 
@@ -285,6 +307,60 @@ namespace NasaSpaceApp.Homeline.Sim
                 }
             }
             UpdateLiveMargin();
+            SuitTelemetry.MissionTimeScale = 1f;
+            SuitTelemetry.MissionStressBpm = MissionStress(LiveMarginMin, MinutesToReserve());
+            // Weather work, cold and stress cost oxygen on top of the planner's model: the tank pays for them.
+            if (Live != null && !MartisMenu.IsOpen && Time.deltaTime > 0f)
+                Live.AddExtra((ExtraWeatherLpm + ExtraStressLpm) * Time.deltaTime / 60.0);
+        }
+
+        // ---- physiology feed of the helmet (SuitTelemetry): activity from the route, stress from the mission state
+
+        LiveState probe;
+
+        /// <summary>O2 used on top of the planner's model, L/min: weather (wind work, bracing, footing, cold) and stress. SIM.</summary>
+        public double ExtraWeatherLpm { get; private set; }
+        public double ExtraStressLpm { get; private set; }
+
+        /// <summary>
+        /// Stress from the mission's own state, bpm (ASSUMED values): time pressure grows as the margin falls below
+        /// an hour (up to +12 bpm at zero), a broken limit adds +6, and the last half hour of O2 above the reserve
+        /// adds up to +8. Acute stress raises heart rate by some 10 to 30 bpm; the total here is capped at 22.
+        /// </summary>
+        public const float StressMarginBpm = 12f, StressMarginFromMin = 60f, StressLimitBrokenBpm = 6f,
+                           StressLowO2Bpm = 8f, StressLowO2FromMin = 30f, StressMissionMaxBpm = 22f;
+
+        public static float MissionStress(double? marginMin, double? minutesToReserve)
+        {
+            float s = 0f;
+            if (marginMin.HasValue)
+            {
+                s += StressMarginBpm * Mathf.Clamp01((StressMarginFromMin - (float)marginMin.Value) / StressMarginFromMin);
+                if (marginMin.Value < 0) s += StressLimitBrokenBpm;
+            }
+            if (minutesToReserve.HasValue)
+                s += StressLowO2Bpm * Mathf.Clamp01((StressLowO2FromMin - (float)minutesToReserve.Value) / StressLowO2FromMin);
+            return Mathf.Min(StressMissionMaxBpm, s);
+        }
+
+        double? MinutesToReserve()
+        {
+            HomelineApp app = HomelineApp.Instance;
+            double? o2 = O2LeftL;
+            if (!o2.HasValue || app == null || app.Config == null) return null;
+            return (o2.Value - app.Config.O2ReserveL) / app.Config.EffortRateLMin;
+        }
+
+        /// <summary>
+        /// The planner's metabolic rate of what the crew is doing now (walking this slope at this pace, working at a
+        /// station, standing), as mL of O2 per kg of body mass per minute, for the helmet's heart-rate model.
+        /// </summary>
+        float? ActivityVo2()
+        {
+            if (!Active) return null;
+            LiveState source = Mode == EvaMode.Replay ? probe : Live;
+            if (source == null) return null;
+            return (float)(source.RateLMin * 1000.0 / SuitTelemetry.BodyMassKg);
         }
 
         /// <summary>
@@ -353,19 +429,11 @@ namespace NasaSpaceApp.Homeline.Sim
             double capacity = cfg ? app.Config.O2CapacityL : SuitTelemetry.O2CapacityL;
             double reserve = cfg ? app.Config.O2ReserveL : SuitTelemetry.O2ReserveL;
             double effort = cfg ? app.Config.EffortRateLMin : 1.35;
-            double rate;
-            if (Mode == EvaMode.Replay)
-            {
-                // The plan's consumption rate around now, from its timeline.
-                double? ahead = Plan.O2LeftAt(System.Math.Min(Plan.EndMin, TMin + 1.0));
-                rate = ahead.HasValue ? System.Math.Max(0, o2.Value - ahead.Value) : 0;
-            }
-            else
-            {
-                rate = Live.RateLMin;
-            }
+            // The flow read-out stays the helmet's own: its VO2 follows the activity fed by ActivityVo2, plus weather
+            // and stress, with the body's kinetics. What weather and stress add is charged to the tank in free walk.
+            ExtraWeatherLpm = t.WeatherVo2 * SuitTelemetry.BodyMassKg / 1000.0;
+            ExtraStressLpm = t.StressVo2 * SuitTelemetry.BodyMassKg / 1000.0;
             t.O2LeftL = (float)o2.Value;
-            t.O2FlowLpm = (float)rate;
             t.O2PercentDisplay = Mathf.Clamp(Mathf.CeilToInt((float)(o2.Value / capacity * 100.0)), 0, 100);
             // "Minutes to reserve" at the planner's effort-capped rate: the O2 term only. The full margin and its
             // binding term are shown in the plan panel.

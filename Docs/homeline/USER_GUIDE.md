@@ -17,7 +17,7 @@ data and from the planner; the crew, the EVA and the suit are simulated.
 
 | Step | What you do |
 | --- | --- |
-| Title | **START SIMULATION** opens the mission planning screen |
+| Title | **MISSION PLAN** opens the mission planning screen. **START SIMULATION** goes straight to free exploration, without a plan |
 | Mission planning | Pick one of the plans, press **GENERATE WAYPOINTS FROM PLAN**, read the waypoint table |
 | Start | **START EVA · REPLAY** (watch the planned walk) or **START EVA · FREE WALK** (walk it yourself) |
 | Pause | `Esc` opens the menu; **MISSION PLAN** reopens the planning screen; **RESUME SIMULATION** continues |
@@ -57,6 +57,8 @@ PLANNER PLAN** undoes every move.
   a route.
 - The order of the stations and the work time at each stay as planned; the engine would also re-optimise the order.
 - The rover cannot be moved.
+- An edited route stays on the high-definition terrain of the scene: a station cannot be dropped outside it
+  (dark on the map) and the re-routed legs are searched inside it only.
 - Where the planner's data has no 1 m terrain, the re-routed leg times are about 2 % off.
 - Dragging needs the mouse; there is no keyboard or gamepad equivalent yet.
 
@@ -83,16 +85,30 @@ HOME (the rover); on the bottom-left dial as an amber line with a ring for each 
 | Read-out | Replay | Free walk |
 | --- | --- | --- |
 | EVA clock, next waypoint | Planner timeline | Your own clock, at real time |
-| O2 left (plan panel and helmet) | Planner timeline | Planner oxygen model applied to the ground you walk: slope and carried mass, 0.84 L/min while working at a station, resting rate when standing |
+| O2 left (plan panel and helmet) | Planner timeline | Planner oxygen model applied to the ground you walk (slope and carried mass, 0.84 L/min while working at a station, resting rate when standing), plus what weather and stress add (SIM, see "Heart rate and oxygen") |
+| Heart rate and VO2 on the helmet | The helmet's physiology model (SIM) fed with the planner's metabolic rate of the planned walk, on the EVA clock | The same model fed with the planner's rate of your own walk |
 | Walking speed | Planner route | Capped at the planner's governed speed for the slope (0.91 m/s on the level, 0.36 m/s at +10 degrees) |
 | Margin | Planner timeline, interpolated between its rows | Official plan only: the planner's formula at your place and time. It is the smallest of the oxygen, daylight, radiation-dose and EVA-duration limits, from the planner's "time and oxygen to get home" maps and its replay of the solar storm |
 | HOME on the helmet | The plan's pad | The plan's pad |
 | "O2 minutes to reserve" on the helmet | (O2 left - 40.5 L) / 1.35 L/min: the oxygen limit only | Same |
 | Sun and sky | The real sky for that minute of the plan (EVA start 2026-11-14 10:51:18 UTC, 09:00 local mean solar time) | Same |
-| Heart rate, CO2, battery, cooling, signal, temperature, dose rate, weather | The game's own simulation (marked SIM) | Same |
+| CO2, battery, cooling, signal, temperature, dose rate, weather | The game's own simulation (marked SIM) | Same |
 
-The planner's oxygen model has no weather term: wind, cold and dust change the helmet's simulated vitals, never the
-planner's oxygen or margin.
+## Heart rate and oxygen
+
+The helmet's heart rate comes from the game's physiology model (SIM), now driven by the mission:
+
+| Input | What it does | Source |
+| --- | --- | --- |
+| The route | The oxygen uptake of walking this slope at this pace, of working at a station, of standing; heart rate follows it as the share of the heart-rate reserve equals the share of the VO2 reserve, with a rise time of about 30 s and a slower recovery, plus a slow drift during long effort | Planner oxygen model for the uptake; helmet model for the heart |
+| The weather | Work against the wind, bracing against gusts, worse footing and visibility in dust, cold while resting: more uptake and a higher heart rate. Dust storms, dust devils and darkness also raise the heart rate as stress | Helmet model (SIM), modest by physics: Mars air is about 1.5 % as dense as Earth's |
+| Stress from the mission | Up to +12 bpm as the margin falls from an hour to zero, +6 bpm when a limit is broken, up to +8 bpm in the last half hour of oxygen above the reserve; at most +22 bpm | Assumed values |
+| Oxygen cost of stress | 0.03 mL/kg/min per bpm of stress (about a tenth of the standing uptake at +20 bpm): stress raises the heart rate much more than the oxygen uptake | Assumed value |
+
+In a **free walk** the oxygen that weather and stress add is taken from the tank on top of the planner's model, and
+the plan panel shows it (LOAD line). In a **replay** the tank follows the planner's timeline, which has no
+weather or stress term; the heart rate and the uptake on the helmet still show what the conditions would cost.
+In a replay faster than real time the physiology runs on the EVA clock.
 
 ## Known differences from the planner
 

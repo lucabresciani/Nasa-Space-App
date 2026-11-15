@@ -21,8 +21,8 @@ namespace NasaSpaceApp.Homeline.Ui
     /// </summary>
     public sealed class PlanPanel : MonoBehaviour
     {
-        // Height: up to 11 body lines (free walk at a station on coarse terrain) above a 3-line footer.
-        const float Width = 460f, Height = 354f, Left = 28f, TopFromMiddle = 250f;
+        // Height: up to 12 body lines (free walk at a station on coarse terrain) above a 3-line footer.
+        const float Width = 460f, Height = 376f, Left = 28f, TopFromMiddle = 250f;
         const float RefreshSeconds = 0.2f;
 
         Canvas canvas;
@@ -129,7 +129,9 @@ namespace NasaSpaceApp.Homeline.Ui
             else if (d.Live != null)
             {
                 LiveState live = d.Live;
-                sb.Append("O2      ").Append(HlJson.F(live.O2LeftL, 1)).Append(" L  ").Append(HlJson.F(live.RateLMin, 2)).Append(" L/min").Append('\n');
+                sb.Append("O2      ").Append(HlJson.F(live.O2LeftL, 1)).Append(" L  ").Append(HlJson.F(live.RateLMin + d.ExtraWeatherLpm + d.ExtraStressLpm, 2)).Append(" L/min").Append('\n');
+                if (d.ExtraWeatherLpm + d.ExtraStressLpm >= 0.005)
+                    sb.Append("LOAD    weather +").Append(HlJson.F(d.ExtraWeatherLpm, 2)).Append("  stress +").Append(HlJson.F(d.ExtraStressLpm, 2)).Append(" L/min").Append('\n');
                 sb.Append("SLOPE   ").Append(HlJson.F(live.GradeDeg, 0)).Append(" deg  max ");
                 sb.Append(live.SpeedCapMs.HasValue ? HlJson.F(live.SpeedCapMs.Value, 2) + " m/s" : "no-go").Append('\n');
                 if (live.AtStation != null)
@@ -138,7 +140,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 {
                     sb.Append("HOME    ").Append(HlJson.F(d.THomeMin.Value, 0)).Append(" min  ").Append(HlJson.F(d.O2HomeL.Value, 1)).Append(" L").Append('\n');
                     sb.Append("MARGIN  ").Append(HlJson.F(d.LiveMarginMin.Value, 0)).Append(" min  limit: ").Append(d.LiveBinding).Append('\n');
-                    footer.text = "O2: planner model on the ground walked; no weather.\n" +
+                    footer.text = "O2: planner model on your walk + SIM weather, stress.\n" +
                                   (d.LiveMarginHasDose ? "Margin: planner formula at your place and time."
                                                        : "Margin: O2, daylight, EVA time. Dose term not live.") +
                                   "\nV back to replay   R track on/off";
@@ -146,7 +148,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 else
                 {
                     sb.Append("MARGIN  n/a (no return field ").Append(plan.HasReturnFields ? "here" : "for this pad").Append(")\n");
-                    footer.text = "O2: planner model on the ground walked; no weather.\nSuit vitals, weather and dose rate: SIM.\nV back to replay   R track on/off";
+                    footer.text = "O2: planner model on your walk + SIM weather, stress.\nSuit vitals, weather and dose rate: SIM.\nV back to replay   R track on/off";
                 }
             }
             else

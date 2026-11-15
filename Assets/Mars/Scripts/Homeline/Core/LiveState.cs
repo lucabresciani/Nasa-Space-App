@@ -59,6 +59,16 @@ namespace NasaSpaceApp.Homeline
         public double TMin { get; private set; }
         public double O2UsedL { get; private set; }
         public double O2LeftL { get { return Math.Max(0, capacityL - O2UsedL); } }
+        /// <summary>Litres used on top of the planner's model (weather work, cold, stress: the simulator's additions).</summary>
+        public double ExtraO2L { get; private set; }
+
+        /// <summary>Takes O2 that the planner's model does not account for out of the tank.</summary>
+        public void AddExtra(double litres)
+        {
+            if (!(litres > 0)) return;
+            O2UsedL += litres;
+            ExtraO2L += litres;
+        }
         /// <summary>O2 rate of the last step, L/min.</summary>
         public double RateLMin { get; private set; }
         /// <summary>Signed grade of the ground walked, degrees (positive uphill), over the grade window.</summary>

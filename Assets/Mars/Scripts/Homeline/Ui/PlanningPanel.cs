@@ -147,6 +147,7 @@ namespace NasaSpaceApp.Homeline.Ui
             map = new PlanMap(ctx, content, new Vector2(W + MenuTokens.PanelPad + 28f, MenuTokens.PanelHeaderHeight - 4f), 600f);
             map.StationMoved = (id, x, y) => MoveStation(id, x, y);
             map.Probe = (x, y) => app.ProbeStationPoint(generated, x, y);
+            map.Placeable = (x, y) => app.CanPlaceStation(generated, x, y);
 
             Rebind();
             Choose(DefaultIndex());
@@ -264,6 +265,15 @@ namespace NasaSpaceApp.Homeline.Ui
             if (showSaved) Rebind();
             RefreshState();
             return r != null;
+        }
+
+        /// <summary>Shows an edited plan built elsewhere (same checks and gating as a plan edited on the map).</summary>
+        public void ShowEdited(MissionPlan plan)
+        {
+            if (plan == null || !plan.Edited) return;
+            generated = plan;
+            note = null;
+            RefreshState();
         }
 
         int DefaultIndex()
