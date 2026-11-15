@@ -85,6 +85,10 @@ namespace NasaSpaceApp.Homeline.Sim
             Check(plan.Waypoints.StationCount == 4, "4 stations (" + plan.Waypoints.StationCount + ")");
             Check(plan.Waypoints.NavCount == 25, "25 navigation points (" + plan.Waypoints.NavCount + ")");
             Check(plan.HasReturnFields, "return fields attached to the official plan");
+            string cardS7 = app.StationCardText(plan, "S7", 3);
+            Check(app.Cards.Count >= 4 && cardS7 != null && cardS7.Contains("sulfate") && cardS7.Contains("Latest departure"),
+                  "station cards read from the planner (" + app.Cards.Count + "); S7: " + (cardS7 != null ? cardS7.Split('\n')[0] : "none"));
+            if (app.Panel != null) app.Panel.SelectStation("S7");
 
             // Move a station by hand (what dragging its mark on the map does): the simulator re-routes the plan,
             // the panel shows it, an impossible move is refused, RESET brings the planner's plan back.

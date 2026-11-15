@@ -24,9 +24,12 @@ namespace NasaSpaceApp.Homeline.Ui
         // Height: up to 12 body lines (free walk at a station on coarse terrain) above a 3-line footer.
         const float Width = 460f, Height = 376f, Left = 28f, TopFromMiddle = 250f;
         const float RefreshSeconds = 0.2f;
+        const float CardHeight = 206f;
 
         Canvas canvas;
-        Text title, body, footer;
+        Text title, body, footer, card;
+        GameObject cardBox;
+        string cardFor;
         float nextRefresh;
         readonly StringBuilder sb = new StringBuilder(640);
 
@@ -65,6 +68,14 @@ namespace NasaSpaceApp.Homeline.Ui
             footer = HudFactory.CreateWrappedText("Footer", r, mono, 13, new Color(0.78f, 0.72f, 0.63f, 1f), TextAnchor.LowerLeft,
                                                   topLeft, topLeft, new Vector2(16f, -(Height - 62f)), new Vector2(Width - 32f, 52f));
             footer.verticalOverflow = VerticalWrapMode.Overflow;
+            // The station card: shown above the plan read-out while the crew is at a science station.
+            Image cb = HudFactory.CreatePanel("StationCard", go.transform, skin, new Color(0.03f, 0.03f, 0.05f, 0.80f), 14f,
+                                              leftMiddle, topLeft, new Vector2(Left, TopFromMiddle + CardHeight + 10f), new Vector2(Width, CardHeight));
+            cardBox = cb.gameObject;
+            card = HudFactory.CreateWrappedText("Card", cb.rectTransform, mono, 13, new Color(0.96f, 0.96f, 0.96f, 1f), TextAnchor.UpperLeft,
+                                                topLeft, topLeft, new Vector2(16f, -10f), new Vector2(Width - 32f, CardHeight - 20f));
+            card.verticalOverflow = VerticalWrapMode.Truncate;
+            cardBox.SetActive(false);
             canvas.enabled = false;
         }
 
@@ -160,6 +171,22 @@ namespace NasaSpaceApp.Homeline.Ui
             }
             if (!d.OnDetailedTerrain) sb.Append("TERRAIN coarse (32 m)\n");
             body.text = sb.ToString();
+
+            // At a science station: what the planner knows about it.
+            string at = null;
+            if (d.Mode == EvaMode.Replay)
+            {
+                foreach (Waypoint w in plan.Waypoints.Main)
+                    if (w.Kind == WaypointKind.Station && w.LeaveMin.HasValue && t >= w.ArriveMin && t <= w.LeaveMin.Value) at = w.Id;
+            }
+            else if (d.Live != null && d.Live.AtStation != null) at = d.Live.AtStation.Id;
+            string cardText = at != null && HomelineApp.Instance != null ? HomelineApp.Instance.StationCardText(plan, at, 2) : null;
+            if (cardBox.activeSelf != (cardText != null)) cardBox.SetActive(cardText != null);
+            if (cardText != null && cardFor != at + plan.Entry.Id)
+            {
+                cardFor = at + plan.Entry.Id;
+                card.text = cardText;
+            }
         }
 
         static string ShortOrigin(PlanEntry e)

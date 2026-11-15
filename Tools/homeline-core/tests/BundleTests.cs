@@ -9,6 +9,20 @@ namespace NasaSpaceApp.Homeline.Tests
     {
         public static void Run(string fixture)
         {
+            using (BundleReader cardsBundle = BundleReader.Open(System.IO.Path.Combine(fixture, "plan_bundle.zip")))
+            {
+                T.Group("bundle");
+                var cards = StationCards.FromBundle(cardsBundle);
+                T.True(cards.Count >= 4 && cards.ContainsKey("S7"), "station cards read (" + cards.Count + ")");
+                if (cards.ContainsKey("S7"))
+                {
+                    T.True(cards["S7"].Name != null && cards["S7"].Name.Contains("ridge"), "S7 card names its science target");
+                    T.True(cards["S7"].Landmarks.Count >= 3, "S7 card lists landmarks (" + cards["S7"].Landmarks.Count + ")");
+                    T.Near(cards["S7"].TurnBackMin, 344.58, 0.01, "S7 latest departure, min");
+                    string moved = StationCards.Text(cards["S7"], true, 90, 3);
+                    T.True(moved.Contains("Moved 90") && !moved.Contains("Latest departure"), "a moved station's card says so and drops the plan-specific lines");
+                }
+            }
             using (BundleReader plan = BundleReader.Open(Path.Combine(fixture, "plan_bundle.zip")))
             using (BundleReader world = BundleReader.Open(Path.Combine(fixture, "world_pack.zip")))
             {

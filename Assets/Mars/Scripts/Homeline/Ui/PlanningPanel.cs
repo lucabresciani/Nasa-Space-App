@@ -148,6 +148,7 @@ namespace NasaSpaceApp.Homeline.Ui
             map.StationMoved = (id, x, y) => MoveStation(id, x, y);
             map.Probe = (x, y) => app.ProbeStationPoint(generated, x, y);
             map.Placeable = (x, y) => app.CanPlaceStation(generated, x, y);
+            map.Card = id => app.StationCardText(generated, id, 3);
 
             Rebind();
             Choose(DefaultIndex());
@@ -274,6 +275,12 @@ namespace NasaSpaceApp.Homeline.Ui
             generated = plan;
             note = null;
             RefreshState();
+        }
+
+        /// <summary>Shows the card of a station under the map (what clicking its mark does).</summary>
+        public void SelectStation(string stationId)
+        {
+            if (map != null) map.Select(stationId);
         }
 
         int DefaultIndex()

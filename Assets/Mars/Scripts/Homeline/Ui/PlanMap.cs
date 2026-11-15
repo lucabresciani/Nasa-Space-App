@@ -46,6 +46,10 @@ namespace NasaSpaceApp.Homeline.Ui
         public Func<double, double, string> Probe;
         /// <summary>True where a station may stand (drawn bright); elsewhere the ground is drawn dark. Null = the way-home map alone decides.</summary>
         public Func<double, double, bool> Placeable;
+        /// <summary>The station card of an id (what is there, landmarks, way home), shown under the map when a station is clicked.</summary>
+        public Func<string, string> Card;
+        /// <summary>The station whose card is shown; null = none.</summary>
+        public string SelectedId { get; private set; }
         /// <summary>True when stations of the shown plan may be dragged.</summary>
         public bool Editable;
 
@@ -53,7 +57,8 @@ namespace NasaSpaceApp.Homeline.Ui
         readonly RawImage relief;
         readonly HudLineMesh lines;
         readonly List<Text> labels = new List<Text>();
-        readonly Text caption;
+        readonly Text caption, card;
+        string pressId;
         readonly Font font;
         readonly float size;
         Texture2D texture;
@@ -76,7 +81,7 @@ namespace NasaSpaceApp.Homeline.Ui
             size = boxSize - 2f * Pad;
             font = ctx.Assets != null ? ctx.Assets.Mono : null;
             Image box = MenuUi.Pill("PlanMap", parent, ctx, MenuTokens.ScrimPanel, MenuTokens.PanelRadius, topLeft, topLeft,
-                                    topLeftPosition, new Vector2(boxSize, boxSize + 40f));
+                                    topLeftPosition, new Vector2(boxSize, boxSize + 132f));
             root = box.rectTransform;
 
             var center = new Vector2(0.5f, 0.5f);
@@ -97,7 +102,16 @@ namespace NasaSpaceApp.Homeline.Ui
             lines = HudFactory.CreateLineMesh("Lines", rt, center, center, Vector2.zero, new Vector2(size, size));
             caption = MenuUi.Paragraph("Caption", root, ctx.Assets != null ? ctx.Assets.Regular : null, MenuTokens.SizeFine, MenuTokens.SandDim,
                                        TextAnchor.UpperLeft, topLeft, topLeft, new Vector2(Pad, -(Pad + size + 6f)), new Vector2(size, 34f), "");
+            card = MenuUi.Paragraph("Card", root, ctx.Assets != null ? ctx.Assets.Regular : null, MenuTokens.SizeFine, MenuTokens.Sand,
+                                    TextAnchor.UpperLeft, topLeft, topLeft, new Vector2(Pad, -(Pad + size + 44f)), new Vector2(size, 84f), "");
             root.gameObject.SetActive(false);
+        }
+
+        /// <summary>Shows the card of a station (what clicking its mark does); null hides it.</summary>
+        public void Select(string stationId)
+        {
+            SelectedId = stationId;
+            if (plan != null && root.gameObject.activeSelf) Redraw();
         }
 
         public bool Dragging { get { return dragId != null; } }
@@ -185,6 +199,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 else
                 {
                     Diamond(p, 8f, 2.4f, StationColor);
+                    if (w.Id == SelectedId) lines.Ring(p, 14f, 1.6f, PadColor, 28); // the station whose card is shown
                     // A filled centre says "this can be picked up".
                     if (Editable) lines.Ring(p, 1.5f, 3f, StationColor, 10);
                     Label(used++, w.Id, p + new Vector2(12f, 0f), StationColor);
@@ -215,6 +230,14 @@ namespace NasaSpaceApp.Homeline.Ui
             else
                 caption.text = "North up · scale bar " + HlJson.F(barM, 0) + " m · terrain relief: this simulator\n" +
                                "Square: rover · diamond: station · dot: navigation point";
+
+            bool known = false;
+            if (SelectedId != null)
+                foreach (Waypoint w in plan.Waypoints.Main) known |= w.Kind == WaypointKind.Station && w.Id == SelectedId;
+            if (!known) SelectedId = null;
+            string text = SelectedId != null && Card != null ? Card(SelectedId) : null;
+            card.text = text ?? "Click a station to read its card: what is there, the landmarks around it, the way home.";
+            card.color = text != null ? (Color)MenuTokens.Sand : (Color)MenuTokens.SandDim;
         }
 
         void Diamond(Vector2 p, float r, float width, Color32 color)
@@ -230,7 +253,8 @@ namespace NasaSpaceApp.Homeline.Ui
 
         internal void PointerDown(PointerEventData e)
         {
-            if (!Editable || plan == null || e.button != PointerEventData.InputButton.Left) return;
+            pressId = null;
+            if (plan == null || e.button != PointerEventData.InputButton.Left) return;
             Vector2 p;
             if (!ToMapPoint(e, out p)) return;
             Waypoint best = null;
@@ -245,7 +269,8 @@ namespace NasaSpaceApp.Homeline.Ui
                     best = w;
                 }
             }
-            if (best == null) return;
+            pressId = best != null ? best.Id : "";   // "" = a press on empty ground: it clears the card
+            if (best == null || !Editable) return;
             dragId = best.Id;
             dragFrom = ToMap(best.X, best.Y);
             grabOffset = dragFrom - p; // the mark keeps the place where it was grabbed under the pointer
@@ -261,11 +286,19 @@ namespace NasaSpaceApp.Homeline.Ui
 
         internal void PointerUp(PointerEventData e)
         {
-            if (dragId == null) return;
+            if (dragId == null)
+            {
+                // A click (no drag): show the card of the station pressed, or none after a press on empty ground.
+                if (pressId != null && plan != null) Select(pressId.Length > 0 ? pressId : null);
+                pressId = null;
+                return;
+            }
             string id = dragId;
             bool moved = dragValid && Vector2.Distance(dragPos, dragFrom) > 2f;
             Vector2 at = dragPos;
             dragId = null;
+            pressId = null;
+            if (Vector2.Distance(dragPos, dragFrom) <= 2f) SelectedId = id; // pressed and released in place: a click
             if (moved && StationMoved != null)
             {
                 double x, y;

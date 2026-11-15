@@ -48,6 +48,26 @@ namespace NasaSpaceApp.Homeline.Flow
         public double? TDarkMin { get; private set; }
         /// <summary>The solar storm of the official plan on the EVA clock (planner conditions/storm.json); null if unknown.</summary>
         public StormTrack Storm { get; private set; }
+        /// <summary>The planner's station cards (what is at each science station), by station id; may be empty.</summary>
+        public Dictionary<string, StationCard> Cards { get; private set; } = new Dictionary<string, StationCard>();
+
+        /// <summary>
+        /// The card of a station of a plan as text: the science target, the landmarks around it and, on the
+        /// official unedited plan, what to do if the partner goes down and the latest departure. Says when the
+        /// station was moved by hand. Null when the planner has no card for it.
+        /// </summary>
+        public string StationCardText(MissionPlan plan, string stationId, int maxLandmarks)
+        {
+            StationCard c;
+            if (plan == null || stationId == null || Cards == null || !Cards.TryGetValue(stationId, out c)) return null;
+            double moved = 0;
+            Waypoint now = null, planned = null;
+            foreach (Waypoint w in plan.Waypoints.Main) if (w.Kind == WaypointKind.Station && w.Id == stationId) now = w;
+            foreach (Waypoint w in plan.BasePlan.Waypoints.Main) if (w.Kind == WaypointKind.Station && w.Id == stationId) planned = w;
+            if (now != null && planned != null) moved = Math.Sqrt((now.X - planned.X) * (now.X - planned.X) + (now.Y - planned.Y) * (now.Y - planned.Y));
+            bool official = plan.BasePlan.Entry.Origin == PlanOrigin.Official && !plan.Edited;
+            return StationCards.Text(c, official, moved, maxLandmarks);
+        }
         /// <summary>The real instant the planned EVA starts (plan.json eva_start.utc: 09:00 local mean solar time); null if unknown.</summary>
         public DateTime? EvaStartUtc { get; private set; }
         /// <summary>The planning panel currently hosted by the menu; null until it has been opened.</summary>
@@ -122,6 +142,14 @@ namespace NasaSpaceApp.Homeline.Flow
                     Physio = new Physio(Config);
                     if (bundle.Has("conditions/sun.json"))
                         TDarkMin = HlJson.NumOrNull(bundle.ReadJson("conditions/sun.json"), "t_dark_min");
+                    try
+                    {
+                        Cards = StationCards.FromBundle(bundle);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning("[HOMELINE] station cards not usable: " + e.Message);
+                    }
                     try
                     {
                         Storm = StormTrack.FromBundle(bundle);
