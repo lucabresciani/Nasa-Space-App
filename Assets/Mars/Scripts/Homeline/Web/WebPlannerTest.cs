@@ -14,15 +14,16 @@ namespace NasaSpaceApp.Homeline.Web
 {
     /// <summary>
     /// Unattended check of the hand-off between the web planner and the simulator:
-    ///   MARTIS.exe -martisWebTest &lt;mission.json&gt; [-martisWebTestDir DIR]
-    /// With the title menu up it talks to the server over real HTTP, opens the planner through MISSION PLAN, takes a
+    ///   MARVIS.exe -marvisWebTest &lt;mission.json&gt; [-marvisWebTestDir DIR]
+    /// With the title menu up it talks to the server over real HTTP, opens the planner through MISSION PLAN, checks
+    /// that the Controls list then has no MISSION PLAN group (the keys of a plan made in the built-in panel), takes a
     /// screenshot of the game window's place on the desktop, posts the mission as the page does, checks that the menu
-    /// closed and the mission is loaded, and that a broken document and a post without the X-Martis header are
+    /// closed and the mission is loaded, and that a broken document and a post without the X-Marvis header are
     /// refused. It writes result.txt (first line PASS or FAIL, then one line per check), planner.png (the planner
     /// up, 1.5 s after it was shown), planner-late.png (4 s later) and eva.png (after the hand-off) to DIR (default:
     /// webtest next to the exe) and exits with 0 or 1.
     /// A watchdog quits with FAIL after 90 s. The screenshots are desktop pixels: they show the game only when its
-    /// window is in front (Tools/martis-web/test/Run-HandoffTest.ps1 starts it that way).
+    /// window is in front (Tools/marvis-web/test/Run-HandoffTest.ps1 starts it that way).
     /// </summary>
     public sealed class WebPlannerTest : MonoBehaviour
     {
@@ -30,7 +31,7 @@ namespace NasaSpaceApp.Homeline.Web
 
         public static bool Requested
         {
-            get { return Arg("-martisWebTest") != null; }
+            get { return Arg("-marvisWebTest") != null; }
         }
 
         sealed class Reply
@@ -54,16 +55,16 @@ namespace NasaSpaceApp.Homeline.Web
         IEnumerator Start()
         {
             startedAt = Now;
-            string fixturePath = Arg("-martisWebTest");
-            dir = Arg("-martisWebTestDir") ?? Path.Combine(Directory.GetParent(Application.dataPath).FullName, "webtest");
+            string fixturePath = Arg("-marvisWebTest");
+            dir = Arg("-marvisWebTestDir") ?? Path.Combine(Directory.GetParent(Application.dataPath).FullName, "webtest");
             Directory.CreateDirectory(dir);
             Note("web planner test started, mission " + fixturePath);
 
             // The menu builds itself after the scene has loaded; the server starts with the planner object.
             WebPlanner planner = WebPlanner.Instance;
             float until = Now + 30f;
-            while (!MartisMenu.IsOpen && Now < until) yield return null;
-            Check(MartisMenu.IsOpen, "title menu is up");
+            while (!MarvisMenu.IsOpen && Now < until) yield return null;
+            Check(MarvisMenu.IsOpen, "title menu is up");
             Check(planner != null && planner.Port != 0, "web server is listening" + (planner != null ? " (port " + planner.Port + ")" : ""));
             if (failures > 0)
             {
@@ -71,12 +72,12 @@ namespace NasaSpaceApp.Homeline.Web
                 yield break;
             }
             string site = "http://127.0.0.1:" + planner.Port;
-            string api = site + "/martis/api/";
+            string api = site + "/marvis/api/";
 
             // 1. The server, over real HTTP.
             yield return Send("GET", api + "hello", null, false);
             JObject o = Json(last);
-            Check(last.Status == 200 && o != null && (string)o["app"] == "MARTIS" && (int?)o["bridge"] == 1, "GET hello " + Short(last));
+            Check(last.Status == 200 && o != null && (string)o["app"] == "MARVIS" && (int?)o["bridge"] == 1, "GET hello " + Short(last));
             yield return Send("GET", site + "/index.html", null, false);
             Check(last.Status == 200 && last.Text.IndexOf("<html", StringComparison.OrdinalIgnoreCase) >= 0,
                   "GET /index.html (" + last.Status + ", " + last.Text.Length + " chars)");
@@ -88,7 +89,7 @@ namespace NasaSpaceApp.Homeline.Web
             Note("INFO viewer: " + (viewer == null ? "not started" : viewer.Loaded ? "page loaded" : "page NOT loaded (" + viewer.Status + ")"));
 
             // 3. MISSION PLAN opens the web planner.
-            Action plan = MartisMenu.PlanRequested;
+            Action plan = MarvisMenu.PlanRequested;
             Check(plan != null, "MISSION PLAN is wired");
             if (plan != null) plan();
             until = Now + 8f;
@@ -97,6 +98,17 @@ namespace NasaSpaceApp.Homeline.Web
             yield return Send("GET", api + "state", null, false);
             o = Json(last);
             Check(o != null && (bool?)o["planner_visible"] == true, "state says planner_visible true " + Short(last));
+            // The Controls list leaves out the keys of a plan made in the built-in panel while the web planner replaces it.
+            string titles = "";
+            bool planKeys = false;
+            foreach (KeybindCatalog.Group g in KeybindCatalog.Read())
+            {
+                titles += (titles.Length > 0 ? ", " : "") + g.Title;
+                planKeys |= g.Title == "MISSION PLAN";
+            }
+            Check(WebPlanner.ReplacesPlanningPanel && !planKeys,
+                  "Controls list has no MISSION PLAN group while the web planner replaces the panel (ReplacesPlanningPanel " +
+                  WebPlanner.ReplacesPlanningPanel + "; groups: " + titles + ")");
             until = Now + 1.5f;   // let the page paint
             while (Now < until) yield return null;
             Note("INFO foreground with the planner up: " + Foreground(planner));
@@ -123,8 +135,8 @@ namespace NasaSpaceApp.Homeline.Web
                 o = Json(last);
                 Check(last.Status == 200 && o != null && (bool?)o["ok"] == true, "POST mission accepted " + Short(last));
                 until = Now + 10f;
-                while ((MartisMenu.IsOpen || MissionLink.Current == null) && Now < until) yield return null;
-                Check(!MartisMenu.IsOpen, "menu closed after the hand-off");
+                while ((MarvisMenu.IsOpen || MissionLink.Current == null) && Now < until) yield return null;
+                Check(!MarvisMenu.IsOpen, "menu closed after the hand-off");
                 Check(MissionLink.Current != null, "mission loaded in the simulator" +
                                                    (MissionLink.Current != null ? " (" + MissionLink.Current.Id + ")" : ""));
                 yield return Send("GET", api + "state", null, false);
@@ -144,7 +156,7 @@ namespace NasaSpaceApp.Homeline.Web
             Check(last.Status == 422 && o != null && (bool?)o["ok"] == false && !string.IsNullOrEmpty((string)o["error"]),
                   "broken mission answered 422 with the reason " + Short(last));
             yield return Send("POST", api + "mission", fixture ?? "{}", false);
-            Check(last.Status == 403, "POST without X-Martis answered 403 " + Short(last));
+            Check(last.Status == 403, "POST without X-Marvis answered 403 " + Short(last));
 
             Finish();
         }
@@ -168,7 +180,8 @@ namespace NasaSpaceApp.Homeline.Web
         void Note(string line)
         {
             log.Append(line).Append('\n');
-            Debug.Log("[WebPlanner] test: " + line);
+            // The player log also says when, in seconds since the game started.
+            Debug.Log("[WebPlanner] test " + Now.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " s: " + line);
         }
 
         void Finish()
@@ -195,14 +208,14 @@ namespace NasaSpaceApp.Homeline.Web
         // ---------------------------------------------------------------- HTTP, off the main thread
 
         // The request runs on a pool thread while the game keeps its frames (POST mission is answered by the main thread).
-        IEnumerator Send(string method, string url, string body, bool martisHeader)
+        IEnumerator Send(string method, string url, string body, bool marvisHeader)
         {
-            Task<Reply> task = Task.Run(() => Request(method, url, body, martisHeader));
+            Task<Reply> task = Task.Run(() => Request(method, url, body, marvisHeader));
             while (!task.IsCompleted) yield return null;
             last = task.Result;
         }
 
-        static Reply Request(string method, string url, string body, bool martisHeader)
+        static Reply Request(string method, string url, string body, bool marvisHeader)
         {
             var reply = new Reply();
             try
@@ -212,7 +225,7 @@ namespace NasaSpaceApp.Homeline.Web
                 req.Proxy = null;
                 req.KeepAlive = false;
                 req.Timeout = 25000;
-                if (martisHeader) req.Headers["X-Martis"] = "1";
+                if (marvisHeader) req.Headers["X-Marvis"] = "1";
                 if (body != null)
                 {
                     byte[] bytes = Encoding.UTF8.GetBytes(body);

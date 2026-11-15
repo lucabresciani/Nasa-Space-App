@@ -1,6 +1,7 @@
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -9,7 +10,7 @@ using Debug = UnityEngine.Debug;
 namespace NasaSpaceApp.Homeline.Web
 {
     /// <summary>
-    /// Starts and supervises MartisWeb.exe, the helper that shows the web planner in a borderless WebView2 window owned
+    /// Starts and supervises MarvisWeb.exe, the helper that shows the web planner in a borderless WebView2 window owned
     /// by the game window. One line per command on its stdin (show, hide, focus, bounds, quit) and one line per event
     /// on its stdout (ready, loaded, loadfail, shown, hidden, fatal, exit); see README.md in this folder.
     /// One instance per started process. Commands are sent from the main thread; the events are read on a background
@@ -23,6 +24,7 @@ namespace NasaSpaceApp.Homeline.Web
 
         Process process;
         int processId;
+        readonly Stopwatch sinceStart = new Stopwatch();
         volatile bool ready, loaded, visible, exited;
         volatile string fatal;
         volatile int exitCode;
@@ -71,6 +73,7 @@ namespace NasaSpaceApp.Homeline.Web
                 RedirectStandardOutput = true,
                 StandardOutputEncoding = Encoding.UTF8,
             };
+            sinceStart.Restart();
             try
             {
                 process = Process.Start(info);
@@ -85,7 +88,7 @@ namespace NasaSpaceApp.Homeline.Web
                 return false;
             }
             processId = process.Id;
-            var reader = new Thread(ReadEvents) { IsBackground = true, Name = "MartisWeb events" };
+            var reader = new Thread(ReadEvents) { IsBackground = true, Name = "MarvisWeb events" };
             reader.Start(process);
             return true;
         }
@@ -192,8 +195,10 @@ namespace NasaSpaceApp.Homeline.Web
                     {
                         case "ready":
                             ready = true;
+                            Debug.Log("[WebPlanner] viewer ready " + Seconds() + " s after its start");
                             break;
                         case "loaded":
+                            if (!loaded) Debug.Log("[WebPlanner] page loaded " + Seconds() + " s after the viewer's start");
                             loaded = true;
                             break;
                         case "loadfail":
@@ -228,6 +233,11 @@ namespace NasaSpaceApp.Homeline.Web
             exitCode = code;
             visible = false;
             exited = true;
+        }
+
+        string Seconds()
+        {
+            return sinceStart.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
         }
 
         // One command-line argument in double quotes (no quote inside, no trailing backslash: a URL or a folder path).

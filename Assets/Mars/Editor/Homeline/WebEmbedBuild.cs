@@ -12,7 +12,7 @@ namespace NasaSpaceApp.Homeline.EditorTools
     /// <summary>
     /// After every Windows player build, puts what the web planner needs next to the exe:
     ///   {project}/HomelineData/web            ->  {output}/HomelineWeb   (the built web app, served by the game)
-    ///   {project}/Tools/martis-web/viewer/dist ->  {output}/MartisWeb     (MartisWeb.exe, the WebView2 window)
+    ///   {project}/Tools/marvis-web/viewer/dist ->  {output}/MarvisWeb     (MarvisWeb.exe, the WebView2 window)
     /// A missing source is a warning, not an error: the folder of an earlier build is removed and the exe keeps the
     /// built-in MISSION PLAN panel. A copy that fails (a file in use in the output) fails the build.
     /// The output's HomelineData folder is never touched (HomelineBuild deletes and rebuilds it after the build).
@@ -39,8 +39,8 @@ namespace NasaSpaceApp.Homeline.EditorTools
             else
             {
                 Remove(webOut, "web app");
-                Debug.LogWarning("[WebPlanner build] no web app with the Mission Planer at " + web +
-                                 " (index.html and assets/mission*): the exe will keep the built-in MISSION PLAN panel.");
+                Debug.LogWarning("[WebPlanner build] no web app with the MARVIS bridge at " + web + " (index.html, assets/ and " +
+                                 WebPlanner.BridgeMarkerFile + "): the exe will keep the built-in MISSION PLAN panel.");
             }
 
             string viewer = Path.Combine(projectRoot, WebPlanner.ViewerDevFolder);

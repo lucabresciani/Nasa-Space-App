@@ -1,14 +1,14 @@
 <#
-  Tests MartisWeb.exe (the WebView2 viewer) against a dummy owner window and a local static server.
+  Tests MarvisWeb.exe (the WebView2 viewer) against a dummy owner window and a local static server.
 
-    powershell -NoProfile -ExecutionPolicy Bypass -File Test-MartisWeb.ps1
+    powershell -NoProfile -ExecutionPolicy Bypass -File Test-MarvisWeb.ps1
 
   It shows a small window near the bottom-right of the primary screen for about half a minute. Other test runs on
-  the same desktop need to keep the focus, so it first waits (up to 4 minutes) until no MARTIS.exe is running.
+  the same desktop need to keep the focus, so it first waits (up to 4 minutes) until no MARVIS.exe is running.
   Screenshots and the WebView2 user data folder go to .\out . The exit code is the number of failed checks.
 #>
 param(
-    [string]$Exe  = (Join-Path $PSScriptRoot '..\viewer\dist\MartisWeb.exe'),
+    [string]$Exe  = (Join-Path $PSScriptRoot '..\viewer\dist\MarvisWeb.exe'),
     [string]$Site = (Join-Path $env:USERPROFILE 'home-line\web\dist'),   # any built copy of the web app
     [int]$Port = 8771,
     [int]$UnlockWaitSeconds = 0   # how long to wait for a locked workstation before going on without screen captures
@@ -191,7 +191,7 @@ public class MwOwner
         {
             Mw.Dpi();
             form = new QuietForm();
-            form.Text = "MartisWeb test owner";
+            form.Text = "MarvisWeb test owner";
             form.StartPosition = FormStartPosition.Manual;
             form.BackColor = Color.FromArgb(255, 0, 255);
             Rectangle area = Screen.PrimaryScreen.WorkingArea;
@@ -218,7 +218,7 @@ public class MwOwner
     }
 }
 
-// MartisWeb.exe with redirected stdin/stdout; every stdout line is kept as "<ms since process start> <line>".
+// MarvisWeb.exe with redirected stdin/stdout; every stdout line is kept as "<ms since process start> <line>".
 public class MwProc
 {
     public Process P;
@@ -296,11 +296,11 @@ function ScreenCheck([string]$name, [string]$file, [scriptblock]$test) {
     $shot = [Mw]::Shot($owner.Handle, (Join-Path $out $file))
     if ($script:screenOk) { Check $name (& $test $shot) $shot } else { Skip $name "desktop not visible; $shot" }
 }
-function Wait-NoMartis {
+function Wait-NoMarvis {
     for ($i = 0; $i -le 12; $i++) {
-        if (-not (Get-Process -Name 'MARTIS' -ErrorAction SilentlyContinue)) { return }
-        if ($i -eq 12) { throw 'MARTIS.exe is still running after 4 minutes; not opening a window.' }
-        Write-Host 'MARTIS.exe is running; waiting 20 s...'
+        if (-not (Get-Process -Name 'MARVIS' -ErrorAction SilentlyContinue)) { return }
+        if ($i -eq 12) { throw 'MARVIS.exe is still running after 4 minutes; not opening a window.' }
+        Write-Host 'MARVIS.exe is running; waiting 20 s...'
         Start-Sleep -Seconds 20
     }
 }
@@ -336,7 +336,7 @@ try {
         Write-Host 'The workstation is locked; waiting 20 s...'
         Start-Sleep -Seconds 20
     }
-    Wait-NoMartis
+    Wait-NoMarvis
     $owner = New-Object MwOwner(900, 560)
     $visibleClock = [Diagnostics.Stopwatch]::StartNew()
 
@@ -399,9 +399,9 @@ try {
     ScreenCheck 'screenshot after hide: only the owner again' '03-hidden.png' { param($d) $d -match 'marker=(0\.9|1\.0)' }
 
     # eval: set the title, then navigate to a url that carries it, which comes back as a loaded event.
-    $v.Send("eval document.title = 'martis-eval-ok'")
+    $v.Send("eval document.title = 'marvis-eval-ok'")
     $v.Send("eval location.href = '/favicon.svg?title=' + encodeURIComponent(document.title)")
-    $evalLine = $v.WaitFor("loaded ${url}favicon.svg?title=martis-eval-ok", 10000)
+    $evalLine = $v.WaitFor("loaded ${url}favicon.svg?title=marvis-eval-ok", 10000)
     Check 'eval: runs javascript in the page' ([bool]$evalLine) "$evalLine"
     $v.Send("nav ${url}index.html?nav=1")
     $navLine = $v.WaitFor("loaded ${url}index.html?nav=1", 15000)

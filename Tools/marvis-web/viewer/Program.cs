@@ -1,4 +1,4 @@
-// MartisWeb.exe - shows the HOMELINE web app inside the MARTIS (Unity) window.
+// MarvisWeb.exe - shows the HOMELINE web app inside the MARVIS (Unity) window.
 //
 // A borderless WebView2 window, owned by the Unity window and kept exactly over its client area, so that the two
 // look like one window. Unity starts it hidden and drives it over stdin; events come back on stdout.
@@ -24,7 +24,7 @@ using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
-namespace MartisWeb
+namespace MarvisWeb
 {
     static class Program
     {

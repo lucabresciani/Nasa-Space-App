@@ -104,7 +104,7 @@ namespace NasaSpaceApp.Menu
         /// </summary>
         public static void OpenNow()
         {
-            MartisMenu m = Instance;
+            MarvisMenu m = Instance;
             if (m == null || !m.built || IsOpen || m.state != State.Hidden)
             {
                 return;

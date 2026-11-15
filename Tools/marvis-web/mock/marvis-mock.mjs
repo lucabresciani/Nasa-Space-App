@@ -1,29 +1,29 @@
 #!/usr/bin/env node
-// martis-mock.mjs: a stand-in for the Unity side of the MARTIS web bridge, for testing the HOMELINE
+// marvis-mock.mjs: a stand-in for the Unity side of the MARVIS web bridge, for testing the HOMELINE
 // web app without Unity. Plain Node (18+), no dependencies.
 //
-// DEV TOOL ONLY. The EVA log this mock produces (GET /martis/mock/complete) is SYNTHETIC TEST DATA:
+// DEV TOOL ONLY. The EVA log this mock produces (GET /marvis/mock/complete) is SYNTHETIC TEST DATA:
 // the posted mission's own planned path, replayed a little slower and with a small sideways wobble.
 // Nobody walked it and no simulator ran. Never show it as a result. The log says so itself
 // (title, origin_label, o2_model, x_mock); the page's debrief card shows the title and origin_label.
 //
 // It serves a folder (the built web app) as static files and implements the bridge API in memory:
-//   GET  /martis/api/hello    {"app":"MARTIS","bridge":1,"version":"mock"}
-//   GET  /martis/api/state    {"seq","planner_visible","eva","mission_id","eva_log_seq","last_error"}
-//   POST /martis/api/mission  mission.json text, header X-Martis: 1 -> {"ok":true,"mission_id"} | 422 {"ok":false,"error"}
-//   GET  /martis/api/eva-log  the latest (synthetic) eva_log document | 404 {"ok":false,"error":"no log"}
-//   POST /martis/api/close    header X-Martis: 1 -> {"ok":true}
+//   GET  /marvis/api/hello    {"app":"MARVIS","bridge":1,"version":"mock"}
+//   GET  /marvis/api/state    {"seq","planner_visible","eva","mission_id","eva_log_seq","last_error"}
+//   POST /marvis/api/mission  mission.json text, header X-Marvis: 1 -> {"ok":true,"mission_id"} | 422 {"ok":false,"error"}
+//   GET  /marvis/api/eva-log  the latest (synthetic) eva_log document | 404 {"ok":false,"error":"no log"}
+//   POST /marvis/api/close    header X-Marvis: 1 -> {"ok":true}
 // The API answers 403 when the Host header is not 127.0.0.1:<port> or localhost:<port>, and to a
-// POST without X-Martis: 1. Every API answer is JSON, UTF-8, Cache-Control: no-store.
+// POST without X-Marvis: 1. Every API answer is JSON, UTF-8, Cache-Control: no-store.
 //
 // Mock-only controls (GET, so they can be opened from a browser or curl):
-//   /martis/mock/complete            end the EVA: build the synthetic log, show the planner again
-//   /martis/mock/complete?ended=1    the same, but ended early (about 60 % of the way, complete = false)
-//   /martis/mock/fail-next?error=..  the next POST /martis/api/mission answers 422 with this reason
-//   /martis/mock/show                planner_visible = true (what Unity does when the planner is opened)
+//   /marvis/mock/complete            end the EVA: build the synthetic log, show the planner again
+//   /marvis/mock/complete?ended=1    the same, but ended early (about 60 % of the way, complete = false)
+//   /marvis/mock/fail-next?error=..  the next POST /marvis/api/mission answers 422 with this reason
+//   /marvis/mock/show                planner_visible = true (what Unity does when the planner is opened)
 //
 // Usage:
-//   node martis-mock.mjs --root <folder with index.html> [--port 47815] [--out <file>] [--log-out <file>]
+//   node marvis-mock.mjs --root <folder with index.html> [--port 47815] [--out <file>] [--log-out <file>]
 //     --out      every accepted mission is written here, byte for byte as it was posted
 //     --log-out  every synthetic eva_log is written here
 import http from 'node:http'
@@ -228,11 +228,11 @@ function syntheticLog(m, endedEarly) {
     created_utc: utc(now),
     started_utc: utc(missionAtMs || now),
     origin: 'unity_simulator', // the contract's only value; this document is NOT from the simulator (see x_mock)
-    origin_label: 'SYNTHETIC TEST LOG from martis-mock.mjs: no simulator ran, nobody walked this',
+    origin_label: 'SYNTHETIC TEST LOG from marvis-mock.mjs: no simulator ran, nobody walked this',
     label: 'Simulated EVA · real terrain and data',
     dummy: m.dummy === true,
     o2_model: 'mock (synthetic test data: the planned O2 times 1.04, not a simulator run)',
-    x_mock: 'synthetic test data from Tools/martis-web/mock/martis-mock.mjs; not a result',
+    x_mock: 'synthetic test data from Tools/marvis-web/mock/marvis-mock.mjs; not a result',
     pad: { lon: pad.lon, lat: pad.lat },
     summary: {
       complete: !endedEarly,
@@ -263,14 +263,14 @@ function syntheticLog(m, endedEarly) {
 async function api(req, res, path, query) {
   const host = req.headers.host
   if (host !== `127.0.0.1:${PORT}` && host !== `localhost:${PORT}`) return sendJson(res, 403, { ok: false, error: 'bad Host header' })
-  if (req.method === 'POST' && req.headers['x-martis'] !== '1') return sendJson(res, 403, { ok: false, error: 'missing X-Martis header' })
+  if (req.method === 'POST' && req.headers['x-marvis'] !== '1') return sendJson(res, 403, { ok: false, error: 'missing X-Marvis header' })
   const route = `${req.method} ${path}`
 
-  if (route === 'GET /martis/api/hello') return sendJson(res, 200, { app: 'MARTIS', bridge: 1, version: 'mock' })
-  if (route === 'GET /martis/api/state') {
+  if (route === 'GET /marvis/api/hello') return sendJson(res, 200, { app: 'MARVIS', bridge: 1, version: 'mock' })
+  if (route === 'GET /marvis/api/state') {
     return sendJson(res, 200, { seq, planner_visible: plannerVisible, eva: evaState(), mission_id: mission?.mission_id ?? null, eva_log_seq: logSeq, last_error: lastError })
   }
-  if (route === 'POST /martis/api/mission') {
+  if (route === 'POST /marvis/api/mission') {
     const text = await readBody(req)
     let doc = null
     let problem = failNext
@@ -298,15 +298,15 @@ async function api(req, res, path, query) {
     console.log(`[mock] mission ${doc.mission_id} accepted (${doc.waypoints.length} waypoints, ${text.length} chars)${OUT ? ` -> ${OUT}` : ''}`)
     return sendJson(res, 200, { ok: true, mission_id: doc.mission_id })
   }
-  if (route === 'GET /martis/api/eva-log') return log ? sendJson(res, 200, log) : sendJson(res, 404, { ok: false, error: 'no log' })
-  if (route === 'POST /martis/api/close') {
+  if (route === 'GET /marvis/api/eva-log') return log ? sendJson(res, 200, log) : sendJson(res, 404, { ok: false, error: 'no log' })
+  if (route === 'POST /marvis/api/close') {
     plannerVisible = false
     seq++
     console.log('[mock] planner closed')
     return sendJson(res, 200, { ok: true })
   }
 
-  if (route === 'GET /martis/mock/complete') {
+  if (route === 'GET /marvis/mock/complete') {
     if (!mission) return sendJson(res, 409, { ok: false, error: 'no mission posted yet' })
     const made = syntheticLog(mission, query.get('ended') === '1')
     if (!made) return sendJson(res, 409, { ok: false, error: 'the mission path has no timed rows' })
@@ -319,11 +319,11 @@ async function api(req, res, path, query) {
     console.log(`[mock] synthetic eva_log #${logSeq} for ${mission.mission_id} (${log.track.rows.length} track rows, complete = ${log.summary.complete})`)
     return sendJson(res, 200, { ok: true, eva_log_seq: logSeq, complete: log.summary.complete })
   }
-  if (route === 'GET /martis/mock/fail-next') {
+  if (route === 'GET /marvis/mock/fail-next') {
     failNext = query.get('error') || 'rejected by the mock (test)'
     return sendJson(res, 200, { ok: true, error: failNext })
   }
-  if (route === 'GET /martis/mock/show') {
+  if (route === 'GET /marvis/mock/show') {
     plannerVisible = true
     seq++
     return sendJson(res, 200, { ok: true })
@@ -362,7 +362,7 @@ function serveStatic(req, res, path) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1')
-  if (url.pathname.startsWith('/martis/api/') || url.pathname.startsWith('/martis/mock/')) {
+  if (url.pathname.startsWith('/marvis/api/') || url.pathname.startsWith('/marvis/mock/')) {
     api(req, res, url.pathname, url.searchParams).catch((e) => sendJson(res, 500, { ok: false, error: String(e?.message ?? e) }))
   } else serveStatic(req, res, url.pathname)
 })
@@ -370,4 +370,4 @@ server.on('error', (e) => {
   console.error(`[mock] ${e.message}`)
   process.exit(1)
 })
-server.listen(PORT, '127.0.0.1', () => console.log(`[mock] MARTIS mock on http://127.0.0.1:${PORT}/ serving ${ROOT} (synthetic test data only)`))
+server.listen(PORT, '127.0.0.1', () => console.log(`[mock] MARVIS mock on http://127.0.0.1:${PORT}/ serving ${ROOT} (synthetic test data only)`))

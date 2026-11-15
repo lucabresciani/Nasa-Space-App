@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    MartisWeb.exe: the WebView2 window that shows the HOMELINE web app inside the MARTIS (Unity) window.
+    MarvisWeb.exe: the WebView2 window that shows the HOMELINE web app inside the MARVIS (Unity) window.
     .NET Framework 4.8 on purpose: it ships with Windows 10 1903+ and Windows 11, so judges install nothing.
     Never opened by Unity. Build:  dotnet build -c Release   (also refreshes dist/, the folder that ships).
   -->
@@ -12,11 +12,11 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>9.0</LangVersion>
     <Nullable>disable</Nullable>
-    <AssemblyName>MartisWeb</AssemblyName>
-    <RootNamespace>MartisWeb</RootNamespace>
+    <AssemblyName>MarvisWeb</AssemblyName>
+    <RootNamespace>MarvisWeb</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Version>1.0.0</Version>
-    <Product>MARTIS web viewer</Product>
+    <Product>MARVIS web viewer</Product>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
@@ -27,7 +27,7 @@
   <!-- dist/ = exactly the files that ship next to the game (x64 loader beside the exe, where the control looks first). -->
   <Target Name="MakeDist" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
-      <DistFile Include="$(OutDir)MartisWeb.exe;$(OutDir)MartisWeb.exe.config" />
+      <DistFile Include="$(OutDir)MarvisWeb.exe;$(OutDir)MarvisWeb.exe.config" />
       <DistFile Include="$(OutDir)Microsoft.Web.WebView2.Core.dll;$(OutDir)Microsoft.Web.WebView2.WinForms.dll" />
       <DistFile Include="$(OutDir)WebView2Loader.dll" />
     </ItemGroup>

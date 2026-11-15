@@ -113,7 +113,15 @@ namespace NasaSpaceApp.Menu
             mission.Rows.Add(new Binding { Action = "PAUSE REPLAY", Keys = new[] { "T" } });
             mission.Rows.Add(new Binding { Action = "REPLAY SPEED", Keys = new[] { "[", "]" } });
             mission.Rows.Add(new Binding { Action = "ROUTE GUIDANCE", Keys = new[] { "R" } });
-            Add(groups, mission);
+            // A plan that comes from the web planner does not use these keys: not listed while MISSION PLAN opens it.
+            bool webPlanner = false;
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            webPlanner = global::NasaSpaceApp.Homeline.Web.WebPlanner.ReplacesPlanningPanel;
+#endif
+            if (!webPlanner)
+            {
+                Add(groups, mission);
+            }
 
             Group science = new Group { Title = "SCIENCE" };
             AddAction(science, actions, "Player/Interact", "SCAN ROCK (HOLD)", new[] { "E" }, "Y");

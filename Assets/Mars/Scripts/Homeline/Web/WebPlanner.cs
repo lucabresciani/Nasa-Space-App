@@ -16,8 +16,8 @@ using WebMission = global::NasaSpaceApp.Mission.MissionPlan;
 namespace NasaSpaceApp.Homeline.Web
 {
     /// <summary>
-    /// The HOMELINE web planner inside MARTIS. A loopback HTTP server (<see cref="WebServer"/>) serves the built web
-    /// app and a small JSON API; a helper window owned by the game window (<see cref="ViewerProcess"/>, MartisWeb.exe)
+    /// The HOMELINE web planner inside MARVIS. A loopback HTTP server (<see cref="WebServer"/>) serves the built web
+    /// app and a small JSON API; a helper window owned by the game window (<see cref="ViewerProcess"/>, MarvisWeb.exe)
     /// shows the page over the menu. MISSION PLAN opens it; the page posts the planned mission, which is loaded
     /// through <see cref="MissionLink"/> and started; when the EVA log is written the page shows the debrief.
     ///
@@ -26,10 +26,12 @@ namespace NasaSpaceApp.Homeline.Web
     /// </summary>
     public sealed class WebPlanner : MonoBehaviour
     {
-        public const string WebEnvVar = "MARTIS_WEB", ViewerEnvVar = "MARTIS_WEBVIEW";
-        public const string WebFolderName = "HomelineWeb", ViewerFolderName = "MartisWeb", ViewerExeName = "MartisWeb.exe";
+        public const string WebEnvVar = "MARVIS_WEB", ViewerEnvVar = "MARVIS_WEBVIEW";
+        public const string WebFolderName = "HomelineWeb", ViewerFolderName = "MarvisWeb", ViewerExeName = "MarvisWeb.exe";
         /// <summary>Where the viewer is built, relative to the project (editor, and the build step's source).</summary>
-        public const string ViewerDevFolder = "Tools/martis-web/viewer/dist";
+        public const string ViewerDevFolder = "Tools/marvis-web/viewer/dist";
+        /// <summary>The file at the root of a web build that says "this build contains the MARVIS bridge".</summary>
+        public const string BridgeMarkerFile = "marvis-bridge.json";
 
         const string MissionSource = "web planner";
         const string ViewerBackground = "#07060B";   // MenuTokens.Void: what shows until the page has painted
@@ -39,10 +41,23 @@ namespace NasaSpaceApp.Homeline.Web
 
         public static WebPlanner Instance { get; private set; }
 
+        /// <summary>
+        /// True exactly while MISSION PLAN opens the web planner in place of the built-in planning panel. False when
+        /// the web planner is off (-noWebPlanner, -homelineSelfTest, batch mode, no web app, no viewer, no free port)
+        /// and after it fell back to the built-in panel. The Controls list leaves the built-in plan's keys out while true.
+        /// </summary>
+        public static bool ReplacesPlanningPanel { get { return Instance != null && Instance.Available; } }
+
         /// <summary>The server's port; 0 when the web planner is off.</summary>
         public int Port { get { return server != null ? server.Port : 0; } }
-        /// <summary>The server is up and the viewer is running and not given up on: MISSION PLAN opens the web planner.</summary>
-        public bool Available { get { return server != null && viewer != null && !viewerDown && viewer.Alive; } }
+        /// <summary>
+        /// The server is up, the viewer is running and its page has loaded or still has the time to: MISSION PLAN opens
+        /// the web planner. A page that loads after that time makes it available again.
+        /// </summary>
+        public bool Available
+        {
+            get { return server != null && viewer != null && !viewerDown && viewer.Alive && (viewer.Loaded || !viewerLate); }
+        }
         public bool PlannerVisible { get { return plannerVisible; } }
         internal ViewerProcess Viewer { get { return viewer; } }
         internal IntPtr OwnerWindow { get { return ownerWindow; } }
@@ -54,9 +69,11 @@ namespace NasaSpaceApp.Homeline.Web
         IntPtr ownerWindow;
         float viewerDeadline;       // the viewer is to be started; give up looking for the game window at this time; 0 = no
         float viewerStartedAt;      // Time.realtimeSinceStartup when the current viewer process was started
-        bool viewerDown, restartTried;
+        bool viewerDown;            // the viewer process stopped
+        bool viewerLate;            // the viewer had not loaded the page ViewerLoadWait after its start
+        bool restartTried;
 
-        Action wrapper, previous;   // ours in MartisMenu.PlanRequested, and the one it replaced (the built-in panel)
+        Action wrapper, previous;   // ours in MarvisMenu.PlanRequested, and the one it replaced (the built-in panel)
         bool plannerVisible;
         Coroutine startEva, autoReturn;
 
@@ -101,14 +118,16 @@ namespace NasaSpaceApp.Homeline.Web
             if (webRoot == null || viewerExe == null)
             {
                 Debug.Log("[WebPlanner] not available: " +
-                          (webRoot == null ? "no web app with the Mission Planer (" + WebFolderName + " next to the exe)" : ViewerExeName + " not found") +
+                          (webRoot == null
+                              ? "no web app with the MARVIS bridge (" + WebFolderName + " next to the exe: index.html, assets/ and " + BridgeMarkerFile + ")"
+                              : ViewerExeName + " not found") +
                           ". MISSION PLAN keeps the built-in panel.");
                 return;
             }
 
             var web = new WebServer
             {
-                HelloJson = new JObject { ["app"] = "MARTIS", ["bridge"] = 1, ["version"] = Application.version }.ToString(Formatting.None),
+                HelloJson = new JObject { ["app"] = "MARVIS", ["bridge"] = 1, ["version"] = Application.version }.ToString(Formatting.None),
             };
             if (!web.Start(webRoot))
             {
@@ -142,13 +161,15 @@ namespace NasaSpaceApp.Homeline.Web
                 Debug.LogWarning("[WebPlanner] the viewer stopped (" + viewer.Status + "): MISSION PLAN falls back to the built-in panel");
             }
             // A viewer that runs but never loads the page would be an empty window over the game with no way back.
-            if (viewer != null && !viewerDown && !viewer.Loaded && Time.realtimeSinceStartup > viewerStartedAt + ViewerLoadWait)
+            // A slow start (the game loads its scene at the same time) only makes it late: it is used once the page is there.
+            if (viewer != null && !viewerDown && !viewerLate && !viewer.Loaded &&
+                Time.realtimeSinceStartup > viewerStartedAt + ViewerLoadWait)
             {
-                viewerDown = true;
+                viewerLate = true;
                 Debug.LogWarning("[WebPlanner] the viewer has not loaded the page after " + ViewerLoadWait +
-                                 " s: MISSION PLAN falls back to the built-in panel");
+                                 " s: MISSION PLAN opens the built-in panel until it has");
             }
-            if (plannerVisible && (!MartisMenu.IsOpen || !Available)) HidePlanner();   // never left over a running simulation
+            if (plannerVisible && (!MarvisMenu.IsOpen || !Available)) HidePlanner();   // never left over a running simulation
 
             string logPath = EvaLogger.LastWrittenPath;
             if (logPath != lastLogPath)
@@ -180,7 +201,7 @@ namespace NasaSpaceApp.Homeline.Web
             if (server == null) return;
             MissionLink.Changed -= OnMissionChanged;
             MenuNavigation(true);
-            if (MartisMenu.PlanRequested == wrapper) MartisMenu.PlanRequested = previous;
+            if (MarvisMenu.PlanRequested == wrapper) MarvisMenu.PlanRequested = previous;
             if (viewer != null) viewer.Quit();
             viewer = null;
             server.Stop();
@@ -191,16 +212,15 @@ namespace NasaSpaceApp.Homeline.Web
         // ---------------------------------------------------------------- where the web app and the viewer are
 
         /// <summary>
-        /// A folder is a usable web root when it has index.html and an assets folder with the Mission Planer chunk
-        /// (a file whose name starts with "mission"; older builds of the web app do not have it).
+        /// A folder is a usable web root when it has index.html, an assets folder and the marker file
+        /// marvis-bridge.json (a build of the web app without the MARVIS bridge does not have it).
         /// </summary>
         public static bool IsValidWebRoot(string dir)
         {
             try
             {
-                if (string.IsNullOrEmpty(dir) || !File.Exists(Path.Combine(dir, "index.html"))) return false;
-                string assets = Path.Combine(dir, "assets");
-                return Directory.Exists(assets) && Directory.GetFiles(assets, "mission*").Length > 0;
+                return !string.IsNullOrEmpty(dir) && File.Exists(Path.Combine(dir, "index.html")) &&
+                       Directory.Exists(Path.Combine(dir, "assets")) && File.Exists(Path.Combine(dir, BridgeMarkerFile));
             }
             catch (Exception)
             {
@@ -208,7 +228,7 @@ namespace NasaSpaceApp.Homeline.Web
             }
         }
 
-        // MARTIS_WEB, else HomelineWeb next to the exe, else (editor, development) the web folder of the planner data.
+        // MARVIS_WEB, else HomelineWeb next to the exe, else (editor, development) the web folder of the planner data.
         static string ResolveWebRoot(string appRoot)
         {
             string env = Environment.GetEnvironmentVariable(WebEnvVar);
@@ -220,7 +240,7 @@ namespace NasaSpaceApp.Homeline.Web
             return IsValidWebRoot(dev) ? dev : null;
         }
 
-        // MARTIS_WEBVIEW, else MartisWeb/MartisWeb.exe next to the exe, else (editor) where the viewer is built.
+        // MARVIS_WEBVIEW, else MarvisWeb/MarvisWeb.exe next to the exe, else (editor) where the viewer is built.
         static string ResolveViewer(string appRoot)
         {
             string env = Environment.GetEnvironmentVariable(ViewerEnvVar);
@@ -263,23 +283,24 @@ namespace NasaSpaceApp.Homeline.Web
         // HomelineApp assigns PlanRequested at boot and may do it after us: put ours in whenever it is not there.
         void Wrap()
         {
-            if (MartisMenu.PlanRequested == wrapper) return;
-            previous = MartisMenu.PlanRequested;
-            MartisMenu.PlanRequested = wrapper;
+            if (MarvisMenu.PlanRequested == wrapper) return;
+            previous = MarvisMenu.PlanRequested;
+            MarvisMenu.PlanRequested = wrapper;
         }
 
         // MISSION PLAN: the web planner when it is available, else whatever was there before (the built-in panel).
         void OnPlanRequested()
         {
             if (ShowPlanner()) return;
-            if (viewerDown && !restartTried && !viewer.NoRuntime)
+            if ((viewerDown || viewerLate && !viewer.Loaded) && !restartTried && !viewer.NoRuntime)
             {
-                // One more chance for a viewer that died; this request is served by the built-in panel meanwhile.
+                // One more chance for a viewer that died or still has no page; this request is served by the built-in
+                // panel meanwhile.
                 restartTried = true;
                 Debug.Log("[WebPlanner] starting the viewer again (once)");
                 viewer.Quit();
                 viewer = null;
-                viewerDown = false;
+                viewerDown = viewerLate = false;
                 viewerDeadline = Time.realtimeSinceStartup + OwnerWindowWait;
             }
             if (previous != null) previous();
@@ -289,7 +310,7 @@ namespace NasaSpaceApp.Homeline.Web
         /// <summary>Shows the web planner over the menu. False when it is not available or the menu is closed.</summary>
         public bool ShowPlanner()
         {
-            if (!Available || !MartisMenu.IsOpen) return false;
+            if (!Available || !MarvisMenu.IsOpen) return false;
             if (Application.isEditor && ViewerProcess.EditorBounds(ownerWindow, out int x, out int y, out int w, out int h))
                 viewer.SetBounds(x, y, w, h);
             if (!viewer.Show()) return false;
@@ -368,9 +389,9 @@ namespace NasaSpaceApp.Homeline.Web
             HidePlanner();
             float until = Time.unscaledTime + 2f;
             while (!Application.isFocused && Time.unscaledTime < until) yield return null;
-            MartisMenu.StartNow();
+            MarvisMenu.StartNow();
             yield return new WaitForSecondsRealtime(1f);
-            if (MartisMenu.IsOpen) MartisMenu.StartNow();
+            if (MarvisMenu.IsOpen) MarvisMenu.StartNow();
             startEva = null;
         }
 
@@ -408,7 +429,7 @@ namespace NasaSpaceApp.Homeline.Web
             Publish();
             Debug.Log("[WebPlanner] EVA log " + evaLogSeq + " (" + (complete ? "complete" : "not complete") + "): eva " + eva);
 
-            if (complete && !MartisMenu.IsOpen && Available)
+            if (complete && !MarvisMenu.IsOpen && Available)
             {
                 if (autoReturn != null) StopCoroutine(autoReturn);
                 autoReturn = StartCoroutine(AutoReturn());
@@ -430,16 +451,16 @@ namespace NasaSpaceApp.Homeline.Web
         {
             yield return new WaitForSecondsRealtime(AutoReturnDelay);
             autoReturn = null;
-            if (MartisMenu.IsOpen || !Available) yield break;
-            MartisMenu.OpenNow();
+            if (MarvisMenu.IsOpen || !Available) yield break;
+            MarvisMenu.OpenNow();
             float until = Time.unscaledTime + 3f;
-            while (!MartisMenu.IsOpen && Time.unscaledTime < until) yield return null;
+            while (!MarvisMenu.IsOpen && Time.unscaledTime < until) yield return null;
             // The debrief is on the Mission Planer page; the user may have left the app on another one.
             if (Available) viewer.Eval("if (!location.hash.startsWith('#/mission')) location.hash = '#/mission'");
             if (ShowPlanner()) Debug.Log("[WebPlanner] EVA complete: planner shown for the debrief");
         }
 
-        // The state document of GET /martis/api/state; seq grows with every change.
+        // The state document of GET /marvis/api/state; seq grows with every change.
         void Publish()
         {
             if (server == null) return;

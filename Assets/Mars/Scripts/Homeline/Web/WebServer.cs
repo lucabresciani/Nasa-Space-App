@@ -23,7 +23,7 @@ namespace NasaSpaceApp.Homeline.Web
 
     /// <summary>
     /// The loopback HTTP server of the web planner: http://127.0.0.1:{port}/ serves the built web app as static files
-    /// and a small JSON API under /martis/api/ (same origin as the page, so no CORS). See README.md in this folder.
+    /// and a small JSON API under /marvis/api/ (same origin as the page, so no CORS). See README.md in this folder.
     ///
     /// Threads: one listener thread accepts, the thread pool answers. hello, state and eva-log are answered from the
     /// strings below (set by the main thread). POST mission and POST close need Unity: the request waits while
@@ -34,7 +34,7 @@ namespace NasaSpaceApp.Homeline.Web
         public const int FirstPort = 47815, LastPort = 47819;
         const int MaxBodyBytes = 4 * 1024 * 1024;
         const int MainThreadTimeoutMs = 10000;
-        const string ApiPrefix = "/martis/api/";
+        const string ApiPrefix = "/marvis/api/";
 
         /// <summary>Bodies of GET hello, GET state and GET eva-log (null = no log yet). Replaced whole by the main thread.</summary>
         public volatile string HelloJson = "{}", StateJson = "{}", EvaLogJson;
@@ -237,9 +237,9 @@ namespace NasaSpaceApp.Homeline.Web
                 Json(ctx, 403, Fail("forbidden host"));   // a page of another site reaching us through its own host name
                 return;
             }
-            if (post && req.Headers["X-Martis"] != "1")
+            if (post && req.Headers["X-Marvis"] != "1")
             {
-                Json(ctx, 403, Fail("missing X-Martis header"));
+                Json(ctx, 403, Fail("missing X-Marvis header"));
                 return;
             }
 
