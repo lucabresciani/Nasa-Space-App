@@ -1143,8 +1143,8 @@ namespace NasaSpaceApp.HUD
             {
                 float hw = 0.5f * boxSize.x + 12f, hh = 0.5f * boxSize.y + 12f;   // cull with a margin
 
-                // HOME: 4-point star at the world origin, labelled.
-                Vector2 home = ToLocal(0f, 0f);
+                // HOME: 4-point star at home (the world origin unless a mission plan set the rover's pad), labelled.
+                Vector2 home = ToLocal(SuitTelemetry.HomeXZ.x, SuitTelemetry.HomeXZ.y);
                 bool homeIn = Mathf.Abs(home.x) <= hw && Mathf.Abs(home.y) <= hh;
                 if (homeIn)
                 {

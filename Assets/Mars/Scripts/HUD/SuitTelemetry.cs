@@ -43,6 +43,20 @@ namespace NasaSpaceApp.HUD
     /// </summary>
     public sealed class SuitTelemetry
     {
+        // ---- external mission feed (HOMELINE planner integration). Left unset, the suit simulation runs on its own.
+        /// <summary>Home (the rover) on the world XZ plane: x = east, y = north. Default: the world origin.</summary>
+        public static Vector2 HomeXZ;
+        /// <summary>Called at the end of every <see cref="Tick"/>, also while paused: a mission layer may overwrite the O2 and mission-time read-outs here.</summary>
+        public static System.Action<SuitTelemetry> AfterTick;
+
+        // Domain reload is off: drop the previous session's feed.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetMissionFeed()
+        {
+            HomeXZ = Vector2.zero;
+            AfterTick = null;
+        }
+
         // ---- body, load, energy
         public const float BodyMassKg = 75f;             // m_b, crew body mass (HOMELINE D10)
         public const float CarriedMassKg = 114f;         // M = 104 kg suit + 10 kg tools (HOMELINE)
@@ -238,6 +252,7 @@ namespace NasaSpaceApp.HUD
         private float obstructionDb;
         private bool homeGroundKnown;
         private float homeGroundY;
+        private Vector2 homeGroundFor;
         private float weatherVo2Raw;
         private float stressTarget;
 
@@ -293,7 +308,7 @@ namespace NasaSpaceApp.HUD
         /// <summary>VO2 reserve fraction 0 (1 MET) .. 1 (VO2max) of the actual VO2.</summary>
         public float Activity { get; private set; }
         public float MetabolicRateW { get; private set; }      // W, VO2 x 20.1 J/mL
-        public float O2FlowLpm { get; private set; }           // L/min STPD, = VO2 x body mass
+        public float O2FlowLpm { get; internal set; }           // L/min STPD, = VO2 x body mass
         public float HeartRate { get; private set; }           // bpm, mean (smoothed) heart rate
         public int HeartRateDisplay { get; private set; }      // updated at 1 Hz
         public HudSeverity HeartState { get; private set; }
@@ -308,10 +323,10 @@ namespace NasaSpaceApp.HUD
         public float WindSpeedMs { get; private set; }
 
         // ---- O2 (SIM consumable)
-        public float O2LeftL { get; private set; }
-        public int O2PercentDisplay { get; private set; }
-        public float O2MinutesToReserve { get; private set; }
-        public HudSeverity O2State { get; private set; }
+        public float O2LeftL { get; internal set; }
+        public int O2PercentDisplay { get; internal set; }
+        public float O2MinutesToReserve { get; internal set; }
+        public HudSeverity O2State { get; internal set; }
 
         // ---- radiation (cited constant, settable for future storm replay)
         public float DoseRateMsvH { get; set; }                // default 0.027
@@ -366,7 +381,7 @@ namespace NasaSpaceApp.HUD
         public HudSeverity SignalState { get; private set; }   // weak link: Caution, no link: Warning
 
         // ---- mission
-        public HudSeverity MetState { get; private set; }
+        public HudSeverity MetState { get; internal set; }
 
         // ---- navigation
         public float DistanceHomeM { get; private set; }
@@ -376,7 +391,7 @@ namespace NasaSpaceApp.HUD
         public bool BeyondExtent => DistanceHomeM > PlanningExtentM;
 
         // ---- time
-        public float MetSeconds { get; private set; }
+        public float MetSeconds { get; internal set; }
         public int Sol { get; private set; }
         public float LocalSolarTime { get; private set; }
         public float DustDevilProximity { get; private set; }
@@ -396,7 +411,7 @@ namespace NasaSpaceApp.HUD
             DustDevilProximity = Mathf.Clamp01(Finite(input.DustDevilProximity, 0f));
             Darkness = Mathf.Clamp01(Finite(input.Darkness, 0f));
 
-            float x = input.CameraPosition.x, z = input.CameraPosition.z;
+            float x = input.CameraPosition.x - HomeXZ.x, z = input.CameraPosition.z - HomeXZ.y;
             DistanceHomeM = Mathf.Sqrt(x * x + z * z);
             BearingHomeDeg = Mathf.Repeat(Mathf.Atan2(-x, -z) * Mathf.Rad2Deg, 360f);
 
@@ -404,6 +419,7 @@ namespace NasaSpaceApp.HUD
 
             if (!(simDt > 0f))
             {
+                AfterTick?.Invoke(this);
                 return;
             }
             simTime = Mathf.Repeat(simTime + simDt, 3600f);   // phase clock only (keeps float precision)
@@ -428,6 +444,7 @@ namespace NasaSpaceApp.HUD
             MetState = MetSeconds >= MetWarningS ? HudSeverity.Warning
                      : MetSeconds >= MetCautionS ? HudSeverity.Caution
                      : HudSeverity.Nominal;
+            AfterTick?.Invoke(this);
         }
 
         // ---------------------------------------------------------------- locomotion
@@ -656,7 +673,7 @@ namespace NasaSpaceApp.HUD
                 CheckLineOfSight(helmet);
             }
 
-            Vector3 antenna = new Vector3(0f, (homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM) + HomeAntennaM, 0f);
+            Vector3 antenna = new Vector3(HomeXZ.x, (homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM) + HomeAntennaM, HomeXZ.y);
             float d = Mathf.Max(1f, Vector3.Distance(helmet, antenna));
             LinkDistanceM = d;
             float logD = Mathf.Log10(d);
@@ -686,18 +703,23 @@ namespace NasaSpaceApp.HUD
         // a point 10 m higher. Allocation-free (RaycastNonAlloc into a cached buffer).
         private void CheckLineOfSight(Vector3 helmet)
         {
+            if (homeGroundKnown && homeGroundFor != HomeXZ)
+            {
+                homeGroundKnown = false;   // home moved (a mission plan set another pad)
+            }
             if (!homeGroundKnown)
             {
                 float top = helmet.y + 3000f;
-                if (TerrainHit(new Vector3(0f, top, 0f), Vector3.down, 6000f, out float y))
+                if (TerrainHit(new Vector3(HomeXZ.x, top, HomeXZ.y), Vector3.down, 6000f, out float y))
                 {
                     homeGroundY = y;
                     homeGroundKnown = true;
+                    homeGroundFor = HomeXZ;
                 }
             }
 
             float baseY = homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM;
-            Vector3 antenna = new Vector3(0f, baseY + HomeAntennaM, 0f);
+            Vector3 antenna = new Vector3(HomeXZ.x, baseY + HomeAntennaM, HomeXZ.y);
             if ((antenna - helmet).sqrMagnitude < 25f)
             {
                 obstructionDb = 0f;
