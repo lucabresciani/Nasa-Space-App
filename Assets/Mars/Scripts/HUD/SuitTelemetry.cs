@@ -48,6 +48,20 @@ namespace NasaSpaceApp.HUD
         public static Vector2 HomeXZ;
         /// <summary>Called at the end of every <see cref="Tick"/>, also while paused: a mission layer may overwrite the O2 and mission-time read-outs here.</summary>
         public static System.Action<SuitTelemetry> AfterTick;
+        /// <summary>
+        /// Seconds of physiology per second of game time. A mission replayed at 60x advances the model 60 s per second,
+        /// so heart rate, drift, battery and cooling follow the EVA clock; 0 freezes the model. Default 1.
+        /// </summary>
+        public static float MissionTimeScale = 1f;
+        /// <summary>
+        /// The metabolic demand of the activity itself (standing included), mL/kg/min of body mass, when a mission
+        /// knows it better than the helmet's own motion estimate: on a replay the crew is carried along the plan and
+        /// the helmet sees no steps. Null result = use the helmet's own estimate. Weather work, footing, cold, stress
+        /// and the VO2 / heart-rate kinetics are still applied on top of it.
+        /// </summary>
+        public static System.Func<float?> MissionActivityVo2;
+        /// <summary>Arousal from the mission's own state (shrinking margin, low O2), bpm, added to the weather's.</summary>
+        public static float MissionStressBpm;
 
         // Domain reload is off: drop the previous session's feed.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -55,7 +69,17 @@ namespace NasaSpaceApp.HUD
         {
             HomeXZ = Vector2.zero;
             AfterTick = null;
+            MissionTimeScale = 1f;
+            MissionActivityVo2 = null;
+            MissionStressBpm = 0f;
         }
+
+        /// <summary>
+        /// Oxygen cost of arousal (ASSUMED value): VO2 rises with psychological stress, but far less than heart rate
+        /// does; the "additional heart rate" of mental load is mostly non-metabolic (Turner and Carroll 1985).
+        /// 0.03 mL/kg/min per bpm gives +0.6 mL/kg/min, about a tenth of the standing rate, at +20 bpm.
+        /// </summary>
+        public const float StressVo2PerBpm = 0.03f;
 
         // ---- body, load, energy
         public const float BodyMassKg = 75f;             // m_b, crew body mass (HOMELINE D10)
@@ -313,6 +337,8 @@ namespace NasaSpaceApp.HUD
         public int HeartRateDisplay { get; private set; }      // updated at 1 Hz
         public HudSeverity HeartState { get; private set; }
         public float StressBpm { get; private set; }           // weather/environment arousal term
+        /// <summary>Part of the demand caused by arousal (see <see cref="StressVo2PerBpm"/>), mL/kg/min.</summary>
+        public float StressVo2 { get; private set; }
         public float DriftBpm { get; private set; }            // cardiovascular drift
         /// <summary>Instant beat-to-beat interval in seconds: mean RR modulated by breathing (RSA), Mayer wave and jitter.</summary>
         public float RrIntervalS { get; private set; }
@@ -417,6 +443,7 @@ namespace NasaSpaceApp.HUD
 
             UpdateAirTemperature(input);
 
+            simDt *= MissionTimeScale; // a mission replayed faster than real time ages the crew at the EVA's pace
             if (!(simDt > 0f))
             {
                 AfterTick?.Invoke(this);
@@ -516,7 +543,8 @@ namespace NasaSpaceApp.HUD
                 storm * StressStormBpm
                 + Mathf.Clamp01((tau - 1f) / 3f) * StressDustBpm
                 + DustDevilProximity * StressDevilBpm
-                + Darkness * StressNightBpm);
+                + Darkness * StressNightBpm)
+                + Mathf.Max(0f, MissionStressBpm);
 
             return 1f + StormFootingGain * storm + DustFootingGain * Mathf.Clamp01((tau - 1f) / 2f);
         }
@@ -537,7 +565,17 @@ namespace NasaSpaceApp.HUD
             float gradeVo2 = gradeW * (MarsGravity / EarthGravity) * ((BodyMassKg + CarriedMassKg) / BodyMassKg)
                              * MlPerMinPerWatt;
 
-            float raw = Vo2Rest + level + gradeVo2 + weatherVo2Raw;
+            float? mission = MissionActivityVo2 != null ? MissionActivityVo2() : null;
+            if (mission.HasValue && Finite(mission.Value))
+            {
+                // The mission states the cost of the activity (route slope and pace, station work): it replaces the
+                // helmet's own walking estimate; bad footing and poor visibility still make the same walk dearer.
+                levelBase = Mathf.Max(0f, mission.Value - Vo2Rest);
+                level = levelBase * footing;
+                gradeVo2 = 0f;
+            }
+            StressVo2 = StressVo2PerBpm * StressBpm;
+            float raw = Vo2Rest + level + gradeVo2 + weatherVo2Raw + StressVo2;
             Vo2Demand = Mathf.Clamp(raw, Vo2Rest, Vo2Max);
             WeatherVo2 = Mathf.Max(0f, weatherVo2Raw + (level - levelBase));
 
