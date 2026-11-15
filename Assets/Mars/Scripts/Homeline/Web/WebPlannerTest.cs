@@ -178,10 +178,11 @@ namespace NasaSpaceApp.Homeline.Web
             {
                 if (live)
                 {
-                    // As the site's "Send to simulator" does: the page downloads the mission file, the viewer catches it.
+                    // As "Start EVA in MARVIS" does: the page builds the mission file the way the site does, the page
+                    // script takes it before it becomes a download and sends it to the game as a message.
                     string download = new JObject
                     {
-                        ["type"] = "test-download",
+                        ["type"] = "test-send",
                         ["name"] = "marvis-test-mission.json",
                         ["text"] = fixture,
                     }.ToString(Newtonsoft.Json.Formatting.None);
@@ -197,7 +198,7 @@ namespace NasaSpaceApp.Homeline.Web
                         {
                             // A new document said hello after the request: the request went to the one that left.
                             again = true;
-                            Note("INFO the page was loaded again meanwhile: the download is asked for once more");
+                            Note("INFO the page was loaded again meanwhile: the mission is asked for once more");
                             planner.Viewer.Post(download);
                         }
                         yield return null;
@@ -205,8 +206,8 @@ namespace NasaSpaceApp.Homeline.Web
                     string why = planner.MissionsAccepted > accepted ? ""
                         : !sent ? " (the request could not be sent to the page)"
                         : planner.MissionsRefused > refused ? " (refused: " + planner.LastRefusal + ")"
-                        : " (no mission file came from the viewer)";
-                    Check(planner.MissionsAccepted > accepted, "mission download accepted" + why);
+                        : " (no mission came from the page)";
+                    Check(planner.MissionsAccepted > accepted, "mission sent by the page accepted (Start EVA in MARVIS)" + why);
                 }
                 else if (hasServer)
                 {

@@ -19,8 +19,10 @@ game shows the new version: nothing in Unity, and nothing here, has to be rebuil
 - `live/marvis-inject.js` is the page script. The site has no MARVIS code, so the viewer runs this
   script in every page: it adds the MARVIS menu button, the EVA debrief panel and the toasts.
   Without it the site is not used.
-- **Send to simulator** on the site downloads a mission file; the viewer catches the download,
-  the game loads the mission and the EVA starts.
+- **Start EVA in MARVIS**, a button the page script adds next to the MARVIS menu button, takes the
+  mission the site has built and sends it to the game: the EVA starts. A "Send to simulator" button
+  of the site does the same. The site's **Download mission.json** stays a plain download (the file
+  goes to the Downloads folder).
 - The **MARVIS menu button**, or **F10**, goes back to the game menu.
 - Fallback order: live site -> local copy -> built-in planning panel. The local copy is the web
   app built from `WebPlanner/` (below) and served by the game on `http://127.0.0.1:47815/`; it is

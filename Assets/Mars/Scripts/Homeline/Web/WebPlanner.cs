@@ -20,9 +20,10 @@ namespace NasaSpaceApp.Homeline.Web
     /// MarvisWeb.exe) shows the planner over the menu: the live planner site first, so that an update of the site
     /// needs no rebuild here, and the copy shipped with the game when the site cannot be reached. The copy is served
     /// by a loopback HTTP server (<see cref="WebServer"/>) with a small JSON API.
-    /// MISSION PLAN opens the planner. The site hands the mission over as a downloaded file (its "Send to simulator"
-    /// button, caught by the viewer), the local copy posts it to the API; either way it is loaded through
-    /// <see cref="MissionLink"/> and the EVA starts. When the EVA log is written the page shows the debrief.
+    /// MISSION PLAN opens the planner. On the site, "Start EVA in MARVIS" (a button of the page script) takes the
+    /// mission the site has built and sends it as a message; the local copy posts it to the API; either way it is
+    /// loaded through <see cref="MissionLink"/> and the EVA starts. The site's "Download mission.json" stays a plain
+    /// download (Downloads folder). When the EVA log is written the page shows the debrief.
     ///
     /// Started from code once per run, survives scene reloads. Without the viewer, or with neither a site nor a local
     /// copy, it stays off and MISSION PLAN keeps opening the built-in planning panel. See README.md in this folder.
@@ -586,6 +587,13 @@ namespace NasaSpaceApp.Homeline.Web
                 case "close":   // the MARVIS menu button, or F10 in the viewer
                     HidePlanner();
                     break;
+                case "mission":   // "Start EVA in MARVIS" of the page script: the mission the planner has just built
+                {
+                    string text = Text(o, "text");
+                    string error = text != null ? LoadMission(text, out _) : "the page sent no mission";
+                    if (error != null) PostToPage(new JObject { ["type"] = "mission-error", ["error"] = error });
+                    break;
+                }
                 case "hello":
                 {
                     JToken b = o["bridge"];
@@ -724,27 +732,30 @@ namespace NasaSpaceApp.Homeline.Web
             return new ApiReply(status, new JObject { ["ok"] = false, ["error"] = message }.ToString(Formatting.None));
         }
 
-        // The planner site's "Send to simulator": the viewer caught the download of a mission file. The file is ours to delete.
+        // A mission file downloaded in the planner (the site's "Download mission.json"): a download stays a download.
+        // The file goes to the user's Downloads folder and the page says so. The EVA starts from "Start EVA in MARVIS"
+        // (the "mission" message of the page script) or from the local copy's own button (the API).
         void OnMissionFile(string path)
         {
-            string json = null;
             try
             {
-                json = File.ReadAllText(path, System.Text.Encoding.UTF8);
+                string name = Path.GetFileName(path);
+                int dash = name.IndexOf('-');   // the viewer's "<n>-" in front of the page's file name
+                if (dash > 0 && dash < name.Length - 1 && int.TryParse(name.Substring(0, dash), out _)) name = name.Substring(dash + 1);
+                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                Directory.CreateDirectory(folder);
+                string target = Path.Combine(folder, name);
+                for (int i = 1; File.Exists(target); i++)
+                    target = Path.Combine(folder, Path.GetFileNameWithoutExtension(name) + " (" + i + ")" + Path.GetExtension(name));
+                File.Move(path, target);
+                Debug.Log("[WebPlanner] mission file saved to the user's Downloads folder: " + target);
+                PostToPage(new JObject { ["type"] = "saved", ["name"] = Path.GetFileName(target) });
             }
             catch (Exception e)
             {
-                Debug.LogWarning("[WebPlanner] mission file " + path + " not readable: " + e.Message);
+                Debug.LogWarning("[WebPlanner] mission file " + path + " not saved: " + e.Message);
+                PostToPage(new JObject { ["type"] = "toast", ["level"] = "error", ["text"] = "The file could not be saved to your Downloads folder." });
             }
-            try
-            {
-                File.Delete(path);
-            }
-            catch (Exception)
-            {
-            }
-            string error = json != null ? LoadMission(json, out _) : "the mission file could not be read";
-            if (error != null) PostToPage(new JObject { ["type"] = "mission-error", ["error"] = error });
         }
 
         // A mission from the planner, either way in: loads it and starts the EVA. Returns null, or why it was refused

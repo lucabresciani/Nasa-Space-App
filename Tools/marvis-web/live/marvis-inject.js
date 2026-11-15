@@ -6,16 +6,37 @@
  *
  * What it does, in the top document only:
  *   1. shows the product name MARVIS wherever the site shows its own upper-case name
- *   2. adds a small overlay in one shadow root: the "Back to MARVIS menu" button (F10),
- *      toasts, and the EVA debrief panel with its "Last EVA" chip
+ *   2. adds a small overlay in one shadow root: the "Back to MARVIS menu" button (F10), the
+ *      "Start EVA in MARVIS" button, toasts, and the EVA debrief panel with its "Last EVA" chip
  *   3. reloads the page when the site has a newer version
  *   4. turns clicks on .json links into downloads (the viewer captures downloads)
- *   5. handles the messages of the game, and says hello to it
+ *   5. sends a mission to the game, but only while sending is armed: for 15 s after "Start EVA in
+ *      MARVIS" (which clicks the site's own export control) or after the user clicks a "Send to
+ *      simulator" control of the site. While armed, the next Blob download the page starts is read
+ *      and, if it is a mission, posted to the game instead of saved. Not armed, nothing is touched:
+ *      the site's "Download mission.json" is a plain download.
+ *   6. handles the messages of the game, and says hello to it
  *
- * It uses nothing of the site: no selectors of its elements, no reading of its state.
- * Game <-> page messages: window.chrome.webview (a test may set window.__MARVIS_TEST_WEBVIEW).
- * On the game's own local copy (it answers /marvis/api/hello) only 1, the toasts, 4 and 5 run:
- * that copy has its own menu button and debrief.
+ * It uses nothing of the site but the visible label of its export control ("Download mission.json",
+ * "Send to simulator"): no selectors of its elements, no reading of its state.
+ * On the game's own local copy (it answers /marvis/api/hello) only 1, the toasts, 4, 5 and 6 run:
+ * that copy has its own menu button and debrief, so the dock (and its Start EVA button) stays hidden.
+ *
+ * Messages: window.chrome.webview (a test may set window.__MARVIS_TEST_WEBVIEW).
+ *   page -> game, wv.postMessage(object):
+ *     { type: 'hello', inject: 1, url, bridge }     once, when the page is ready
+ *     { type: 'close' }                             "Back to MARVIS menu" or F10
+ *     { type: 'reloading', reason: 'update' }       just before an update reload
+ *     { type: 'mission', name, text }               a mission to start: file name and JSON text
+ *   game -> page, 'message' events (an object or its JSON):
+ *     { type: 'eva-log', eva, log }                 show the EVA debrief
+ *     { type: 'mission-error', error }              error toast
+ *     { type: 'toast', text, level }                level 'error' or anything else
+ *     { type: 'saved', name }                       "Saved to your Downloads folder"
+ *     { type: 'blocked' }                           a link to another site was not opened
+ *     { type: 'check-update' }                      look for a newer version of the site now
+ *     { type: 'test-download', name, text }         a plain download, as the site does it (not armed)
+ *     { type: 'test-send', name, text }             arm, then the same download: becomes 'mission'
  */
 (function () {
   'use strict';
@@ -157,7 +178,7 @@ button {
 }
 button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
-/* The menu button and the Last EVA chip */
+/* The Last EVA chip, the menu button and the Start EVA button */
 .dock {
   position: fixed; top: 8px; right: 144px; display: flex; align-items: center; gap: 8px;
   pointer-events: auto; user-select: none; -webkit-user-select: none; touch-action: none;
@@ -170,6 +191,9 @@ button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 }
 .btn svg { flex: none; color: var(--muted); }
 .btn:active { transform: scale(0.97); }
+/* The main action: the neutral button inverted, from the same two tokens */
+.btn.primary { padding: 0 12px 0 8px; background: var(--text); border-color: var(--text); color: var(--bg); font-weight: 600; }
+.btn.primary svg { color: inherit; }
 .chip { height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; line-height: 16px; color: var(--muted); }
 .chip[aria-expanded="true"] { background: var(--raised); border-color: var(--line-strong); color: var(--text); }
 kbd {
@@ -188,6 +212,7 @@ kbd {
 
 @media (hover: hover) and (pointer: fine) {
   .btn:hover { background: var(--raised); border-color: var(--line-strong); color: var(--text); }
+  .btn.primary:hover { background: #FBFDFE; border-color: #FBFDFE; color: var(--bg); }
   .x:hover { background: var(--raised); color: var(--text); }
 }
 
@@ -253,6 +278,7 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
     // 24 x 24 stroke icons in the style of the site's icon set
     const ICON = {
       back: ['m15 18-6-6 6-6'],
+      play: ['M6 3l14 9-14 9z'],
       close: ['M18 6 6 18', 'm6 6 12 12'],
       info: ['M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0', 'M12 16v-4', 'M12 8h.01'],
       error: ['M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0', 'M12 8v4', 'M12 16h.01'],
@@ -301,7 +327,11 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
         el('span', { text: 'Back to MARVIS menu' }),
         el('kbd', { text: 'F10' }),
       ]);
-      dock = el('div', { class: 'dock', role: 'group', 'aria-label': 'MARVIS', hidden: '' }, [chip, menu]);
+      const start = el('button', { type: 'button', class: 'btn primary', title: 'Send the route planned here to MARVIS and start the EVA' }, [
+        icon('play'),
+        el('span', { text: 'Start EVA in MARVIS' }),
+      ]);
+      dock = el('div', { class: 'dock', role: 'group', 'aria-label': 'MARVIS', hidden: '' }, [chip, menu, start]);
 
       panelClose = el('button', { type: 'button', class: 'x', 'aria-label': 'Close the EVA debrief', title: 'Close' }, [icon('close')]);
       panelBody = el('div');
@@ -314,6 +344,7 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
       root.appendChild(el('div', { class: 'm', translate: 'no' }, [dock, panel, toasts]));
 
       menu.addEventListener('click', safe(() => post({ type: 'close' })));
+      start.addEventListener('click', safe(startEva)); // after a drag the dock stops the click, as for the menu button
       chip.addEventListener('click', safe(() => (panel.classList.contains('open') ? closePanel() : openPanel(true))));
       panelClose.addEventListener('click', safe(closePanel));
       panel.addEventListener(
@@ -604,16 +635,10 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
 
     // ---------------------------------------------------------------- 4. .json links
 
-    /** A file download the way the site does its own: a Blob URL and a click on <a download>. */
+    /** A file for the user. Under the rule of section 5: while sending is armed, a mission goes to the game. */
     function download(blob, name) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      (document.body || document.documentElement).appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      if (sendArmed()) take(blob, name);
+      else plainDownload(blob, name);
     }
 
     window.addEventListener(
@@ -642,7 +667,186 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
       false, // after the page's own handlers: a link the page downloads itself is not downloaded twice
     );
 
-    // ---------------------------------------------------------------- 5. the game
+    // ---------------------------------------------------------------- 5. the mission, to the game
+
+    // The site downloads a mission as a Blob URL opened by a click on <a download>. That stays a plain
+    // download, except while sending is armed: then the file is read here and a mission is posted to
+    // the game. What arms: "Start EVA in MARVIS", and the user's click on a "Send to simulator" control.
+    const ARM_MS = 15000;
+    const EXPORT = /download mission\.json|send to (the )?simulator/i; // what "Start EVA in MARVIS" clicks
+    const SEND = /send to (the )?simulator/i; // what arms when the user clicks it
+    const NO_MISSION = 'The planner did not produce a mission. Try again.';
+    const urlCreate = URL.createObjectURL;
+    const urlRevoke = URL.revokeObjectURL;
+    const anchorClick = HTMLAnchorElement.prototype.click;
+    const blobs = new Map(); // blob: URL -> Blob, the 20 newest
+    let armedUntil = 0;
+    let armTimer = 0; // runs when the user is to be told that no mission came
+    let plain = false; // true during a download click of this script: never taken
+
+    function sendArmed() {
+      return Date.now() < armedUntil;
+    }
+
+    function disarmSend() {
+      armedUntil = 0;
+      clearTimeout(armTimer);
+      armTimer = 0;
+    }
+
+    /** report: tell the user when the time runs out without a mission. */
+    function armSend(report) {
+      disarmSend();
+      armedUntil = Date.now() + ARM_MS;
+      if (!report) return;
+      armTimer = setTimeout(
+        safe(() => {
+          disarmSend();
+          toast(NO_MISSION, 'error');
+        }),
+        ARM_MS,
+      );
+    }
+
+    /** A real download, the way the site does its own. The originals are used: this one is never taken. */
+    function plainDownload(blob, name) {
+      const url = urlCreate.call(URL, blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      (document.body || document.documentElement).appendChild(a);
+      plain = true;
+      try {
+        anchorClick.call(a);
+      } finally {
+        plain = false;
+      }
+      a.remove();
+      setTimeout(() => urlRevoke.call(URL, url), 60000);
+    }
+
+    /** A file caught while armed: a mission goes to the game, anything else is downloaded after all. */
+    const take = safe((blob, name) => {
+      const report = armTimer !== 0;
+      disarmSend(); // first: the same click is never taken twice
+      const other = safe(() => {
+        plainDownload(blob, name || '');
+        if (report) toast(NO_MISSION, 'error');
+      });
+      let read;
+      try {
+        read = blob.text();
+      } catch (e) {
+        read = Promise.reject(e);
+      }
+      read.then(
+        safe((text) => {
+          if (text.indexOf('homeline_mission') === -1) other();
+          else post({ type: 'mission', name: name || 'mission.json', text: text });
+        }),
+        other,
+      );
+    });
+
+    /** While armed: the Blob behind an <a download href="blob:..."> that is being clicked. Null otherwise. */
+    function caught(a) {
+      if (plain || !sendArmed() || !a || typeof a.hasAttribute !== 'function' || !a.hasAttribute('download')) return null;
+      const href = a.href;
+      return (typeof href === 'string' && href.indexOf('blob:') === 0 && blobs.get(href)) || null;
+    }
+
+    // The wrappers return what the originals return and add no error of their own.
+    safe(() => {
+      if (typeof urlCreate !== 'function' || typeof urlRevoke !== 'function' || typeof anchorClick !== 'function') return;
+      URL.createObjectURL = function (obj) {
+        const url = urlCreate.apply(this, arguments);
+        try {
+          if (typeof url === 'string' && obj instanceof Blob) {
+            blobs.set(url, obj);
+            if (blobs.size > 20) blobs.delete(blobs.keys().next().value);
+          }
+        } catch (e) {
+          /* never into the page */
+        }
+        return url;
+      };
+      URL.revokeObjectURL = function (url) {
+        const r = urlRevoke.apply(this, arguments);
+        try {
+          // The site revokes right after its click: the Blob stays readable a little longer.
+          if (blobs.has(url)) setTimeout(() => blobs.delete(url), 30000);
+        } catch (e) {
+          /* never into the page */
+        }
+        return r;
+      };
+      // click() of an <a> that is not in the document sends no event to the window: caught here.
+      HTMLAnchorElement.prototype.click = function () {
+        let blob = null;
+        try {
+          blob = caught(this);
+        } catch (e) {
+          blob = null;
+        }
+        if (!blob) return anchorClick.apply(this, arguments);
+        take(blob, this.getAttribute('download'));
+        return undefined;
+      };
+    })();
+
+    const labelOf = (e) => {
+      const t = (e.textContent || '').trim();
+      return t.length <= 60 ? t : ''; // a control, not a container of controls
+    };
+    const isOff = (e) => e.disabled === true || e.getAttribute('aria-disabled') === 'true';
+
+    // Before the page's own handlers: clicks that reach an <a download> without going through click()
+    // (a real click, a dispatched event), and the user's clicks on the site's "Send to simulator".
+    window.addEventListener(
+      'click',
+      safe((e) => {
+        const t = e.target;
+        if (plain || !t || typeof t.closest !== 'function') return;
+        const c = e.isTrusted ? t.closest('button, a, [role="button"]') : null;
+        if (c && SEND.test(labelOf(c))) armSend(false); // first: the control can be the download link itself
+        const a = t.closest('a[download]');
+        const blob = a ? caught(a) : null;
+        if (!blob) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        take(blob, a.getAttribute('download'));
+      }),
+      true,
+    );
+
+    /** The site's own export control, known by its visible label only. One that is not disabled comes first. */
+    function exportControl() {
+      const all = document.querySelectorAll('button, a, [role="button"]');
+      let off = null;
+      for (let i = 0; i < all.length; i++) {
+        const c = all[i];
+        if (!EXPORT.test(labelOf(c))) continue;
+        const r = c.getBoundingClientRect();
+        if (!(r.width > 0 && r.height > 0)) continue; // not rendered
+        if (!isOff(c)) return c;
+        if (!off) off = c;
+      }
+      return off;
+    }
+
+    /** "Start EVA in MARVIS": the site builds the mission as for its own download, and it is taken. */
+    function startEva(e) {
+      if (e && e.detail > 1) return; // the second click of a double click: one mission, not two
+      const c = exportControl();
+      if (!c) toast('This page of the planner has no mission to send. Open PLAN and build a route.', 'info');
+      else if (isOff(c)) toast('Add at least one waypoint to the route first.', 'info');
+      else {
+        armSend(true);
+        c.click();
+      }
+    }
+
+    // ---------------------------------------------------------------- 6. the game
 
     // The game's own local copy is served on the loopback address only: anywhere else, do not even ask.
     let bridge = /^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname) ? null : false; // null = not known yet
@@ -698,6 +902,19 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
         case 'test-download':
           download(new Blob([String(d.text)], { type: 'application/json' }), String(d.name || 'mission.json'));
           break;
+        case 'test-send': {
+          // Exactly the site's own download, armed: the wrappers of section 5 must turn it into 'mission'.
+          armSend(false);
+          const url = URL.createObjectURL(new Blob([String(d.text)], { type: 'application/json' }));
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = String(d.name || 'mission.json');
+          document.body.append(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+          break;
+        }
         default: // unknown types are ignored
       }
     });

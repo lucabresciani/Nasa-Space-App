@@ -42,11 +42,15 @@ Order: live site -> local copy -> built-in planning panel.
    site. While the page is up, uGUI navigation is off (`EventSystem.sendNavigationEvents`): the
    game runs in the background there, and a controller would otherwise move and press the menu
    entries hidden underneath. Alt+F4 on the page closes the game, as it does on the game window.
-3. **Send to simulator** on the site downloads a mission file (`"kind": "homeline_mission"`). The
-   viewer catches the download and reports the file; `WebPlanner` loads it with
-   `MissionLink.LoadJson`, hides the viewer, the menu closes and the EVA starts on the pad. A
-   mission that is refused is shown by the page as an error. The local copy posts the mission to
-   the API instead; the rest is the same.
+3. **Start EVA in MARVIS** is a button of the page script, next to the MARVIS menu button. It
+   presses the site's own export control ("Download mission.json", or a "Send to simulator"
+   button) and takes the mission file (`"kind": "homeline_mission"`) before it becomes a download;
+   the game gets it as a message. `WebPlanner` loads it with `MissionLink.LoadJson`, hides the
+   viewer, the menu closes and the EVA starts on the pad. A mission that is refused is shown by
+   the page as an error. A "Send to simulator" button of the site, pressed by the user, does the
+   same. **Download mission.json** pressed by the user stays a plain download: the file goes to
+   the Downloads folder and the page says so. The local copy posts the mission to the API instead;
+   the rest is the same.
 4. The **MARVIS menu button** of the page script, or **F10**, hides the planner: the menu is back.
    F10 is handled by the viewer itself, so it works even when the page script failed.
 5. When `EvaLogger` writes a log of the current mission, the live page gets it as a message and
@@ -115,6 +119,7 @@ Page to game, `window.chrome.webview.postMessage(object)`:
 | --- | --- |
 | `{"type":"hello","inject":1,"url":"...","bridge":true\|false}` | once per document. `bridge` true = the page is the game's own local copy (`/marvis/api/hello` answers there): it has its own controls and debrief, so the script adds neither |
 | `{"type":"close"}` | the MARVIS menu button: the planner is hidden |
+| `{"type":"mission","name":"...","text":"..."}` | "Start EVA in MARVIS": the text of the mission file the site has just built; the game loads it and starts the EVA |
 | `{"type":"reloading","reason":"update"}` | the page loads itself again (a newer version of the site) |
 
 Game to page, `window.chrome.webview.addEventListener('message', ...)`:
@@ -127,7 +132,8 @@ Game to page, `window.chrome.webview.addEventListener('message', ...)`:
 | `{"type":"saved","name":"..."}` | from the viewer: a download was saved to the Downloads folder |
 | `{"type":"blocked","url":"..."}` | from the viewer: a link to another site was not opened |
 | `{"type":"check-update"}` | check now for a newer version of the site |
-| `{"type":"test-download","name":"...","text":"..."}` | download this text as a file, as the site's own button does (the hand-off test) |
+| `{"type":"test-send","name":"...","text":"..."}` | build this text as a file the way the site does and send it as "Start EVA in MARVIS" does (the hand-off test) |
+| `{"type":"test-download","name":"...","text":"..."}` | download this text as a file, as the site's own button does: a plain download |
 
 ## API of the local copy (same origin as the page, JSON, `Cache-Control: no-store`)
 
