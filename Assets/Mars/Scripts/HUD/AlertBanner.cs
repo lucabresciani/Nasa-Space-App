@@ -31,6 +31,9 @@ namespace NasaSpaceApp.HUD
                           HeartElevated = 16, BatteryCaution = 17, WaterCaution = 18, CommWeak = 19, FanMax = 20, EvaLong = 21;
         private const int LastCaution = EvaLong;
         private const int BeyondExtent = 22, DustDevilNearby = 23;
+        // Web mission (MissionTracker, SPEC F18 rules); severities set in SeverityOf, priority set by Select's order.
+        private const int MissionReturnNow = 30, MissionTurnBack = 31, MissionReplan = 32, MissionOffRoute = 33,
+                          MissionBehind = 34, MissionComplete = 35;
 
         private readonly HudContext ctx;
         private readonly GameObject panelGo;
@@ -107,7 +110,7 @@ namespace NasaSpaceApp.HUD
 
         private void Evaluate()
         {
-            int id = Select(ctx.Telemetry, out int number);
+            int id = Select(ctx.Telemetry, ctx.Mission, out int number);
             if (id == shownId)
             {
                 if (id != None && number != shownNumber)
@@ -139,18 +142,20 @@ namespace NasaSpaceApp.HUD
             FadeTo(1f);
         }
 
-        private static int Select(SuitTelemetry t, out int number)
+        private static int Select(SuitTelemetry t, NasaSpaceApp.Mission.MissionTracker m, out int number)
         {
             number = 0;
             if (t == null)
             {
                 return None;
             }
+            NasaSpaceApp.Mission.MissionStatus ms = m != null && m.Active ? m.Status : NasaSpaceApp.Mission.MissionStatus.None;
 
             // warning
             if (t.O2State == HudSeverity.Warning) return O2Reserve;
             if (t.PressureState == HudSeverity.Warning) { number = Tenths(t.SuitPressureKpa); return PressureLow; }
             if (t.Co2State == HudSeverity.Warning) { number = Tenths(t.Co2Mmhg); return Co2High; }
+            if (ms == NasaSpaceApp.Mission.MissionStatus.ReturnNow) return MissionReturnNow;
             if (t.SlopeState == HudSeverity.Warning) { number = Mathf.RoundToInt(t.SlopeDeg); return SlopeNoGo; }
             if (t.RadState == HudSeverity.Warning) return RadiationHigh;
             if (t.BatteryState == HudSeverity.Warning) { number = Mathf.CeilToInt(t.BatteryPct); return BatteryLow; }
@@ -160,6 +165,7 @@ namespace NasaSpaceApp.HUD
             if (t.MetState == HudSeverity.Warning) return EvaLimit;
 
             // caution
+            if (ms == NasaSpaceApp.Mission.MissionStatus.TurnBack) { number = Mathf.Max(0, Mathf.FloorToInt(m.MarginMin)); return MissionTurnBack; }
             if (t.SlopeState == HudSeverity.Caution) { number = Mathf.RoundToInt(t.SlopeDeg); return SlopeBeyond; }
             if (t.O2State == HudSeverity.Caution) { number = Mathf.Max(0, Mathf.FloorToInt(t.O2MinutesToReserve)); return O2ToReserve; }
             if (t.PressureState == HudSeverity.Caution) { number = Tenths(t.SuitPressureKpa); return PressureCaution; }
@@ -171,8 +177,12 @@ namespace NasaSpaceApp.HUD
             if (t.SignalState == HudSeverity.Caution) { number = Mathf.Max(0, Mathf.FloorToInt(t.LinkMarginDb)); return CommWeak; }
             if (t.FanState == HudSeverity.Caution) return FanMax;
             if (t.MetState == HudSeverity.Caution) { number = Mathf.FloorToInt(t.MetSeconds / 60f); return EvaLong; }
+            if (ms == NasaSpaceApp.Mission.MissionStatus.Replan) return MissionReplan;
+            if (ms == NasaSpaceApp.Mission.MissionStatus.OffRoute) { number = Mathf.RoundToInt(m.CrossTrackM); return MissionOffRoute; }
+            if (ms == NasaSpaceApp.Mission.MissionStatus.Behind) { number = Mathf.RoundToInt(m.ScheduleDeltaMin); return MissionBehind; }
 
             // info
+            if (ms == NasaSpaceApp.Mission.MissionStatus.Complete && m.EvaMin - m.CompleteAtMin < 0.25f) return MissionComplete;
             if (t.BeyondExtent) return BeyondExtent;
             if (t.DustDevilProximity > DustDevilClosePass) return DustDevilNearby;
             return None;
@@ -185,6 +195,15 @@ namespace NasaSpaceApp.HUD
 
         private static HudSeverity SeverityOf(int id)
         {
+            switch (id)
+            {
+                case MissionReturnNow: return HudSeverity.Warning;
+                case MissionTurnBack:
+                case MissionReplan:
+                case MissionOffRoute:
+                case MissionBehind: return HudSeverity.Caution;
+                case MissionComplete: return HudSeverity.Info;
+            }
             return id <= LastWarning ? HudSeverity.Warning : id <= LastCaution ? HudSeverity.Caution : HudSeverity.Info;
         }
 
@@ -216,6 +235,12 @@ namespace NasaSpaceApp.HUD
                 case EvaLong:
                     int mm = n % 60;
                     return "EVA " + HudStrings.Int(n / 60) + (mm < 10 ? ":0" : ":") + HudStrings.Int(mm) + " OF 6:30";
+                case MissionReturnNow: return "TURN BACK NOW · HEAD HOME";
+                case MissionTurnBack: return "TURN-BACK IN " + HudStrings.Int(n) + " MIN";
+                case MissionReplan: return "PLAN NO LONGER FITS · REPLAN";
+                case MissionOffRoute: return "OFF ROUTE " + HudStrings.Int(n) + " m · REJOIN ROUTE";
+                case MissionBehind: return "BEHIND PLAN " + HudStrings.Int(n) + " MIN";
+                case MissionComplete: return "EVA complete · back at the pad";
                 case BeyondExtent: return "Beyond planning extent 3.7 km";
                 case DustDevilNearby: return "Dust devil nearby";
                 default: return string.Empty;

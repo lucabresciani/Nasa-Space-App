@@ -11,6 +11,8 @@ namespace NasaSpaceApp.HUD
         /// <summary>The planned way home (last waypoint → pad, WS2 pointer path): the same hue, dimmer.</summary>
         public static readonly Color RouteHome = HudTokens.Light(0xC59BFF, 0.55f);
         public const float Width = 2f, HaloWidth = 4.5f, HomeWidth = 1.5f, HomeHaloWidth = 3.5f;
+        /// <summary>Legs already walked (before the current leg), and closed waypoints.</summary>
+        public static readonly Color Done = HudTokens.Light(0xB4BBC1, 0.45f);
         public const float WaypointRadius = 6f, DialWaypointRadius = 4.5f;
     }
 
@@ -30,7 +32,8 @@ namespace NasaSpaceApp.HUD
         private Vector2[] pts = new Vector2[256];
         private Vector2[] scratch = new Vector2[256];
         private int[] runStart = new int[16], runCount = new int[16];
-        private bool[] runHome = new bool[16];
+        private byte[] runStyle = new byte[16];   // StyleOut, StyleHome, StyleDone
+        private const byte StyleOut = 0, StyleHome = 1, StyleDone = 2;
         private int runs, used;
 
         private MissionPlan cachedPlan;
@@ -51,32 +54,44 @@ namespace NasaSpaceApp.HUD
                 : Mathf.Abs(p.x) <= extent.x && Mathf.Abs(p.y) <= extent.y;
         }
 
-        /// <summary>Adds the route (halos, then outbound and home strokes) to <paramref name="mesh"/>; no Clear/Commit.</summary>
-        public void DrawRoute(HudLineMesh mesh, MissionPlan plan, Vector2 origin, Vector2 ax, Vector2 ay, ClipShape clip, Vector2 extent)
+        /// <summary>
+        /// Adds the route (halos, then walked, home and outbound strokes) to <paramref name="mesh"/>; no Clear/Commit.
+        /// Segments ending at or before route index <paramref name="doneBefore"/> are drawn as walked (dim).
+        /// </summary>
+        public void DrawRoute(HudLineMesh mesh, MissionPlan plan, Vector2 origin, Vector2 ax, Vector2 ay, ClipShape clip, Vector2 extent,
+                              int doneBefore = 0)
         {
             if (mesh == null || plan == null || plan.Route == null || plan.Route.Length < 2)
             {
                 return;
             }
             CacheLegs(plan);
-            Collect(plan, origin, ax, ay, clip, extent);
+            Collect(plan, origin, ax, ay, clip, extent, doneBefore);
             for (int k = 0; k < runs; k++)
             {
-                Emit(mesh, k, runHome[k] ? MissionRouteStyle.HomeHaloWidth : MissionRouteStyle.HaloWidth, HudTokens.Halo);
+                Emit(mesh, k, runStyle[k] == StyleOut ? MissionRouteStyle.HaloWidth : MissionRouteStyle.HomeHaloWidth, HudTokens.Halo);
             }
             for (int k = 0; k < runs; k++)
             {
-                if (runHome[k]) Emit(mesh, k, MissionRouteStyle.HomeWidth, MissionRouteStyle.RouteHome);
+                if (runStyle[k] == StyleDone) Emit(mesh, k, MissionRouteStyle.HomeWidth, MissionRouteStyle.Done);
             }
             for (int k = 0; k < runs; k++)
             {
-                if (!runHome[k]) Emit(mesh, k, MissionRouteStyle.Width, MissionRouteStyle.Route);
+                if (runStyle[k] == StyleHome) Emit(mesh, k, MissionRouteStyle.HomeWidth, MissionRouteStyle.RouteHome);
+            }
+            for (int k = 0; k < runs; k++)
+            {
+                if (runStyle[k] == StyleOut) Emit(mesh, k, MissionRouteStyle.Width, MissionRouteStyle.Route);
             }
         }
 
-        /// <summary>Adds a ring per waypoint inside the clip shape; no Clear/Commit.</summary>
+        /// <summary>
+        /// Adds a ring per waypoint inside the clip shape; no Clear/Commit. With tracker states: closed (done/skipped)
+        /// waypoints are dim, the next one gets an extra white ring.
+        /// </summary>
         public static void DrawWaypoints(HudLineMesh mesh, MissionPlan plan, Vector2 origin, Vector2 ax, Vector2 ay,
-                                         ClipShape clip, Vector2 extent, float radius)
+                                         ClipShape clip, Vector2 extent, float radius,
+                                         WaypointState[] states = null, int next = -1)
         {
             if (mesh == null || plan == null)
             {
@@ -89,8 +104,15 @@ namespace NasaSpaceApp.HUD
                 {
                     continue;
                 }
+                bool closed = states != null && i < states.Length
+                              && (states[i] == WaypointState.Done || states[i] == WaypointState.Skipped);
                 mesh.Ring(c, radius, 3.5f, HudTokens.Halo, 20);
-                mesh.Ring(c, radius, 2f, MissionRouteStyle.Route, 20);
+                mesh.Ring(c, radius, 2f, closed ? MissionRouteStyle.Done : MissionRouteStyle.Route, 20);
+                if (i == next)
+                {
+                    mesh.Ring(c, radius + 3.5f, 3.5f, HudTokens.Halo, 24);
+                    mesh.Ring(c, radius + 3.5f, 1.5f, HudTokens.InkPrimary, 24);
+                }
             }
         }
 
@@ -114,45 +136,46 @@ namespace NasaSpaceApp.HUD
         private bool IsHome(int leg) => (uint)leg < (uint)homeByLeg.Length && homeByLeg[leg];
 
         // Clips every segment, chaining consecutive visible pieces of the same leg kind into runs.
-        private void Collect(MissionPlan plan, Vector2 origin, Vector2 ax, Vector2 ay, ClipShape clip, Vector2 extent)
+        private void Collect(MissionPlan plan, Vector2 origin, Vector2 ax, Vector2 ay, ClipShape clip, Vector2 extent, int doneBefore)
         {
             runs = used = 0;
             Vector3[] route = plan.Route;
             int[] legs = plan.RouteLeg;
-            bool open = false, openHome = false;
+            bool open = false;
+            byte openStyle = StyleOut;
             Vector2 prev = Local(route[0], origin, ax, ay);
             for (int i = 1; i < route.Length; i++)
             {
                 Vector2 a = prev, b = Local(route[i], origin, ax, ay);
                 prev = b;
-                bool home = IsHome(legs[i]);
+                byte style = i <= doneBefore ? StyleDone : IsHome(legs[i]) ? StyleHome : StyleOut;
                 if (!ClipSegment(ref a, ref b, out bool aCut, out bool bCut, clip, extent))
                 {
                     open = false;
                     continue;
                 }
-                if (!open || aCut || home != openHome)
+                if (!open || aCut || style != openStyle)
                 {
-                    BeginRun(home);
+                    BeginRun(style);
                     Append(a);
-                    openHome = home;
+                    openStyle = style;
                 }
                 AppendMerged(b);
                 open = !bCut;
             }
         }
 
-        private void BeginRun(bool home)
+        private void BeginRun(byte style)
         {
             if (runs == runStart.Length)
             {
                 System.Array.Resize(ref runStart, runs * 2);
                 System.Array.Resize(ref runCount, runs * 2);
-                System.Array.Resize(ref runHome, runs * 2);
+                System.Array.Resize(ref runStyle, runs * 2);
             }
             runStart[runs] = used;
             runCount[runs] = 0;
-            runHome[runs] = home;
+            runStyle[runs] = style;
             runs++;
         }
 

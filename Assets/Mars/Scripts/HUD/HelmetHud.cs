@@ -39,6 +39,7 @@ namespace NasaSpaceApp.HUD
         private int missionVersion = -1;   // MissionLink.Version the tracker follows
         private HudTooltip tooltip;
         private MissionCaption caption;
+        private MissionPanel missionPanel;
         private VitalsStack vitals;
         private CompassDial dial;
         private HeadingCaret caret;
@@ -210,6 +211,7 @@ namespace NasaSpaceApp.HUD
             tooltip = new HudTooltip(ctx);
             ctx.Tooltip = tooltip;
             caption = new MissionCaption(ctx);
+            missionPanel = new MissionPanel(ctx);
             vitals = new VitalsStack(ctx);
             dial = new CompassDial(ctx);
             caret = new HeadingCaret(ctx);
@@ -427,6 +429,7 @@ namespace NasaSpaceApp.HUD
             caret.Tick(dt);
             vitals.Tick(dt);
             caption.Tick(dt);
+            missionPanel.Tick(dt);
             alerts.Tick(dt);
             tooltip.Tick(dt);
 

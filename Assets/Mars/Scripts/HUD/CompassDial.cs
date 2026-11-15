@@ -51,6 +51,7 @@ namespace NasaSpaceApp.HUD
         private readonly HudLineMesh route;                               // web mission route + waypoints (under the rim)
         private readonly MissionRouteDrawer routeDrawer = new MissionRouteDrawer();
         private int routeVersion = -1;
+        private int trackerVersion = -1;
         private readonly Text north;
         private readonly Text status;
         private readonly Text homeDistance;
@@ -262,10 +263,13 @@ namespace NasaSpaceApp.HUD
             }
             dirty |= UpdatePips(cam, cosH, sinH);
 
-            bool routeChanged = MissionLink.Version != routeVersion;
+            MissionTracker tracker = ctx.Mission;
+            int tv = tracker != null ? tracker.Version : 0;
+            bool routeChanged = MissionLink.Version != routeVersion || tv != trackerVersion;
             if (routeChanged || turned || moved)
             {
                 routeVersion = MissionLink.Version;
+                trackerVersion = tv;
                 RedrawRoute(cam, cosH, sinH);
             }
 
@@ -333,9 +337,28 @@ namespace NasaSpaceApp.HUD
                 Vector2 origin = new Vector2(cam.x, cam.z);
                 Vector2 ax = new Vector2(cosH, sinH) * inv, ay = new Vector2(-sinH, cosH) * inv;
                 Vector2 clip = new Vector2(Inner - 1f, 0f);
-                routeDrawer.DrawRoute(route, plan, origin, ax, ay, MissionRouteDrawer.ClipShape.Circle, clip);
+                MissionTracker tr = ctx.Mission != null && ctx.Mission.Plan == plan ? ctx.Mission : null;
+                int doneBefore = tr != null ? tr.DoneBeforePoint : 0;
+                int next = tr != null ? tr.NextWaypoint : -1;
+                routeDrawer.DrawRoute(route, plan, origin, ax, ay, MissionRouteDrawer.ClipShape.Circle, clip, doneBefore);
                 MissionRouteDrawer.DrawWaypoints(route, plan, origin, ax, ay, MissionRouteDrawer.ClipShape.Circle,
-                                                 new Vector2(Inner - MarkMargin, 0f), MissionRouteStyle.DialWaypointRadius);
+                                                 new Vector2(Inner - MarkMargin, 0f), MissionRouteStyle.DialWaypointRadius,
+                                                 tr != null ? tr.States : null, next);
+
+                // Next waypoint beyond the window: a violet ring on the window's edge at its bearing.
+                if (next >= 0)
+                {
+                    Vector2 c = MissionRouteDrawer.Local(plan.Waypoints[next].World, origin, ax, ay);
+                    float edge = Inner - MarkMargin;
+                    float r = c.magnitude;
+                    if (r > edge && r > 1e-3f)
+                    {
+                        c = c / r * edge;
+                        route.Ring(c, MissionRouteStyle.DialWaypointRadius, 3.5f, HudTokens.Halo, 20);
+                        route.Ring(c, MissionRouteStyle.DialWaypointRadius, 2f, MissionRouteStyle.Route, 20);
+                        route.Ring(c, MissionRouteStyle.DialWaypointRadius + 3f, 1.5f, HudTokens.InkPrimary, 24);
+                    }
+                }
             }
             route.Commit();
         }

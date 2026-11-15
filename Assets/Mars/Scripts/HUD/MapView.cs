@@ -228,7 +228,7 @@ namespace NasaSpaceApp.HUD
         private readonly List<Text> wpLabels = new List<Text>(16);
         private readonly List<string> wpNumbers = new List<string>(16);
         private Font wpFont;
-        private int missionVersion = -1, homeVersion = -1;
+        private int missionVersion = -1, homeVersion = -1, trackerVersion = -1;
 
         /// <summary>Builds the view as a full-stretch child of <paramref name="parent"/> (the map box).</summary>
         public MapView(HudContext ctx, RectTransform parent)
@@ -575,6 +575,7 @@ namespace NasaSpaceApp.HUD
             {
                 legend.Add(new MapLegendEntry("Planned route", MissionRouteStyle.Route, MapLegendShape.Line));
                 legend.Add(new MapLegendEntry("Way home", MissionRouteStyle.RouteHome, MapLegendShape.Line));
+                legend.Add(new MapLegendEntry("Walked / closed", MissionRouteStyle.Done, MapLegendShape.Line));
                 legend.Add(new MapLegendEntry("Waypoint", MissionRouteStyle.Route, MapLegendShape.Dot));
             }
             for (int i = 0; i < scannedLegend.Count; i++)
@@ -819,12 +820,18 @@ namespace NasaSpaceApp.HUD
         // A new/cleared mission or a moved HOME redraws the marks and the legend.
         private void TrackMission()
         {
+            int tv = ctx.Mission != null ? ctx.Mission.Version : 0;
             if (MissionLink.Version != missionVersion || HomeBase.Version != homeVersion)
             {
                 missionVersion = MissionLink.Version;
                 homeVersion = HomeBase.Version;
                 marksDirty = true;
                 legendDirty = true;
+            }
+            if (tv != trackerVersion)
+            {
+                trackerVersion = tv;
+                marksDirty = true;   // waypoint closed, leg changed
             }
         }
 
@@ -1233,9 +1240,12 @@ namespace NasaSpaceApp.HUD
             float inv = 1f / mpu;
             Vector2 ax = new Vector2(inv, 0f), ay = new Vector2(0f, inv);
             Vector2 extent = new Vector2(hw, hh);
-            routeDrawer.DrawRoute(marksMesh, plan, center, ax, ay, MissionRouteDrawer.ClipShape.Rect, extent);
+            MissionTracker tr = ctx.Mission != null && ctx.Mission.Plan == plan ? ctx.Mission : null;
+            routeDrawer.DrawRoute(marksMesh, plan, center, ax, ay, MissionRouteDrawer.ClipShape.Rect, extent,
+                                  tr != null ? tr.DoneBeforePoint : 0);
             MissionRouteDrawer.DrawWaypoints(marksMesh, plan, center, ax, ay, MissionRouteDrawer.ClipShape.Rect, extent,
-                                             MissionRouteStyle.WaypointRadius);
+                                             MissionRouteStyle.WaypointRadius, tr != null ? tr.States : null,
+                                             tr != null ? tr.NextWaypoint : -1);
             int shown = 0;
             for (int i = 0; i < plan.Waypoints.Count; i++)
             {
@@ -1245,7 +1255,15 @@ namespace NasaSpaceApp.HUD
                 {
                     continue;
                 }
-                Place(WaypointLabel(shown), WaypointNumber(w.Index), c + new Vector2(MissionRouteStyle.WaypointRadius + 4f, 8f));
+                Text label = WaypointLabel(shown);
+                Place(label, WaypointNumber(w.Index), c + new Vector2(MissionRouteStyle.WaypointRadius + 4f, 8f));
+                bool closed = tr != null && i < tr.States.Length
+                              && (tr.States[i] == WaypointState.Done || tr.States[i] == WaypointState.Skipped);
+                Color want = closed ? MissionRouteStyle.Done : MissionRouteStyle.Route;
+                if (label.color != want)
+                {
+                    label.color = want;
+                }
                 shown++;
             }
             HideWaypointLabels(shown);
