@@ -213,7 +213,7 @@ namespace NasaSpaceApp.Mission
             MissionPlan plan;
             try
             {
-                plan = MissionPlan.Build(file, new SceneWorld(geo));
+                plan = MissionPlan.Build(file, new SceneMissionWorld(geo));
             }
             catch (Exception e)
             {
@@ -370,45 +370,6 @@ namespace NasaSpaceApp.Mission
                 }
             }
             return best;
-        }
-
-        // ---- scene mapping
-
-        /// <summary>Lat/lon → world via the scene's geo-reference; y = height of the finest terrain under the point.</summary>
-        private sealed class SceneWorld : IMissionWorld
-        {
-            private readonly MarsGeoReference geo;
-            private readonly Terrain[] terrains;
-
-            public SceneWorld(MarsGeoReference geo)
-            {
-                this.geo = geo;
-                terrains = Terrain.activeTerrains;
-            }
-
-            public Vector3 ToWorld(double lat, double lon)
-            {
-                Vector3 p = geo.WorldXZ(lat, lon);
-                Terrain best = null;
-                float bestArea = float.MaxValue;
-                foreach (Terrain t in terrains)
-                {
-                    if (t == null || t.terrainData == null) continue;
-                    Vector3 o = t.GetPosition(), size = t.terrainData.size;
-                    if (p.x < o.x || p.z < o.z || p.x > o.x + size.x || p.z > o.z + size.z) continue;
-                    float area = size.x * size.z;
-                    if (area < bestArea)
-                    {
-                        bestArea = area;
-                        best = t;
-                    }
-                }
-                if (best != null)
-                {
-                    p.y = best.SampleHeight(p) + best.GetPosition().y;
-                }
-                return p;
-            }
         }
     }
 }
