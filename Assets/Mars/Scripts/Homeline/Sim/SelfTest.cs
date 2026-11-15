@@ -469,12 +469,18 @@ namespace NasaSpaceApp.Homeline.Sim
                     SuitTelemetry tel2 = Telemetry();
                     Check(tel2 != null && tel2.DistanceHomeM < 15f, "helmet HOME is the pad after the restart" + (tel2 != null ? " (" + F(tel2.DistanceHomeM) + " m)" : ""));
                     yield return Shot("eva_free_walk_after_restart");
-                    Check(app.Driver.RouteVisible, "the amber track is shown by default");
-                    app.Driver.SetRouteVisible(false);
-                    yield return null;
-                    Check(!app.Driver.RouteVisible, "the amber track can be hidden (key R)");
-                    yield return Shot("eva_track_hidden");
+                    Check(!app.Driver.RouteVisible && app.Driver.GuidanceShownPoints == 0 && app.Driver.GuidanceShownPosts == 0,
+                          "route guidance (line and posts) is off by default");
                     app.Driver.SetRouteVisible(true);
+                    yield return new WaitForSecondsRealtime(0.4f);
+                    Note("guidance on: " + app.Driver.GuidanceShownPoints + " of " + app.Driver.GuidanceTotalPoints + " route vertices, " +
+                         app.Driver.GuidanceShownPosts + " of " + app.Driver.GuidanceTotalPosts + " posts drawn");
+                    Check(app.Driver.RouteVisible && app.Driver.GuidanceShownPoints > 0 && app.Driver.GuidanceShownPoints * 10 < app.Driver.GuidanceTotalPoints,
+                          "key R shows the route only near the crew");
+                    Check(app.Driver.GuidanceShownPosts >= 1 && app.Driver.GuidanceShownPosts < app.Driver.GuidanceTotalPosts,
+                          "only the posts near the crew are drawn");
+                    yield return Shot("eva_guidance_near");
+                    app.Driver.SetRouteVisible(false);
                 }
             }
 

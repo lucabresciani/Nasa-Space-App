@@ -115,13 +115,15 @@ ends a web mission, and loading a web mission ends the plan.
 | `V` | Switch between replay and free walk |
 | `[` `]` | Replay speed: 1x, 30x, 60x, 300x |
 | `T` | Pause or resume the replay |
-| `R` | Show or hide the amber track on the ground (the beacons and the helmet maps stay) |
+| `R` | Route guidance in the world, on or off (off at the start) |
 | `G` | Full-screen EVA map |
 | `E` | Scan the rock under the reticle |
 | `Esc` | Menu |
 
-In the 3D world the amber ribbon is the planned route, the tall beacons are the rover (white) and the stations
-(cyan), the short amber posts are navigation points. The same route is on the helmet's maps: on the full-screen
+Route guidance in the 3D world is a simulator aid, so it is off at the start: the crew navigates with the helmet's
+maps. `R` turns it on, and then only what is near is drawn: the stretch of the planned route within 45 m (a thin
+amber line that fades out at both ends) and the posts within 70 m (white at the rover, cyan at a station, small
+amber posts at navigation points). Nothing of it is visible from far away. The whole route is on the helmet's maps: on the full-screen
 map (`G`) as an amber line with the stations as labelled diamonds, the navigation points as beads and a ring around
 HOME (the rover); on the bottom-left dial as an amber line with a ring for each station in range.
 

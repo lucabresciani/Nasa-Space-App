@@ -113,6 +113,7 @@ namespace NasaSpaceApp.Homeline.Sim
             }
             ground = new GroundSampler();
             if (view == null) view = RouteWorldView.Create(transform);
+            view.Viewer = player.transform;
             view.Show(plan, ground);
 
             Plan = plan;
@@ -470,8 +471,16 @@ namespace NasaSpaceApp.Homeline.Sim
                       : HudSeverity.Nominal;
         }
 
-        /// <summary>The amber track on the ground (key R); the beacons and the helmet maps keep showing the route.</summary>
-        public bool RouteVisible { get { return view == null || view.RibbonVisible; } }
+        /// <summary>
+        /// Route guidance in the world (key R): off by default, and when on only the stretch of the route and the
+        /// posts near the crew are drawn. The helmet maps always show the whole route.
+        /// </summary>
+        public bool RouteVisible { get { return view != null && view.RibbonVisible; } }
+        /// <summary>Route vertices and posts drawn now, and in the whole plan (diagnostics).</summary>
+        public int GuidanceShownPoints { get { return view != null ? view.ShownPoints : 0; } }
+        public int GuidanceTotalPoints { get { return view != null ? view.TotalPoints : 0; } }
+        public int GuidanceShownPosts { get { return view != null ? view.ShownPosts : 0; } }
+        public int GuidanceTotalPosts { get { return view != null ? view.TotalPosts : 0; } }
 
         public void SetRouteVisible(bool visible)
         {
