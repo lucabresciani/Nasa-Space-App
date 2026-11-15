@@ -3,7 +3,7 @@
 # focus hand-off between the game and the web viewer is the real one.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File Run-HandoffTest.ps1 [-Windowed] [-Exe <MARVIS.exe>]
-#              [-Mission <mission.json>] [-OutDir <dir>] [-LogFile <player log>] [-PlannerUrl <url>|local]
+#              [-Mission <mission.json>] [-OutDir <dir>] [-LogFile <player log>] [-PlannerUrl <url>|local] [-Props]
 #
 # -PlannerUrl is passed to the game as -plannerUrl: the address of the planner site for this run, in place of
 # planner-url.txt. "local" tests the fallback, the copy of the planner shipped with the game. result.txt has the
@@ -19,6 +19,7 @@ param(
     [string]$LogFile,
     [string]$PlannerUrl,        # the planner site for this run, or "local" for the copy shipped with the game
     [switch]$Windowed,          # a 1280 x 720 window instead of the delivery mode (borderless full screen)
+    [switch]$Props,             # keep the start-point models (Assets/Mars/Props) on during the test: -propsInTests
     [int]$GuardSeconds = 240,
     [int]$TimeoutSeconds = 150
 )
@@ -83,6 +84,7 @@ else {
 }
 if ($LogFile) { $gameArgs += @('-logFile', "`"$LogFile`"", '-timestamps') }   # a time on every line of the player log
 if ($PlannerUrl) { $gameArgs += @('-plannerUrl', "`"$PlannerUrl`"") }
+if ($Props) { $gameArgs += '-propsInTests' }   # the models are off in unattended tests unless asked for
 $game = Start-Process -FilePath $Exe -ArgumentList $gameArgs -PassThru
 
 # Put the game window in front as soon as it exists, and once more a little later (the first frames can lose it).
