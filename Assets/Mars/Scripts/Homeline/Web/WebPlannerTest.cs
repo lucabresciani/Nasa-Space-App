@@ -240,6 +240,56 @@ namespace NasaSpaceApp.Homeline.Web
                 Note("INFO foreground after the hand-off: " + Foreground(planner) + "; game focused " + Application.isFocused +
                      ", cursor " + Cursor.lockState);
                 Note("INFO screenshot: " + Screenshot(planner.OwnerWindow, Path.Combine(dir, "eva.png")));
+
+                // 4b. The route of the mission is walked by itself (Mission/MissionAutoWalk.cs), to the end of the EVA:
+                //     the crew moves along the route, the EVA completes, its log is written and the planner comes back.
+                global::NasaSpaceApp.Mission.MissionAutoWalk walk = global::NasaSpaceApp.Mission.MissionAutoWalk.Instance;
+                global::NasaSpaceApp.HUD.HelmetHud hud = global::NasaSpaceApp.HUD.HelmetHud.Instance;
+                global::NasaSpaceApp.Mission.MissionTracker tracker = hud != null && hud.Context != null ? hud.Context.Mission : null;
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
+                Check(walk != null && walk.Following, "auto walk is on after the hand-off" +
+                                                      (walk != null ? " (" + walk.Speed.ToString("0", inv) + "x)" : " (no MissionAutoWalk)"));
+                if (walk != null && walk.Following && tracker != null && MissionLink.Current != null)
+                {
+                    Vector3 pad = MissionLink.Current.PadWorld;
+                    float away = 0f;
+                    until = Now + 8f;
+                    while (Now < until && away <= 40f)
+                    {
+                        float dx = tracker.Position.x - pad.x, dz = tracker.Position.z - pad.z;
+                        away = Mathf.Sqrt(dx * dx + dz * dz);
+                        yield return null;
+                    }
+                    Check(away > 40f, "auto walk carries the crew along the route (" + away.ToString("0", inv) + " m from the pad at EVA minute " +
+                                      tracker.EvaMin.ToString("0.0", inv) + ", " + tracker.CrossTrackM.ToString("0.0", inv) + " m off the route)");
+                    // The game's own frame (HUD and the auto walk hint), taken by the game: it does not need the screen.
+                    string frame = Path.Combine(dir, "autowalk-game.png");
+                    ScreenCapture.CaptureScreenshot(frame);
+                    until = Now + 1f;
+                    while (!File.Exists(frame) && Now < until) yield return null;
+                    Note("INFO game frame during the auto walk: " + (File.Exists(frame) ? frame : "not written"));
+                    string logBefore = global::NasaSpaceApp.Mission.EvaLogger.LastWrittenPath;
+                    walk.SetSpeed(300);
+                    until = Now + 45f;
+                    while (!tracker.Complete && Now < until) yield return null;
+                    int done = 0;
+                    foreach (global::NasaSpaceApp.Mission.WaypointState st in tracker.States)
+                        if (st == global::NasaSpaceApp.Mission.WaypointState.Done) done++;
+                    Check(tracker.Complete, "EVA complete under auto walk (EVA minute " + tracker.EvaMin.ToString("0.0", inv) + ", planned " +
+                                            MissionLink.Current.EvaMin.ToString("0.0", inv) + "; waypoints done " + done + " of " + tracker.States.Length +
+                                            "; schedule " + tracker.ScheduleDeltaMin.ToString("+0.0;-0.0", inv) + " min, O2 against plan " +
+                                            tracker.O2DeltaL.ToString("+0.0;-0.0", inv) + " L)");
+                    until = Now + 10f;
+                    while (global::NasaSpaceApp.Mission.EvaLogger.LastWrittenPath == logBefore && Now < until) yield return null;
+                    string logNow = global::NasaSpaceApp.Mission.EvaLogger.LastWrittenPath;
+                    Check(logNow != logBefore && logNow != null, "EVA log written" + (logNow != null ? " (" + Path.GetFileName(logNow) + ")" : ""));
+                    until = Now + 15f;   // the planner comes back a few seconds after a complete EVA
+                    while (!planner.PlannerVisible && Now < until) yield return null;
+                    Check(planner.PlannerVisible, "planner shown again after the EVA, for the debrief");
+                    until = Now + 2f;   // the page draws the debrief
+                    while (Now < until) yield return null;
+                    Note("INFO screenshot: " + Screenshot(planner.OwnerWindow, Path.Combine(dir, "debrief.png")));
+                }
             }
 
             // 5. Refusals of the local copy's API.

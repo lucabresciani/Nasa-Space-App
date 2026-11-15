@@ -113,7 +113,8 @@ namespace NasaSpaceApp.Menu
             mission.Rows.Add(new Binding { Action = "PAUSE REPLAY", Keys = new[] { "T" } });
             mission.Rows.Add(new Binding { Action = "REPLAY SPEED", Keys = new[] { "[", "]" } });
             mission.Rows.Add(new Binding { Action = "ROUTE GUIDANCE", Keys = new[] { "R" } });
-            // A plan that comes from the web planner does not use these keys: not listed while MISSION PLAN opens it.
+            // While MISSION PLAN opens the web planner these are not listed: a mission from the planner walks its route
+            // by itself (Mission/MissionAutoWalk.cs) with the same three keys, and has no route guidance key.
             bool webPlanner = false;
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             webPlanner = global::NasaSpaceApp.Homeline.Web.WebPlanner.ReplacesPlanningPanel;
@@ -121,6 +122,14 @@ namespace NasaSpaceApp.Menu
             if (!webPlanner)
             {
                 Add(groups, mission);
+            }
+            else
+            {
+                Group auto = new Group { Title = "AUTO WALK" };
+                auto.Rows.Add(new Binding { Action = "AUTO WALK / FREE WALK", Keys = new[] { "V" } });
+                auto.Rows.Add(new Binding { Action = "PAUSE AUTO WALK", Keys = new[] { "T" } });
+                auto.Rows.Add(new Binding { Action = "AUTO WALK SPEED", Keys = new[] { "[", "]" } });
+                Add(groups, auto);
             }
 
             Group science = new Group { Title = "SCIENCE" };

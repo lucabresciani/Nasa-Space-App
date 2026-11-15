@@ -25,7 +25,7 @@ Windows 10. Without it **MISSION PLAN** opens the built-in planning screen descr
 | Title | **MISSION PLAN** opens the planner. **START SIMULATION** goes straight to free exploration, without a plan |
 | Planner | Click the map to add waypoints; the times, the oxygen and the margins of the route are estimated at once |
 | Send | **Send to MARVIS** in the planner's right-hand panel: the planner closes and the EVA starts at the rover pad |
-| EVA | Walk the route; the helmet shows the next waypoint, the schedule, the oxygen against the plan and the margin |
+| EVA | The crew walks the planned route by itself (**AUTO WALK**, 60 times real time, with the planned stop at each waypoint); the helmet shows the next waypoint, the schedule, the oxygen against the plan and the margin. Press `V` to walk yourself |
 | Pause | `Esc` opens the menu; **MISSION PLAN** reopens the planner; **RESUME SIMULATION** continues |
 | After the EVA | A few seconds after a completed EVA the planner comes back; **Last EVA**, top right, compares the walk with the plan |
 
@@ -139,15 +139,18 @@ the plan.
 
 ## Keys during the EVA
 
-The keys `V`, `[`, `]`, `T` and `R` belong to an EVA started from the built-in planning screen.
+A mission sent from the planner starts in **auto walk**: the crew is carried along the planned route at the planned
+times, and a line at the bottom of the screen shows the state and the keys. `V` hands the walk to you (**free
+walk**) and back; going back, the auto walk resumes from the point of the route you are nearest to. An EVA started
+from the built-in planning screen has the same keys, there called replay, plus `R`.
 
 | Key | Action |
 | --- | --- |
-| `W A S D`, mouse | Walk (free walk) and look |
-| `V` | Switch between replay and free walk |
-| `[` `]` | Replay speed: 1x, 30x, 60x, 300x |
-| `T` | Pause or resume the replay |
-| `R` | Route guidance in the world, on or off (off at the start) |
+| `W A S D`, mouse | Walk (free walk) and look; in the auto walk the mouse still looks around |
+| `V` | Switch between the auto walk (replay) and the free walk |
+| `[` `]` | Speed of the auto walk (replay): 1x, 30x, 60x, 300x |
+| `T` | Pause or resume the auto walk (replay) |
+| `R` | Built-in plans only: route guidance in the world, on or off (off at the start) |
 | `G` | Full-screen EVA map |
 | `E` | Scan the rock under the reticle |
 | `Esc` | Menu |
