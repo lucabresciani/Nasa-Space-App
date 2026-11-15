@@ -375,11 +375,20 @@ namespace NasaSpaceApp.Homeline.Sim
                       : HudSeverity.Nominal;
         }
 
+        /// <summary>The amber track on the ground (key R); the beacons and the helmet maps keep showing the route.</summary>
+        public bool RouteVisible { get { return view == null || view.RibbonVisible; } }
+
+        public void SetRouteVisible(bool visible)
+        {
+            if (view != null) view.SetRibbonVisible(visible);
+        }
+
         void ReadKeys()
         {
             Keyboard k = Keyboard.current;
             if (k == null) return;
             if (k.vKey.wasPressedThisFrame) SetMode(Mode == EvaMode.Replay ? EvaMode.FreeWalk : EvaMode.Replay);
+            if (k.rKey.wasPressedThisFrame) SetRouteVisible(!RouteVisible);
             if (Mode != EvaMode.Replay) return;
             if (k.tKey.wasPressedThisFrame && !ReplayFinished) Playing = !Playing;
             if (k.rightBracketKey.wasPressedThisFrame) StepSpeed(1);

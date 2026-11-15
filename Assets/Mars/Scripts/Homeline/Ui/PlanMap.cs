@@ -89,7 +89,10 @@ namespace NasaSpaceApp.Homeline.Ui
             relief.raycastTarget = true; // the pointer events of the map
             go.AddComponent<PlanMapInput>().Map = this;
 
-            lines = HudFactory.CreateLineMesh("Lines", root, topLeft, center, rt.anchoredPosition, new Vector2(size, size));
+            // The route and the marks are children of the map square: an edited route that leaves the view is cut at
+            // its edge, and a press on a mark or a label reaches the square's pointer handler.
+            go.AddComponent<RectMask2D>();
+            lines = HudFactory.CreateLineMesh("Lines", rt, center, center, Vector2.zero, new Vector2(size, size));
             caption = MenuUi.Paragraph("Caption", root, ctx.Assets != null ? ctx.Assets.Regular : null, MenuTokens.SizeFine, MenuTokens.SandDim,
                                        TextAnchor.UpperLeft, topLeft, topLeft, new Vector2(Pad, -(Pad + size + 6f)), new Vector2(size, 34f), "");
             root.gameObject.SetActive(false);

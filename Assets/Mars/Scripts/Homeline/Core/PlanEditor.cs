@@ -20,11 +20,14 @@ namespace NasaSpaceApp.Homeline
         public double? TDarkMin;
         /// <summary>The storm as timed for the official plan; re-timed for the edited route (may be null).</summary>
         public StormTrack Storm;
-        public GridF32 THome, O2Home;
+        /// <summary>Time (min) and O2 (L) to walk home from a point of the frame; null where unknown.</summary>
+        public Func<double, double, double?> THome, O2Home;
         public double PadX, PadY;
         public string Scenario;
         /// <summary>Minutes between O2 checkpoint rows of the timeline (the planner uses 30).</summary>
         public double CheckpointMin = 30.0;
+        /// <summary>Optional: routed legs by their end points, shared between edits of the same session.</summary>
+        public Dictionary<string, RoutedLeg> LegCache;
     }
 
     /// <summary>An edited plan in the planner's own file shapes, ready for <see cref="MissionPlan.FromEdited"/>.</summary>
@@ -38,6 +41,10 @@ namespace NasaSpaceApp.Homeline
         public double MinMarginMin, MinMarginAtMin;
         public string MinMarginBinding, MinMarginWhere;
         public bool Feasible { get { return MinMarginMin >= 0; } }
+        /// <summary>The smallest oxygen margin alone (O2 left minus O2 to get home, work left and reserve, at the effort rate).</summary>
+        public double MinO2MarginMin = double.PositiveInfinity;
+        public string MinO2MarginWhere;
+        public bool OxygenOk { get { return MinO2MarginMin >= 0; } }
     }
 
     /// <summary>
@@ -64,7 +71,20 @@ namespace NasaSpaceApp.Homeline
             {
                 double ax = i == 0 ? ctx.PadX : stops[i - 1].X, ay = i == 0 ? ctx.PadY : stops[i - 1].Y;
                 double bx = i == n ? ctx.PadX : stops[i].X, by = i == n ? ctx.PadY : stops[i].Y;
-                legs[i] = ctx.Router.Route(ax, ay, bx, by);
+                // Legs whose two ends did not move are taken from the cache: moving one station re-routes two legs.
+                string key = ctx.LegCache == null ? null
+                    : HlJson.F(ax, 1) + "," + HlJson.F(ay, 1) + ">" + HlJson.F(bx, 1) + "," + HlJson.F(by, 1);
+                RoutedLeg hit;
+                if (key != null && ctx.LegCache.TryGetValue(key, out hit)) legs[i] = hit;
+                else
+                {
+                    legs[i] = ctx.Router.Route(ax, ay, bx, by);
+                    if (key != null && legs[i] != null)
+                    {
+                        if (ctx.LegCache.Count > 200) ctx.LegCache.Clear();
+                        ctx.LegCache[key] = legs[i];
+                    }
+                }
                 if (legs[i] == null) return null;
             }
 
@@ -77,7 +97,7 @@ namespace NasaSpaceApp.Homeline
                 RoutedLeg leg = legs[i];
                 for (int v = 0; v < leg.Count; v++)
                 {
-                    double? th = ctx.THome != null ? ctx.THome.ValueAt(leg.X[v], leg.Y[v]) : null;
+                    double? th = ctx.THome != null ? ctx.THome(leg.X[v], leg.Y[v]) : null;
                     if (th.HasValue && th.Value > worstHome)
                     {
                         worstHome = th.Value;
@@ -209,8 +229,18 @@ namespace NasaSpaceApp.Homeline
         {
             double o2Left = ctx.Config.O2CapacityL - usedL;
             bool atPad = ev == "depart" || ev == "return";
-            double? tHome = atPad ? 0 : (ctx.THome != null ? ctx.THome.ValueAt(x, y) : null);
-            double? o2Home = atPad ? 0 : (ctx.O2Home != null ? ctx.O2Home.ValueAt(x, y) : null);
+            double? tHome = atPad ? 0 : (ctx.THome != null ? ctx.THome(x, y) : null);
+            double? o2Home = atPad ? 0 : (ctx.O2Home != null ? ctx.O2Home(x, y) : null);
+            if (tHome.HasValue && o2Home.HasValue)
+            {
+                // The oxygen limit alone, so the screen can state it apart from the other three limits.
+                double o2Margin = (o2Left - o2Home.Value - tasksLeftL - ctx.Config.O2ReserveL) / ctx.Config.EffortRateLMin;
+                if (o2Margin < data.MinO2MarginMin)
+                {
+                    data.MinO2MarginMin = o2Margin;
+                    data.MinO2MarginWhere = where;
+                }
+            }
             var row = new JObject();
             row["t_min"] = t;
             row["event"] = ev;

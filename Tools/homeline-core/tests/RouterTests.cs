@@ -55,12 +55,29 @@ namespace NasaSpaceApp.Homeline.Tests
                 }
                 Console.WriteLine("  router: 5 legs in " + sw.ElapsedMilliseconds + " ms");
 
+                GridF32 tHomeGrid = bundle.ReadGrid("fields/t_home.f32"), o2HomeGrid = bundle.ReadGrid("fields/o2_home.f32");
+
+                // (1b) the simulator's own way-home map of the official pad against the planner's, at the stations.
+                sw.Restart();
+                HomeField home = router.HomeFieldOf(track.Legs[0].X[0], track.Legs[0].Y[0], 200, 3600);
+                Console.WriteLine("  way-home map of the pad: " + sw.ElapsedMilliseconds + " ms");
+                T.True(home != null, "way-home map computes");
+                if (home != null)
+                {
+                    foreach (EditStop s in stops)
+                    {
+                        T.Near(home.TAt(s.X, s.Y), tHomeGrid.ValueAt(s.X, s.Y).Value, 0.15, "way home from " + s.Id + ", min (planner map quantum 0.1)");
+                        T.Near(home.O2At(s.X, s.Y), o2HomeGrid.ValueAt(s.X, s.Y).Value, 0.2, "O2 home from " + s.Id + ", L");
+                    }
+                    T.True(home.TAt(stops[0].X + 40000, stops[0].Y) == null, "way-home map is unknown outside the grid");
+                }
+
                 // (2) the editor with nothing moved against the planner's timeline.
                 var ctx = new EditContext
                 {
                     Router = router, Config = cfg, Storm = StormTrack.FromBundle(bundle),
                     TDarkMin = HlJson.NumOrNull(bundle.ReadJson("conditions/sun.json"), "t_dark_min"),
-                    THome = bundle.ReadGrid("fields/t_home.f32"), O2Home = bundle.ReadGrid("fields/o2_home.f32"),
+                    THome = tHomeGrid.ValueAt, O2Home = o2HomeGrid.ValueAt,
                     PadX = track.Legs[0].X[0], PadY = track.Legs[0].Y[0], Scenario = "nom_104",
                 };
                 EditedPlanData same = PlanEditor.Build(ctx, frame, stops);
@@ -104,6 +121,35 @@ namespace NasaSpaceApp.Homeline.Tests
                     T.True(moved.Feasible, "moved plan keeps a positive margin");
                 }
                 stops[1].Y += 90;
+
+                // (4) limits: a station pushed away until the plan breaks a limit must be reported as not feasible.
+                double sx = stops[0].X, sy = stops[0].Y;
+                string broke = null;
+                for (int step = 1; step <= 14 && broke == null; step++)
+                {
+                    stops[0].X = sx - 150 * step;
+                    stops[0].Y = sy - 100 * step;
+                    int rr, cc;
+                    if (!router.NearestPassable(stops[0].X, stops[0].Y, 15, out rr, out cc) || !tHomeGrid.ValueAt(stops[0].X, stops[0].Y).HasValue) continue;
+                    EditedPlanData far = PlanEditor.Build(ctx, frame, stops);
+                    if (far == null) continue;
+                    Console.WriteLine("  S7 moved " + (150 * step) + " m west, " + (100 * step) + " m south: ends " + T.N(far.EndMin) + " min, margin " + T.N(far.MinMarginMin) +
+                                      " (" + far.MinMarginBinding + "), O2 margin " + T.N(far.MinO2MarginMin) + ", O2 at return " + T.N(far.O2AtReturnL));
+                    if (!far.Feasible) broke = "step " + step;
+                }
+                T.True(broke != null, "a station moved far enough makes the plan not feasible (" + broke + ")");
+                stops[0].X = sx;
+                stops[0].Y = sy;
+
+                // (5) saved routes: write, list, read back.
+                string folder = Path.Combine(Path.GetTempPath(), "homeline_routes_test_" + Guid.NewGuid().ToString("N"));
+                SavedRoute saved = RouteStore.Save(folder, "Route 1", "rank1", stops, same, new DateTime(2026, 11, 15, 9, 0, 0, DateTimeKind.Utc));
+                RouteStore.Save(folder, "Route 2", "rank1", stops, same, new DateTime(2026, 11, 15, 9, 5, 0, DateTimeKind.Utc));
+                List<SavedRoute> listed = RouteStore.List(folder);
+                T.True(listed.Count == 2 && listed[0].Name == "Route 2", "saved routes are listed, newest first");
+                T.True(listed.Count == 2 && listed[1].Stops.Count == stops.Count && Math.Abs(listed[1].Stops[1].X - stops[1].X) < 1e-6 &&
+                       listed[1].BasePlanId == "rank1", "a saved route reads back with its stations");
+                Directory.Delete(folder, true);
                 stops[1].X += 4000; // far outside the passable ground
                 T.True(PlanEditor.Build(ctx, frame, stops) == null, "a station on impassable ground gives no plan");
             }

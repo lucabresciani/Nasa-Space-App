@@ -124,7 +124,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 if (d.THomeMin.HasValue) sb.Append("HOME    ").Append(HlJson.F(d.THomeMin.Value, 0)).Append(" min walk").Append('\n');
                 footer.text = (plan.Edited ? "O2, margin: simulator re-route, planner model."
                                            : "O2: planner timeline. Margin: timeline, interpolated.") +
-                              "\nSuit vitals, weather and dose rate: SIM.\n[ ] speed   T pause   V walk freely";
+                              "\nSuit vitals, weather and dose rate: SIM.\n[ ] speed  T pause  V walk freely  R track";
             }
             else if (d.Live != null)
             {
@@ -141,12 +141,12 @@ namespace NasaSpaceApp.Homeline.Ui
                     footer.text = "O2: planner model on the ground walked; no weather.\n" +
                                   (d.LiveMarginHasDose ? "Margin: planner formula at your place and time."
                                                        : "Margin: O2, daylight, EVA time. Dose term not live.") +
-                                  "\nV back to replay";
+                                  "\nV back to replay   R track on/off";
                 }
                 else
                 {
                     sb.Append("MARGIN  n/a (no return field ").Append(plan.HasReturnFields ? "here" : "for this pad").Append(")\n");
-                    footer.text = "O2: planner model on the ground walked; no weather.\nSuit vitals, weather and dose rate: SIM.\nV back to replay";
+                    footer.text = "O2: planner model on the ground walked; no weather.\nSuit vitals, weather and dose rate: SIM.\nV back to replay   R track on/off";
                 }
             }
             else
@@ -154,7 +154,7 @@ namespace NasaSpaceApp.Homeline.Ui
                 double? o2 = plan.O2LeftAt(t);
                 sb.Append("O2      suit read-out = SIM\n");
                 sb.Append("PLAN O2 ").Append(o2.HasValue ? HlJson.F(o2.Value, 1) + " L at this time" : "-").Append('\n');
-                footer.text = "O2: SIM (game model, not the planner).\nPlan values are for the planned track.\nV back to replay";
+                footer.text = "O2: SIM (game model, not the planner).\nPlan values are for the planned track.\nV back to replay   R track on/off";
             }
             if (!d.OnDetailedTerrain) sb.Append("TERRAIN coarse (32 m)\n");
             body.text = sb.ToString();

@@ -42,9 +42,21 @@ PLANNER PLAN** undoes every move.
 - The new route is the simulator's own computation with the planner's cost model on the planner's 3 m terrain
   grid, not output of the planner engine, and the screen says so. With no station moved it reproduces the
   planner's timeline within 0.6 min of margin and 0.05 L of oxygen.
+- **Limits.** Every plan is checked before it can start, whoever made it: the margin (the smallest of the oxygen,
+  daylight, dose and EVA-duration limits) must never fall below zero and the oxygen at the return must not be
+  below the 40.5 L reserve. The screen states the result; for an edited plan it also states the oxygen margin
+  alone. A plan that breaks a limit is shown, but **START EVA** and **SAVE ROUTE** are off until the station is
+  moved back or the plan is reset.
+- **Every plan can be edited**, also the alternative pads. For those the planner publishes no way-home map, so
+  the simulator computes one for the pad with the same model (about four seconds, in the background; at the
+  stations of the official pad it matches the planner's map within 0.15 min). On those pads the storm timing in
+  a free walk is the official plan's.
+- **SAVE ROUTE** keeps an edited plan. **MY ROUTES** (top right of the list) shows the saved routes, newest
+  first; **PLANNER PLANS** goes back. A saved route stores the stations' points and is re-built when loaded.
+  The files are in `%USERPROFILE%\AppData\LocalLow\<company>\<product>\HomelineRoutes`; delete a file to remove
+  a route.
 - The order of the stations and the work time at each stay as planned; the engine would also re-optimise the order.
-- The rover cannot be moved, and stations of the alternative pads cannot be moved: the way-home maps exist for
-  the official pad only.
+- The rover cannot be moved.
 - Where the planner's data has no 1 m terrain, the re-routed leg times are about 2 % off.
 - Dragging needs the mouse; there is no keyboard or gamepad equivalent yet.
 
@@ -56,6 +68,7 @@ PLANNER PLAN** undoes every move.
 | `V` | Switch between replay and free walk |
 | `[` `]` | Replay speed: 1x, 30x, 60x, 300x |
 | `T` | Pause or resume the replay |
+| `R` | Show or hide the amber track on the ground (the beacons and the helmet maps stay) |
 | `G` | Full-screen EVA map |
 | `E` | Scan the rock under the reticle |
 | `Esc` | Menu |

@@ -21,6 +21,41 @@ namespace NasaSpaceApp.Homeline
     }
 
     /// <summary>
+    /// Time (min) and O2 (L) of the fastest walk home from every cell around a pad, computed by
+    /// <see cref="GridRouter.HomeFieldOf"/>: the simulator's stand-in for the planner's way-home maps on pads that
+    /// have none. Unknown (null) where the pad cannot be reached within the search limits.
+    /// </summary>
+    public sealed class HomeField
+    {
+        internal GridRouter Router;
+        internal int R0, C0, H, W;
+        internal float[] TMin, O2L;
+
+        int Index(double x, double y)
+        {
+            int r, c;
+            Router.CellOf(x, y, out r, out c);
+            r -= R0;
+            c -= C0;
+            if (r < 0 || r >= H || c < 0 || c >= W) return -1;
+            int i = r * W + c;
+            return TMin[i] < 0 ? -1 : i;
+        }
+
+        public double? TAt(double x, double y)
+        {
+            int i = Index(x, y);
+            return i < 0 ? (double?)null : TMin[i];
+        }
+
+        public double? O2At(double x, double y)
+        {
+            int i = Index(x, y);
+            return i < 0 ? (double?)null : O2L[i];
+        }
+    }
+
+    /// <summary>
     /// The planner's route search, re-implemented for the simulator so that a plan can be re-routed after a station
     /// is moved by hand (the planner's engine does not run inside the app). Same rules as the engine
     /// (pipeline/engine graph.py and dijkstra.py), checked against its legs:
@@ -162,6 +197,113 @@ namespace NasaSpaceApp.Homeline
                 if (leg != null) return leg;
             }
             return null;
+        }
+
+        /// <summary>
+        /// The way-home map of a pad, computed here as the planner computes its own (reverse search from the pad):
+        /// for every cell, the time and the O2 of the fastest walk to the pad. Cells farther than
+        /// <paramref name="maxMin"/> minutes, or outside the box of <paramref name="windowM"/> metres around the
+        /// pad, stay unknown. Used for pads that have no planner way-home map; null when the pad is not walkable.
+        /// </summary>
+        public HomeField HomeFieldOf(double padX, double padY, double maxMin, double windowM)
+        {
+            int pr, pc;
+            if (!NearestPassable(padX, padY, 2.0 * CellM, out pr, out pc)) return null;
+            int m = (int)Math.Round(windowM / CellM);
+            int r0 = Math.Max(0, pr - m), r1 = Math.Min(Rows, pr + m + 1), c0 = Math.Max(0, pc - m), c1 = Math.Min(Cols, pc + m + 1);
+            int h = r1 - r0, w = c1 - c0;
+            var time = new double[h * w];
+            var o2 = new float[h * w];
+            var done = new bool[h * w];
+            for (int i = 0; i < time.Length; i++) time[i] = double.PositiveInfinity;
+            int cap = 1 << 18, size = 1;
+            var hk = new double[cap];
+            var hv = new int[cap];
+            int seed = (pr - r0) * w + (pc - c0);
+            time[seed] = 0;
+            hk[0] = 0;
+            hv[0] = seed;
+            const double rad2deg = 180.0 / Math.PI;
+            int ntab = pace.Length;
+            double maxS = maxMin * 60.0;
+
+            while (size > 0)
+            {
+                double key = hk[0];
+                int idx = hv[0];
+                size--;
+                hk[0] = hk[size];
+                hv[0] = hv[size];
+                int i = 0;
+                while (true)
+                {
+                    int lft = 2 * i + 1;
+                    if (lft >= size) break;
+                    int mm = lft;
+                    if (lft + 1 < size && hk[lft + 1] < hk[lft]) mm = lft + 1;
+                    if (hk[i] <= hk[mm]) break;
+                    double tk = hk[mm]; hk[mm] = hk[i]; hk[i] = tk;
+                    int tv = hv[mm]; hv[mm] = hv[i]; hv[i] = tv;
+                    i = mm;
+                }
+                if (done[idx] || key > time[idx]) continue;
+                if (key > maxS) break;
+                done[idx] = true;
+                int r = idx / w, c = idx - r * w;
+                double g = time[idx];
+                float ze = elev[(r + r0) * Cols + c + c0];
+                for (int k = 0; k < 16; k++)
+                {
+                    // The move k goes FROM the neighbour n TO this cell: n = this cell minus the move.
+                    int nr = r - OffR[k], nc = c - OffC[k];
+                    if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
+                    int nidx = nr * w + nc;
+                    if (done[nidx]) continue;
+                    float zn = elev[(nr + r0) * Cols + nc + c0];
+                    if (zn == noData) continue;
+                    if (HasCross[k])
+                    {
+                        int ar = nr + CrossR1[k], ac = nc + CrossC1[k], br = nr + CrossR2[k], bc = nc + CrossC2[k];
+                        if (ar < 0 || ar >= h || ac < 0 || ac >= w || br < 0 || br >= h || bc < 0 || bc >= w) continue;
+                        if (elev[(ar + r0) * Cols + ac + c0] == noData || elev[(br + r0) * Cols + bc + c0] == noData) continue;
+                    }
+                    double length = CellM * UnitLen[k];
+                    double theta = Math.Atan2((double)ze - zn, length) * rad2deg;
+                    double f = (theta - th0) / dth;
+                    int i0 = (int)f;
+                    if (i0 < 0) i0 = 0;
+                    else if (i0 > ntab - 2) i0 = ntab - 2;
+                    double wgt = f - i0, p0 = pace[i0], p1 = pace[i0 + 1];
+                    if (double.IsInfinity(p0) || double.IsInfinity(p1) || double.IsNaN(p0) || double.IsNaN(p1)) continue;
+                    double nt = g + length * (p0 + wgt * (p1 - p0));
+                    if (nt < time[nidx])
+                    {
+                        time[nidx] = nt;
+                        o2[nidx] = (float)(o2[idx] + length * (o2PerM[i0] + wgt * (o2PerM[i0 + 1] - o2PerM[i0])));
+                        if (size == cap)
+                        {
+                            cap *= 2;
+                            Array.Resize(ref hk, cap);
+                            Array.Resize(ref hv, cap);
+                        }
+                        int j = size++;
+                        hk[j] = nt;
+                        hv[j] = nidx;
+                        while (j > 0)
+                        {
+                            int par = (j - 1) >> 1;
+                            if (hk[par] <= hk[j]) break;
+                            double tk = hk[par]; hk[par] = hk[j]; hk[j] = tk;
+                            int tv = hv[par]; hv[par] = hv[j]; hv[j] = tv;
+                            j = par;
+                        }
+                    }
+                }
+            }
+
+            var field = new HomeField { Router = this, R0 = r0, C0 = c0, H = h, W = w, TMin = new float[h * w], O2L = o2 };
+            for (int i = 0; i < time.Length; i++) field.TMin[i] = done[i] ? (float)(time[i] / 60.0) : -1f;
+            return field;
         }
 
         RoutedLeg Search(int sr, int sc, int tr, int tc, double marginM)

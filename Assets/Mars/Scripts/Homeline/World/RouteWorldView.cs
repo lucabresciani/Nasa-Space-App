@@ -24,6 +24,17 @@ namespace NasaSpaceApp.Homeline.World
 
         Material material;
         readonly List<GameObject> parts = new List<GameObject>();
+        readonly List<GameObject> ribbon = new List<GameObject>();
+
+        /// <summary>The amber track on the ground; the beacons stay when it is hidden. Kept across plans.</summary>
+        public bool RibbonVisible { get; private set; } = true;
+
+        public void SetRibbonVisible(bool visible)
+        {
+            RibbonVisible = visible;
+            foreach (GameObject g in ribbon)
+                if (g != null) g.SetActive(visible);
+        }
 
         public static RouteWorldView Create(Transform parent)
         {
@@ -58,6 +69,8 @@ namespace NasaSpaceApp.Homeline.World
                     buffer.Add(ground.OnGround(wx, wz, RibbonLift));
                 }
                 LineRenderer line = NewLine("Leg " + leg.Number, RouteColor, RibbonWidth);
+                ribbon.Add(line.gameObject);
+                line.gameObject.SetActive(RibbonVisible);
                 // Lie flat on the ground like a painted track: the ribbon faces the object's Z axis, turned to point up.
                 line.alignment = LineAlignment.TransformZ;
                 line.transform.rotation = Quaternion.Euler(-90f, 0f, 0f);
@@ -86,6 +99,7 @@ namespace NasaSpaceApp.Homeline.World
             foreach (GameObject g in parts)
                 if (g != null) Destroy(g);
             parts.Clear();
+            ribbon.Clear();
         }
 
         LineRenderer NewLine(string name, Color color, float width)

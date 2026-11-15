@@ -37,9 +37,11 @@ namespace NasaSpaceApp.Homeline
         public Timeline Timeline { get; private set; }
         public WaypointPlan Waypoints { get; private set; }
         /// <summary>Time to get home (min) and O2 to get home (L) from any point: official plan only, else null.</summary>
-        public GridF32 THome { get; private set; }
-        public GridF32 O2Home { get; private set; }
-        public bool HasReturnFields { get { return THome != null && O2Home != null; } }
+        public Func<double, double, double?> THomeFn { get; private set; }
+        public Func<double, double, double?> O2HomeFn { get; private set; }
+        public bool HasReturnFields { get { return THomeFn != null && O2HomeFn != null; } }
+        /// <summary>True when the way-home map is the planner's own; false when the simulator computed it.</summary>
+        public bool PlannerHomeMap { get; private set; }
         /// <summary>The storm timed for THIS route (edited plans only); null = use the official plan's.</summary>
         public StormTrack Storm { get; private set; }
         /// <summary>True when stations were moved by hand and the plan was re-routed by the simulator.</summary>
@@ -124,8 +126,10 @@ namespace NasaSpaceApp.Homeline
                 if (Math.Abs(bx) < 0.01 && Math.Abs(by) < 0.01 &&
                     officialBundle.Has("fields/t_home.f32") && officialBundle.Has("fields/o2_home.f32"))
                 {
-                    plan.THome = officialBundle.ReadGrid("fields/t_home.f32");
-                    plan.O2Home = officialBundle.ReadGrid("fields/o2_home.f32");
+                    GridF32 th = officialBundle.ReadGrid("fields/t_home.f32"), oh = officialBundle.ReadGrid("fields/o2_home.f32");
+                    plan.THomeFn = th.ValueAt;
+                    plan.O2HomeFn = oh.ValueAt;
+                    plan.PlannerHomeMap = true;
                 }
             }
             return plan;
@@ -163,11 +167,60 @@ namespace NasaSpaceApp.Homeline
                 return names != null && names.TryGetValue(id, out n) ? n : null;
             };
             plan.Waypoints = WaypointPlan.Build(plan.Track, plan.Timeline, nameOf, navToleranceM);
-            plan.THome = root.THome;
-            plan.O2Home = root.O2Home;
+            plan.THomeFn = root.THomeFn;
+            plan.O2HomeFn = root.O2HomeFn;
+            plan.PlannerHomeMap = root.PlannerHomeMap;
             plan.Storm = data.Storm;
             plan.EditData = data;
             return plan;
+        }
+
+        /// <summary>
+        /// Gives a plan without planner way-home maps (alternative pads) a map computed by the simulator's router
+        /// for its pad, so that its stations can be moved and its margin evaluated off the track.
+        /// </summary>
+        public void AttachHomeField(HomeField field)
+        {
+            if (field == null || HasReturnFields) return;
+            THomeFn = field.TAt;
+            O2HomeFn = field.O2At;
+            PlannerHomeMap = false;
+        }
+
+        /// <summary>The stations of this plan in visit order, with their points and work times (for editing and saving).</summary>
+        public List<EditStop> StopsOf()
+        {
+            var stops = new List<EditStop>();
+            for (int i = 0; i < Track.Legs.Count - 1; i++)
+            {
+                RouteLeg leg = Track.Legs[i];
+                int n = leg.X.Length;
+                stops.Add(new EditStop { Id = leg.To, X = leg.X[n - 1], Y = leg.Y[n - 1], DwellMin = Track.Legs[i + 1].StartMin - leg.EndMin });
+            }
+            return stops;
+        }
+
+        /// <summary>
+        /// The check every plan must pass before an EVA starts, whoever made it: the margin of its timeline (the
+        /// smallest of the oxygen, daylight, dose and EVA-duration limits) never below zero, and the O2 at the
+        /// return not below the reserve. Returns false with the first reason found.
+        /// </summary>
+        public bool LimitsOk(double o2ReserveL, out double minMarginMin, out string binding, out double atMin, out double? o2AtReturnL)
+        {
+            minMarginMin = double.PositiveInfinity;
+            binding = null;
+            atMin = 0;
+            foreach (TimelineRow row in Timeline.Events)
+            {
+                if (!row.MarginMin.HasValue || row.MarginMin.Value >= minMarginMin) continue;
+                minMarginMin = row.MarginMin.Value;
+                binding = row.MarginBinding;
+                atMin = row.TMin;
+            }
+            o2AtReturnL = O2AtReturnL;
+            bool marginOk = double.IsPositiveInfinity(minMarginMin) || minMarginMin >= 0;
+            bool reserveOk = !o2AtReturnL.HasValue || o2AtReturnL.Value >= o2ReserveL;
+            return marginOk && reserveOk;
         }
 
         public double? O2LeftAt(double tEvaMin)
@@ -195,12 +248,12 @@ namespace NasaSpaceApp.Homeline
         /// <summary>Time to get home from a point of the frame, minutes; null where the planner gives no value.</summary>
         public double? THomeAt(double x, double y)
         {
-            return THome != null ? THome.ValueAt(x, y) : null;
+            return THomeFn != null ? THomeFn(x, y) : null;
         }
 
         public double? O2HomeAt(double x, double y)
         {
-            return O2Home != null ? O2Home.ValueAt(x, y) : null;
+            return O2HomeFn != null ? O2HomeFn(x, y) : null;
         }
 
         /// <summary>"4 stations + 25 navigation points. Route, timings, O2: planner engine (...). Navigation points: derived ..."</summary>

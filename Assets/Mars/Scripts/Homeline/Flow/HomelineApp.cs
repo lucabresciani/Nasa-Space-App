@@ -155,6 +155,7 @@ namespace NasaSpaceApp.Homeline.Flow
         {
             // RESTART SIMULATION reloads the scene: the player, the terrain and the menu are new objects.
             frame = null;
+            planCache.Clear();
             panel = null;
             panelOwner = null;
             pendingStart = false;
@@ -198,11 +199,14 @@ namespace NasaSpaceApp.Homeline.Flow
         {
             PadFrame f = Frame;
             if (f == null || entry == null) return null;
+            MissionPlan cached;
+            if (planCache.TryGetValue(entry.Id, out cached)) return cached; // one object per plan: its way-home map is attached once
             BundleReader bundle = null;
             try
             {
                 if (entry.Origin == PlanOrigin.Official && Paths.PlanBundle != null) bundle = BundleReader.Open(Paths.PlanBundle);
                 MissionPlan plan = MissionPlan.Load(entry, f, StationNames, bundle, WaypointPlan.AssumedNavToleranceM);
+                planCache[entry.Id] = plan;
                 Debug.Log("[HOMELINE] plan " + entry.Id + ": " + plan.Waypoints.CountText() + ", " +
                           HlJson.F(plan.EndMin, 2) + " min, return fields " + (plan.HasReturnFields ? "yes" : "no"));
                 return plan;
@@ -218,6 +222,8 @@ namespace NasaSpaceApp.Homeline.Flow
             }
         }
 
+        readonly Dictionary<string, MissionPlan> planCache = new Dictionary<string, MissionPlan>(StringComparer.Ordinal);
+        readonly Dictionary<string, RoutedLeg> legCache = new Dictionary<string, RoutedLeg>(StringComparer.Ordinal);
         GridRouter router;
         bool routerTried;
 
@@ -243,8 +249,8 @@ namespace NasaSpaceApp.Homeline.Flow
         }
 
         /// <summary>
-        /// True when the stations of a plan can be moved by hand: the plan needs the planner's way-home maps (the
-        /// official pad), the planner's numbers and the router data.
+        /// True when the stations of a plan can be moved by hand: the plan needs a way-home map (the planner's on the
+        /// official pad, else one computed here, see <see cref="EnsureHomeMap"/>), the planner's numbers and the router data.
         /// </summary>
         public bool CanEdit(MissionPlan plan)
         {
@@ -276,7 +282,7 @@ namespace NasaSpaceApp.Homeline.Flow
             problem = null;
             if (!CanEdit(plan))
             {
-                problem = "stations can be moved on the official plan only.";
+                problem = "this plan has no way-home map yet.";
                 return null;
             }
             int r, c;
@@ -291,33 +297,38 @@ namespace NasaSpaceApp.Homeline.Flow
                 problem = "that point is outside the planner's way-home map.";
                 return null;
             }
-            var stops = new List<EditStop>();
-            RouteTrack track = plan.Track;
+            List<EditStop> stops = plan.StopsOf();
             bool found = false;
-            for (int i = 0; i < track.Legs.Count - 1; i++)
+            foreach (EditStop s in stops)
             {
-                RouteLeg leg = track.Legs[i];
-                int n = leg.X.Length;
-                var stop = new EditStop { Id = leg.To, X = leg.X[n - 1], Y = leg.Y[n - 1], DwellMin = track.Legs[i + 1].StartMin - leg.EndMin };
-                if (stop.Id == stationId)
-                {
-                    stop.X = x;
-                    stop.Y = y;
-                    found = true;
-                }
-                stops.Add(stop);
+                if (s.Id != stationId) continue;
+                s.X = x;
+                s.Y = y;
+                found = true;
             }
             if (!found)
             {
                 problem = "the plan has no station " + stationId + ".";
                 return null;
             }
+            return BuildEdited(plan, stops, out problem);
+        }
+
+        /// <summary>The plan re-routed through the given stations (the pad, the frame and the way-home map are the plan's).</summary>
+        public MissionPlan BuildEdited(MissionPlan plan, List<EditStop> stops, out string problem)
+        {
+            problem = null;
+            if (!CanEdit(plan))
+            {
+                problem = "this plan has no way-home map yet.";
+                return null;
+            }
             try
             {
                 var ctx = new EditContext
                 {
-                    Router = Router, Config = Config, TDarkMin = TDarkMin, Storm = Storm, THome = plan.THome, O2Home = plan.O2Home,
-                    PadX = plan.Route.PadX, PadY = plan.Route.PadY, Scenario = plan.Entry.ScenarioId,
+                    Router = Router, Config = Config, TDarkMin = TDarkMin, Storm = Storm, THome = plan.THomeAt, O2Home = plan.O2HomeAt,
+                    PadX = plan.Route.PadX, PadY = plan.Route.PadY, Scenario = plan.Entry.ScenarioId, LegCache = legCache,
                 };
                 float t0 = Time.realtimeSinceStartup;
                 EditedPlanData data = PlanEditor.Build(ctx, plan.Frame, stops);
@@ -327,8 +338,9 @@ namespace NasaSpaceApp.Homeline.Flow
                     return null;
                 }
                 MissionPlan edited = MissionPlan.FromEdited(plan, data, WaypointPlan.AssumedNavToleranceM);
-                Debug.Log("[HOMELINE] " + stationId + " moved, plan re-routed in " + HlJson.F((Time.realtimeSinceStartup - t0) * 1000f, 0) + " ms: " +
-                          HlJson.F(edited.EndMin, 2) + " min, smallest margin " + HlJson.F(data.MinMarginMin, 1) + " min (" + data.MinMarginBinding + ")");
+                Debug.Log("[HOMELINE] plan re-routed in " + HlJson.F((Time.realtimeSinceStartup - t0) * 1000f, 0) + " ms: " +
+                          HlJson.F(edited.EndMin, 2) + " min, smallest margin " + HlJson.F(data.MinMarginMin, 1) + " min (" + data.MinMarginBinding +
+                          "), O2 margin " + HlJson.F(data.MinO2MarginMin, 1) + " min");
                 return edited;
             }
             catch (Exception e)
@@ -337,6 +349,139 @@ namespace NasaSpaceApp.Homeline.Flow
                 problem = "the plan could not be re-routed.";
                 return null;
             }
+        }
+
+        // ---- way-home maps for pads that have none from the planner (computed on a worker thread)
+
+        /// <summary>Search limits of a computed way-home map: minutes from the pad, and metres around it.</summary>
+        public const double HomeMapMaxMin = 160.0, HomeMapWindowM = 3000.0;
+
+        System.Threading.Tasks.Task<HomeField> homeTask;
+        MissionPlan homeTaskPlan;
+        HomeField homeCache;
+        string homeCacheId;
+
+        public bool HomeMapPending(MissionPlan plan)
+        {
+            return plan != null && homeTask != null && ReferenceEquals(homeTaskPlan, plan.BasePlan);
+        }
+
+        /// <summary>
+        /// Makes sure the plan's pad gets a way-home map: the planner's when it has one, else one computed here in
+        /// the background (a few seconds). Cheap to call every frame; <see cref="PollHomeMap"/> reports the arrival.
+        /// </summary>
+        public void EnsureHomeMap(MissionPlan plan)
+        {
+            if (plan == null) return;
+            MissionPlan root = plan.BasePlan;
+            if (root.HasReturnFields || Config == null || Router == null || homeTask != null) return;
+            if (homeCache != null && homeCacheId == root.Entry.Id)
+            {
+                root.AttachHomeField(homeCache);
+                return;
+            }
+            GridRouter r = Router;
+            double px = root.Route.PadX, py = root.Route.PadY;
+            homeTaskPlan = root;
+            homeTask = System.Threading.Tasks.Task.Run(() => r.HomeFieldOf(px, py, HomeMapMaxMin, HomeMapWindowM));
+        }
+
+        /// <summary>True in the frame a background way-home map has finished (attached, or failed and logged).</summary>
+        public bool PollHomeMap()
+        {
+            if (homeTask == null || !homeTask.IsCompleted) return false;
+            System.Threading.Tasks.Task<HomeField> t = homeTask;
+            MissionPlan root = homeTaskPlan;
+            homeTask = null;
+            homeTaskPlan = null;
+            if (t.IsFaulted || t.Result == null)
+            {
+                Debug.LogWarning("[HOMELINE] way-home map of " + root.Entry.Id + " could not be computed" + (t.Exception != null ? ": " + t.Exception.Message : ""));
+                return true;
+            }
+            homeCache = t.Result;
+            homeCacheId = root.Entry.Id;
+            root.AttachHomeField(t.Result);
+            Debug.Log("[HOMELINE] way-home map of " + root.Entry.Id + " computed by the simulator");
+            return true;
+        }
+
+        void HomeMapNow(MissionPlan root)
+        {
+            if (root.HasReturnFields || Config == null || Router == null) return;
+            if (homeCache == null || homeCacheId != root.Entry.Id)
+            {
+                homeCache = Router.HomeFieldOf(root.Route.PadX, root.Route.PadY, HomeMapMaxMin, HomeMapWindowM);
+                homeCacheId = root.Entry.Id;
+            }
+            root.AttachHomeField(homeCache);
+        }
+
+        // ---- the user's saved routes
+
+        /// <summary>Set to keep saved routes somewhere else than the user's data folder (the self-test does).</summary>
+        public string RoutesFolderOverride;
+
+        public string RoutesFolder
+        {
+            get { return !string.IsNullOrEmpty(RoutesFolderOverride) ? RoutesFolderOverride : System.IO.Path.Combine(Application.persistentDataPath, "HomelineRoutes"); }
+        }
+
+        public List<SavedRoute> SavedRoutes()
+        {
+            try
+            {
+                return RouteStore.List(RoutesFolder);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[HOMELINE] saved routes not readable: " + e.Message);
+                return new List<SavedRoute>();
+            }
+        }
+
+        /// <summary>Saves an edited plan as a route of the user's list; null with the reason when it cannot.</summary>
+        public SavedRoute SaveRoute(MissionPlan plan, out string problem)
+        {
+            problem = null;
+            if (plan == null || !plan.Edited || plan.EditData == null)
+            {
+                problem = "only an edited plan can be saved.";
+                return null;
+            }
+            try
+            {
+                int number = SavedRoutes().Count + 1;
+                string name = "Route " + number + " · " + plan.BasePlan.Entry.Title;
+                SavedRoute r = RouteStore.Save(RoutesFolder, name, plan.BasePlan.Entry.Id, plan.StopsOf(), plan.EditData, DateTime.UtcNow);
+                Debug.Log("[HOMELINE] route saved: " + r.FilePath);
+                return r;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[HOMELINE] route not saved: " + e);
+                problem = "the file could not be written (" + e.Message + ").";
+                return null;
+            }
+        }
+
+        /// <summary>Re-builds a saved route from its base plan and its saved stations; null with the reason when it cannot.</summary>
+        public MissionPlan LoadSaved(SavedRoute route, out string problem)
+        {
+            problem = null;
+            PlanEntry entry = route != null ? Catalog.Find(route.BasePlanId) : null;
+            MissionPlan root = entry != null ? Generate(entry) : null;
+            if (root == null)
+            {
+                problem = "its base plan (" + (route != null ? route.BasePlanId : "?") + ") is not available.";
+                return null;
+            }
+            HomeMapNow(root);
+            var stops = new List<EditStop>();
+            foreach (EditStop s in route.Stops) stops.Add(new EditStop { Id = s.Id, X = s.X, Y = s.Y, DwellMin = s.DwellMin });
+            MissionPlan plan = BuildEdited(root, stops, out problem);
+            if (plan != null) plan.Entry.Title = route.Name;
+            return plan;
         }
 
         /// <summary>START EVA: leaves the menu and starts the mission when the menu has actually closed.</summary>

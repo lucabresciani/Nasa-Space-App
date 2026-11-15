@@ -20,7 +20,7 @@ namespace NasaSpaceApp.Homeline.Sim
     /// </summary>
     public sealed class SelfTest : MonoBehaviour
     {
-        const float WatchdogSeconds = 260f;
+        const float WatchdogSeconds = 330f;
 
         public static bool Requested
         {
@@ -46,6 +46,7 @@ namespace NasaSpaceApp.Homeline.Sim
 
             HomelineApp app = HomelineApp.Instance;
             Check(app != null, "app object exists");
+            if (app != null) app.RoutesFolderOverride = Path.Combine(dir, "routes"); // never the user's own list
             if (app == null) { Finish(); yield break; }
             Check(app.Catalog.Plans.Count >= 5, "catalog has the 5 precomputed plans (" + app.Catalog.Plans.Count + ")");
             Check(app.Physio != null, "planner O2 model loaded from the official bundle");
@@ -104,6 +105,44 @@ namespace NasaSpaceApp.Homeline.Sim
                     yield return Shot("planning_edited");
                     Check(!app.Panel.MoveStation("S6", s6.X + 4000, s6.Y), "a move onto unreachable ground is refused");
                     Check(app.Panel.Generated == editedPlan, "a refused move leaves the plan as it was");
+
+                    // Limits: the edited plan respects them, so START and SAVE are offered; it is saved.
+                    Check(app.Panel.StartAllowed, "START is offered for an edited plan that respects the limits");
+                    Check(editedPlan.EditData.OxygenOk, "oxygen margin of the edited plan stays positive (" + F(editedPlan.EditData.MinO2MarginMin) + " min at " + editedPlan.EditData.MinO2MarginWhere + ")");
+                    Check(app.Panel.SaveRoute(), "edited plan saved with SAVE ROUTE");
+                    Check(app.SavedRoutes().Count == 1, "one saved route on disk (" + app.SavedRoutes().Count + ")");
+
+                    // A station pushed too far breaks the limits: the plan is shown, START and SAVE are refused.
+                    Waypoint s7 = null;
+                    foreach (Waypoint w in plan.Waypoints.Main) if (w.Id == "S7") s7 = w;
+                    if (s7 != null && app.Panel.MoveStation("S7", s7.X - 300, s7.Y - 200))
+                    {
+                        MissionPlan broken = app.Panel.Generated;
+                        Note("S7 moved 300 m west and 200 m south: " + F(broken.EndMin) + " min, margin " + F(broken.EditData.MinMarginMin) + " min (" +
+                             broken.EditData.MinMarginBinding + "), oxygen margin " + F(broken.EditData.MinO2MarginMin) + " min, O2 at return " + F(broken.EditData.O2AtReturnL) + " L");
+                        Check(!broken.EditData.Feasible && !broken.EditData.OxygenOk, "a station moved too far is found to break the oxygen limit");
+                        Check(!app.Panel.StartAllowed, "START is refused for a plan that breaks the limits");
+                        Check(!app.Panel.SaveRoute(), "a plan that breaks the limits cannot be saved");
+                        app.Panel.Begin(EvaMode.Replay);
+                        yield return null;
+                        Check(!app.Driver.Active && MartisMenu.IsOpen, "pressing START on such a plan starts nothing");
+                        yield return new WaitForSecondsRealtime(0.4f);
+                        yield return Shot("planning_limits_broken");
+                    }
+                    else Check(false, "S7 could be moved 300 m west and 200 m south for the limits check");
+
+                    // MY ROUTES: the saved route is listed, re-builds to the same plan, and the planner list comes back.
+                    app.Panel.ShowSavedRoutes(true);
+                    Check(app.Panel.ItemCount == 1, "MY ROUTES lists the saved route (" + app.Panel.ItemCount + ")");
+                    app.Panel.Generate();
+                    MissionPlan reloaded = app.Panel.Generated;
+                    Check(reloaded != null && reloaded.Edited && Math.Abs(reloaded.EndMin - editedPlan.EndMin) < 0.01,
+                          "the saved route re-builds to the same plan (" + (reloaded != null ? F(reloaded.EndMin) : "null") + " min)");
+                    yield return new WaitForSecondsRealtime(0.4f);
+                    yield return Shot("planning_my_routes");
+                    app.Panel.ShowSavedRoutes(false);
+                    app.Panel.Generate();
+                    app.Panel.MoveStation("S6", s6.X, s6.Y - 90);
                     app.Panel.ResetEdit();
                     Check(app.Panel.Generated == plan, "RESET TO PLANNER PLAN restores the planner's plan");
                 }
@@ -220,7 +259,29 @@ namespace NasaSpaceApp.Homeline.Sim
             Check(altPlan != null, "alternative plan (first survey spot) loads");
             if (altPlan != null)
             {
-                Check(!altPlan.HasReturnFields, "alternative plan has no return fields");
+                Check(!altPlan.HasReturnFields, "alternative plan has no planner way-home map");
+
+                // Every plan can be edited, not only the official one: the simulator computes this pad's way-home map.
+                float h0 = Time.realtimeSinceStartup;
+                app.EnsureHomeMap(altPlan);
+                waitUntil = Time.realtimeSinceStartup + 60f;
+                while (!altPlan.HasReturnFields && Time.realtimeSinceStartup < waitUntil)
+                {
+                    app.PollHomeMap();
+                    yield return null;
+                }
+                Check(altPlan.HasReturnFields && !altPlan.PlannerHomeMap, "way-home map of the alternative pad computed in " + F(Time.realtimeSinceStartup - h0) + " s");
+                if (altPlan.HasReturnFields)
+                {
+                    Waypoint a0 = null;
+                    foreach (Waypoint w in altPlan.Waypoints.Main) if (w.Kind == WaypointKind.Station && a0 == null) a0 = w;
+                    string why;
+                    MissionPlan altEdited = a0 != null ? app.MoveStation(altPlan, a0.Id, a0.X + 45, a0.Y + 30, out why) : null;
+                    Check(altEdited != null && altEdited.Edited, "a station of the alternative plan can be moved (" + (a0 != null ? a0.Id : "?") + ")");
+                    if (altEdited != null)
+                        Note("alternative plan edited: " + F(altEdited.EndMin) + " min (planner plan " + F(altPlan.EndMin) + "), margin " + F(altEdited.EditData.MinMarginMin) +
+                             " min (" + altEdited.EditData.MinMarginBinding + "), oxygen margin " + F(altEdited.EditData.MinO2MarginMin) + " min");
+                }
                 app.Begin(altPlan, EvaMode.Replay);
                 yield return new WaitForSecondsRealtime(1.0f);
                 Check(app.Driver.Active && app.Driver.Plan == altPlan, "alternative plan started");
@@ -312,6 +373,12 @@ namespace NasaSpaceApp.Homeline.Sim
                     SuitTelemetry tel2 = Telemetry();
                     Check(tel2 != null && tel2.DistanceHomeM < 15f, "helmet HOME is the pad after the restart" + (tel2 != null ? " (" + F(tel2.DistanceHomeM) + " m)" : ""));
                     yield return Shot("eva_free_walk_after_restart");
+                    Check(app.Driver.RouteVisible, "the amber track is shown by default");
+                    app.Driver.SetRouteVisible(false);
+                    yield return null;
+                    Check(!app.Driver.RouteVisible, "the amber track can be hidden (key R)");
+                    yield return Shot("eva_track_hidden");
+                    app.Driver.SetRouteVisible(true);
                 }
             }
 
@@ -320,6 +387,10 @@ namespace NasaSpaceApp.Homeline.Sim
 
         void Update()
         {
+            // The window may lose focus while the test runs (someone is using the PC): the menu then opens its
+            // pause screen and the EVA clock stops. The test never wants the pause screen during a mission.
+            HomelineApp running = HomelineApp.Instance;
+            if (!finished && running != null && running.Driver != null && running.Driver.Active && MartisMenu.IsOpen) MartisMenu.StartNow();
             if (!finished && Time.realtimeSinceStartup - startedAt > WatchdogSeconds)
             {
                 Check(false, "watchdog: the self-test did not finish in " + WatchdogSeconds + " s");
