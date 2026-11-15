@@ -15,8 +15,9 @@ namespace NasaSpaceApp.HUD
         private const string SimLabel = "Simulated EVA · real terrain and data";   // HOMELINE label rule
 
         private readonly HudContext ctx;
-        private readonly Text ltst, sol, met;
+        private readonly Text ltst, sol, met, lamp;
         private string ltstShown, solShown, metShown;
+        private bool lampShown;
         private float timer = RefreshPeriod;   // first Tick refreshes
 
         public MissionCaption(HudContext ctx)
@@ -42,6 +43,10 @@ namespace NasaSpaceApp.HUD
                                         topLeft, new Vector2(1f, 0.5f), new Vector2(Width - 16f, -18f), new Vector2(100f, 20f));
             met = HudFactory.CreateText("Met", p, skin.Regular, HudTokens.SizeMicro, HudTokens.InkSecondary, TextAnchor.MiddleLeft,
                                         topLeft, new Vector2(0f, 0.5f), new Vector2(40f, -39f), new Vector2(160f, 18f));
+            lamp = HudFactory.CreateText("Lamp", p, skin.Medium, HudTokens.SizeMicro, HudTokens.InkPrimary, TextAnchor.MiddleRight,
+                                         topLeft, new Vector2(1f, 0.5f), new Vector2(Width - 16f, -39f), new Vector2(100f, 18f));
+            lamp.text = "LAMP ON";
+            lamp.enabled = false;
             Text label = HudFactory.CreateText("SimLabel", p, skin.Regular, HudTokens.SizeFoot, HudTokens.InkTertiary, TextAnchor.MiddleLeft,
                                                topLeft, new Vector2(0f, 0.5f), new Vector2(16f, -61f), new Vector2(Width - 32f, 18f));
             label.text = SimLabel;
@@ -73,6 +78,12 @@ namespace NasaSpaceApp.HUD
             Assign(ltst, ref ltstShown, HudStrings.Ltst(minuteOfSol));
             Assign(sol, ref solShown, HudStrings.Sol(solNumber));
             Assign(met, ref metShown, HudStrings.Met(metMinutes));
+            bool lampOn = t != null && t.HeadlampOn;
+            if (lampOn != lampShown)
+            {
+                lampShown = lampOn;
+                lamp.enabled = lampOn;
+            }
         }
 
         private static void Assign(Text text, ref string shown, string value)

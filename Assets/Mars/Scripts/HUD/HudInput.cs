@@ -5,7 +5,8 @@ namespace NasaSpaceApp.HUD
 {
     /// <summary>
     /// Code-only input actions of the HUD (no asset edits): close card (X / gamepad East), free cursor (hold Tab),
-    /// debug overlay toggle (F3) and map screen toggle (G / gamepad Select). M is taken by MarsWeather's weather cycle.
+    /// debug overlay toggle (F3), map screen toggle (G / gamepad Select) and head lamp (L). M is taken by MarsWeather's
+    /// weather cycle; the night sky's star names moved from L to J for the lamp.
     /// <see cref="Poll"/> once per frame, then read the edge flags.
     /// </summary>
     public sealed class HudInput : IDisposable
@@ -14,6 +15,7 @@ namespace NasaSpaceApp.HUD
         private readonly InputAction freeCursor;
         private readonly InputAction debugToggle;
         private readonly InputAction mapToggle;
+        private readonly InputAction headlamp;
         private bool disposed;
 
         /// <summary>True on the frame X or gamepad East was pressed.</summary>
@@ -31,6 +33,9 @@ namespace NasaSpaceApp.HUD
         /// <summary>True on the frame G or gamepad Select (View) was pressed.</summary>
         public bool MapTogglePressed { get; private set; }
 
+        /// <summary>True on the frame L was pressed (head lamp on/off).</summary>
+        public bool HeadlampPressed { get; private set; }
+
         /// <summary>Creates and enables the actions.</summary>
         public HudInput()
         {
@@ -45,7 +50,10 @@ namespace NasaSpaceApp.HUD
             mapToggle.AddBinding("<Keyboard>/g");
             mapToggle.AddBinding("<Gamepad>/select");
 
+            headlamp = new InputAction("HudHeadlamp", InputActionType.Button, "<Keyboard>/l");
+
             closeCard.Enable();
+            headlamp.Enable();
             freeCursor.Enable();
             debugToggle.Enable();
             mapToggle.Enable();
@@ -56,7 +64,7 @@ namespace NasaSpaceApp.HUD
         {
             if (disposed)
             {
-                CloseCardPressed = FreeCursorPressed = FreeCursorReleased = DebugTogglePressed = MapTogglePressed = false;
+                CloseCardPressed = FreeCursorPressed = FreeCursorReleased = DebugTogglePressed = MapTogglePressed = HeadlampPressed = false;
                 return;
             }
             CloseCardPressed = closeCard.WasPressedThisFrame();
@@ -64,6 +72,7 @@ namespace NasaSpaceApp.HUD
             FreeCursorReleased = freeCursor.WasReleasedThisFrame();
             DebugTogglePressed = debugToggle.WasPressedThisFrame();
             MapTogglePressed = mapToggle.WasPressedThisFrame();
+            HeadlampPressed = headlamp.WasPressedThisFrame();
         }
 
         /// <summary>Disables and disposes the actions. Safe to call twice.</summary>
@@ -78,6 +87,8 @@ namespace NasaSpaceApp.HUD
             freeCursor.Disable();
             debugToggle.Disable();
             mapToggle.Disable();
+            headlamp.Disable();
+            headlamp.Dispose();
             closeCard.Dispose();
             freeCursor.Dispose();
             debugToggle.Dispose();

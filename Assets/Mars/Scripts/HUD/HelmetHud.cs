@@ -37,6 +37,8 @@ namespace NasaSpaceApp.HUD
 
         private SuitTelemetry telemetry;
         private int missionVersion = -1;   // MissionLink.Version the tracker follows
+        private Light headlamp;            // helmet lamp (L), a spot on the camera; null without a camera
+        private bool headlampOn;
         private readonly EvaLogger evaLog = new EvaLogger();
         private HudTooltip tooltip;
         private MissionCaption caption;
@@ -251,6 +253,12 @@ namespace NasaSpaceApp.HUD
                 return;
             }
 
+            // Head lamp: L toggles (also with the map open).
+            if (input.HeadlampPressed)
+            {
+                SetHeadlamp(!headlampOn);
+            }
+
             // Map screen: G / Select toggles; X / East close it (and are then consumed: no rock card closes with it).
             bool closeConsumed = false;
             if (input.MapTogglePressed)
@@ -403,6 +411,7 @@ namespace NasaSpaceApp.HUD
             float targetDarkness = TargetDarkness();
             ti.Darkness = targetDarkness;
             SyncMission();
+            telemetry.HeadlampOn = headlampOn;   // its power draw (a fresh EVA swaps the telemetry instance)
             telemetry.Tick(simDt, in ti);
 
             // 2b. Web mission: compare the live EVA with the plan (after telemetry: MET and O₂ of this frame).
@@ -445,6 +454,41 @@ namespace NasaSpaceApp.HUD
             {
                 mapScreen.Tick(dt);
                 ApplyLayersAlpha(1f - mapScreen.Visibility);
+            }
+        }
+
+        /// <summary>True while the head lamp (L) is on.</summary>
+        public bool HeadlampOn => headlampOn;
+
+        /// <summary>Switches the head lamp: a warm spot light on the helmet, slightly above the eyes so boulders cast shadows.</summary>
+        public void SetHeadlamp(bool on)
+        {
+            headlampOn = on;
+            if (headlamp == null && on)
+            {
+                Camera cam = Context != null ? Context.Camera : null;
+                if (cam == null)
+                {
+                    return;
+                }
+                var go = new GameObject("Headlamp");
+                go.transform.SetParent(cam.transform, false);
+                go.transform.localPosition = new Vector3(0f, 0.12f, 0.08f);   // helmet brow, ahead of the near plane
+                go.transform.localRotation = Quaternion.Euler(4f, 0f, 0f);     // a little down, where the feet go
+                headlamp = go.AddComponent<Light>();
+                headlamp.type = LightType.Spot;
+                headlamp.color = new Color(1f, 0.95f, 0.86f);                // warm white LED
+                headlamp.range = 45f;
+                headlamp.spotAngle = 58f;
+                headlamp.innerSpotAngle = 30f;
+                headlamp.intensity = 40f;                                     // inverse square: ~0.4 at 10 m, ~0.1 at 20 m
+                headlamp.shadows = LightShadows.Soft;
+                headlamp.shadowStrength = 0.85f;
+                headlamp.renderMode = LightRenderMode.ForcePixel;
+            }
+            if (headlamp != null && headlamp.enabled != on)
+            {
+                headlamp.enabled = on;
             }
         }
 

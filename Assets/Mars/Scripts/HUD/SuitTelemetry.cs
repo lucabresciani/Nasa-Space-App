@@ -344,6 +344,8 @@ namespace NasaSpaceApp.HUD
         public float BatteryMinutesLeft { get; private set; }  // at the 60 s mean load
         public float HeaterW { get; private set; }
         public float LightsW { get; private set; }
+        /// <summary>Head lamp switched on (L, set by HelmetHud each frame): the helmet lights draw <see cref="HelmetLightsW"/>.</summary>
+        public bool HeadlampOn { get; set; }
         public float CommW { get; private set; }
         public HudSeverity BatteryState { get; private set; }
         public HudSeverity PowerState { get; private set; }
@@ -766,7 +768,7 @@ namespace NasaSpaceApp.HUD
             float windFactor = 1f + HeaterWindGain * Mathf.Min(WindSpeedMs, 30f);
             float heaterTarget = HeaterMaxW * Mathf.Clamp01(cold * windFactor) * (1f - 0.5f * Activity);
             HeaterW += (heaterTarget - HeaterW) * (1f - Mathf.Exp(-dt / 20f));
-            LightsW = HelmetLightsW * Mathf.Clamp01((Darkness - 0.3f) / 0.4f);
+            LightsW = HeadlampOn ? HelmetLightsW : 0f;   // the real lamp (L) instead of an automatic night light
             CommW = CommBaseW + (!float.IsNaN(LinkMarginDb) && LinkMarginDb < CommBoostBelowDb ? CommBoostW : 0f);
 
             BatteryLoadW = AvionicsW + CommW + FanPowerW + PumpW + HeaterW + LightsW;

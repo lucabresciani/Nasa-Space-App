@@ -111,6 +111,8 @@ namespace NasaSpaceApp.Menu
             science.Rows.Add(new Binding { Action = "CLOSE ROCK CARD", Keys = new[] { "X" }, Gamepad = "B" });
             science.Rows.Add(new Binding { Action = "FREE CURSOR (HOLD)", Keys = new[] { "TAB" } });
             science.Rows.Add(new Binding { Action = "EVA MAP", Keys = new[] { "G" }, Gamepad = "SELECT" });
+            science.Rows.Add(new Binding { Action = "HEAD LAMP", Keys = new[] { "L" } });
+            science.Rows.Add(new Binding { Action = "LOAD NEWEST MISSION", Keys = new[] { "F5" } });
             Add(groups, science);
 
             Group environment = new Group { Title = "ENVIRONMENT" };
@@ -133,7 +135,7 @@ namespace NasaSpaceApp.Menu
             MarsNightSky night = UnityEngine.Object.FindAnyObjectByType<MarsNightSky>();
             if (night != null)
             {
-                AddKey(sky, "STAR NAMES", null, ReadKey(night, "starNamesKey", Key.L));
+                AddKey(sky, "STAR NAMES", null, ReadKey(night, "starNamesKey", Key.J));
                 AddKey(sky, "CONSTELLATIONS", null, ReadKey(night, "constellationsKey", Key.K));
                 AddKey(sky, "PLANETS AND MOONS", null, ReadKey(night, "planetsKey", Key.P));
             }
