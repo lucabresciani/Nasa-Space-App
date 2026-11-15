@@ -85,6 +85,7 @@ namespace NasaSpaceApp.Homeline.EditorTools
                 PlayerSettings.visibleInBackground = true;
                 PlayerSettings.resizableWindow = true;
                 PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
+                IncludeRuntimeShaders();
                 report = BuildPipeline.BuildPlayer(options);
             }
             finally
@@ -104,14 +105,8 @@ namespace NasaSpaceApp.Homeline.EditorTools
             if (Directory.Exists(dataDir))
             {
                 string target = Path.Combine(outDir, DataFolderName);
-                int code = Robocopy(dataDir, target);
-                // robocopy: 0-7 = success (files copied, extras, mismatches), 8+ = failure.
-                if (code >= 8)
-                {
-                    Debug.LogError("[HOMELINE build] copying " + DataFolderName + " failed (robocopy " + code + ")");
-                    return false;
-                }
-                Debug.Log("[HOMELINE build] planner data copied to " + target);
+                int files = CopyPlannerData(dataDir, target);
+                Debug.Log("[HOMELINE build] planner data copied to " + target + " (" + files + " files)");
             }
             else
             {
@@ -124,20 +119,82 @@ namespace NasaSpaceApp.Homeline.EditorTools
             return true;
         }
 
-        static int Robocopy(string from, string to)
+        /// <summary>
+        /// Copies only what the app reads: the plans (route, timeline, pad list, station names), the official
+        /// simulator bundle and any engine-service result trees. The planner's web app itself (map tiles, 3D
+        /// chunks, about 250 MB) is not used by the app and is left out.
+        /// </summary>
+        static int CopyPlannerData(string from, string to)
         {
-            var info = new ProcessStartInfo
+            if (Directory.Exists(to)) Directory.Delete(to, true);
+            int n = 0;
+            string web = Path.Combine(from, "web", "data");
+            if (Directory.Exists(web))
             {
-                FileName = "robocopy",
-                Arguments = "\"" + from + "\" \"" + to + "\" /MIR /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XF .gitignore",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-            using (Process p = Process.Start(info))
-            {
-                p.WaitForExit();
-                return p.ExitCode;
+                string webTo = Path.Combine(to, "web", "data");
+                foreach (string pattern in new[] { "route_*.geojson", "timeline_*.json", "stations.json", "pad.json" })
+                    foreach (string f in Directory.GetFiles(web, pattern))
+                        n += CopyFile(f, Path.Combine(webTo, Path.GetFileName(f)));
+                string pads = Path.Combine(web, "scenarios", "pads");
+                if (Directory.Exists(pads))
+                {
+                    string padsTo = Path.Combine(webTo, "scenarios", "pads");
+                    foreach (string f in Directory.GetFiles(pads, "*.json")) n += CopyFile(f, Path.Combine(padsTo, Path.GetFileName(f)));
+                    foreach (string dir in Directory.GetDirectories(pads))
+                        foreach (string pattern in new[] { "route_*.geojson", "timeline_*.json", "summary.json" })
+                            foreach (string f in Directory.GetFiles(dir, pattern))
+                                n += CopyFile(f, Path.Combine(padsTo, Path.GetFileName(dir), Path.GetFileName(f)));
+                }
             }
+            foreach (string sub in new[] { "bundle", "results" })
+            {
+                string dir = Path.Combine(from, sub);
+                if (!Directory.Exists(dir)) continue;
+                foreach (string f in Directory.GetFiles(dir, "*", SearchOption.AllDirectories))
+                    n += CopyFile(f, Path.Combine(to, sub, f.Substring(dir.Length).TrimStart('\\', '/')));
+            }
+            string source = Path.Combine(from, "source.json");
+            if (File.Exists(source)) n += CopyFile(source, Path.Combine(to, "source.json"));
+            return n;
+        }
+
+        /// <summary>
+        /// Shaders that scripts look up by name at run time (the night sky attaches itself from code) are stripped
+        /// from a player unless they are in Always Included Shaders: add them before building.
+        /// </summary>
+        static void IncludeRuntimeShaders()
+        {
+            string[] paths = { "Assets/Mars/Shaders/MarsStars.shader", "Assets/Mars/Shaders/MarsConstellations.shader" };
+            UnityEngine.Object[] settings = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset");
+            if (settings == null || settings.Length == 0) return;
+            var so = new SerializedObject(settings[0]);
+            SerializedProperty list = so.FindProperty("m_AlwaysIncludedShaders");
+            if (list == null) return;
+            int added = 0;
+            foreach (string p in paths)
+            {
+                Shader shader = AssetDatabase.LoadAssetAtPath<Shader>(p);
+                if (shader == null) continue;
+                bool present = false;
+                for (int i = 0; i < list.arraySize; i++)
+                    if (list.GetArrayElementAtIndex(i).objectReferenceValue == shader) present = true;
+                if (present) continue;
+                list.InsertArrayElementAtIndex(list.arraySize);
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = shader;
+                added++;
+            }
+            if (added > 0)
+            {
+                so.ApplyModifiedPropertiesWithoutUndo();
+                Debug.Log("[HOMELINE build] " + added + " run-time shader(s) added to Always Included Shaders");
+            }
+        }
+
+        static int CopyFile(string from, string to)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(to));
+            File.Copy(from, to, true);
+            return 1;
         }
 
         static string Arg(string name)

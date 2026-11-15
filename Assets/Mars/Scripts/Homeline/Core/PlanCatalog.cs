@@ -129,6 +129,17 @@ namespace NasaSpaceApp.Homeline
                 e.Title = official ? "Official pad" : (e.Rank.HasValue ? "Alternative pad · rank " + e.Rank.Value : "Alternative pad · " + e.Id);
                 if (e.Id == "pad_default") e.Title = "Alternative pad · first survey spot";
                 JToken route = p["route"];
+                if (HlJson.IsNull(route))
+                {
+                    // Picker pads state their route in their own summary file (path relative to the data folder).
+                    string summaryRel = HlJson.Str(p, "summary");
+                    string summaryPath = string.IsNullOrEmpty(summaryRel) ? null : Path.Combine(web, summaryRel.Replace('/', Path.DirectorySeparatorChar));
+                    if (summaryPath != null && File.Exists(summaryPath))
+                    {
+                        try { route = HlJson.Parse(File.ReadAllText(summaryPath))["route"]; }
+                        catch (Exception) { route = null; }
+                    }
+                }
                 if (!HlJson.IsNull(route))
                 {
                     e.TotalMin = HlJson.NumOrNull(route, "total_min");
