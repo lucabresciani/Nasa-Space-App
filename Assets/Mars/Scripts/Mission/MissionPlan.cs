@@ -16,6 +16,7 @@ namespace NasaSpaceApp.Mission
     {
         public int Index;
         public string Note;
+        public string Name;   // "W1".. for a free point, a station id, or null (browser export)
         public IReadOnlyList<string> Tags;
         public double Lat, Lon;
         public Vector3 World;
@@ -184,6 +185,7 @@ namespace NasaSpaceApp.Mission
                 {
                     Index = w.Index,
                     Note = w.Note ?? string.Empty,
+                    Name = w.Name,
                     Tags = (IReadOnlyList<string>)w.Tags ?? Array.Empty<string>(),
                     Lat = lat,
                     Lon = lon,
@@ -278,6 +280,8 @@ namespace NasaSpaceApp.Mission
                 }
             }
 
+            plan.FillRouteO2Gaps();
+
             // EVA clock: start instant, LMST, dose series.
             MissionFile.ConditionsBlock cond = file.Conditions;
             if (cond != null)
@@ -353,6 +357,39 @@ namespace NasaSpaceApp.Mission
             state.TasksLeftL = Mathf.Lerp(a.TasksLeftL, b.TasksLeftL, u);
             state.MarginMin = Mathf.Lerp(a.MarginMin, b.MarginMin, u);
             return true;
+        }
+
+        /// <summary>
+        /// Server exports (live route, official plan) give the O₂ used only at each leg's ends; the browser export gives it
+        /// at every point. Fills the missing ones from the planned timeline at the point's minute, else linearly in time
+        /// between the nearest known points of the same leg. Returns how many points were filled.
+        /// </summary>
+        private int FillRouteO2Gaps()
+        {
+            int n = Route.Length, filled = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (!float.IsNaN(RouteO2Used[i]) || float.IsNaN(RouteT[i]))
+                {
+                    continue;
+                }
+                float v = TryPlannedAt(RouteT[i], out MissionTimelineRow row) ? row.O2UsedL : float.NaN;
+                if (float.IsNaN(v))
+                {
+                    int a = i - 1, b = i + 1, leg = RouteLeg[i];
+                    while (b < n && RouteLeg[b] == leg && float.IsNaN(RouteO2Used[b])) b++;
+                    if (a >= 0 && b < n && RouteLeg[a] == leg && RouteLeg[b] == leg && RouteT[b] > RouteT[a])
+                    {
+                        v = RouteO2Used[a] + (RouteO2Used[b] - RouteO2Used[a]) * (RouteT[i] - RouteT[a]) / (RouteT[b] - RouteT[a]);
+                    }
+                }
+                if (!float.IsNaN(v))
+                {
+                    RouteO2Used[i] = v;
+                    filled++;
+                }
+            }
+            return filled;
         }
 
         /// <summary>One-line description for logs and the HUD.</summary>

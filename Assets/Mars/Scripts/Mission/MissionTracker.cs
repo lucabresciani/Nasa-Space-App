@@ -615,8 +615,14 @@ namespace NasaSpaceApp.Mission
             MissionFile.ConstantsBlock c = Plan.Constants;
             float effort = (float)c.EffortRateLMin;
             float delay = float.IsNaN(ScheduleDeltaMin) ? 0f : ScheduleDeltaMin;
-            float o2Now = !float.IsNaN(o2LeftL) ? o2LeftL : (float)c.O2CapacityL - (float.IsNaN(PlannedO2UsedL) ? 0f : PlannedO2UsedL);
-            float plannedUsedNow = float.IsNaN(PlannedO2UsedL) ? 0f : PlannedO2UsedL;
+            // Planned O₂ used now: from the route, else from the timeline at the planned minute. Never 0 as a stand-in:
+            // with the real suit O₂ that would count the O₂ already used twice (false REPLAN).
+            float plannedUsedNow = PlannedO2UsedL;
+            if (float.IsNaN(plannedUsedNow) && Plan.TryPlannedAt(PlannedMin, out MissionTimelineRow now))
+            {
+                plannedUsedNow = now.O2UsedL;
+            }
+            float o2Now = !float.IsNaN(o2LeftL) ? o2LeftL : (float)c.O2CapacityL - plannedUsedNow;
             float tDark = Plan.TDarkMin;
             float best = float.NaN;
             string bind = null;
@@ -630,7 +636,7 @@ namespace NasaSpaceApp.Mission
                 float t = r.TMin + delay;
                 float m = float.NaN;
                 string b = null;
-                if (effort > 0f)
+                if (effort > 0f && !float.IsNaN(plannedUsedNow))
                 {
                     float o2Left = o2Now - (r.O2UsedL - plannedUsedNow);
                     Consider((o2Left - r.O2HomeL - r.TasksLeftL - (float)c.ReserveL) / effort, "O2", ref m, ref b);
