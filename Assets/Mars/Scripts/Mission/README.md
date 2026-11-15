@@ -51,3 +51,10 @@ draft) in home-line; the log back is `contracts/bundle/eva_log.schema.json`.
 places the mission on the terrain, compares the planner's elevations with Unity's, and walks the
 plan exactly: it must stay ON PLAN, keep the live margin within 0.5 min of the plan (SPEC F18)
 and end COMPLETE.
+
+Play-mode smoke test (batch only; Unity must be closed):
+`Unity -batchmode -projectPath . -executeMethod NasaSpaceApp.MarsGen.MissionPlaySmokeTest.Run -missionTest <mission.json> -logFile -`
+starts the game, leaves the title menu, loads the mission, walks the route (completing stops from
+the map's Waypoints tab), returns to the pad and fails on any logged error or exception. It writes
+a real EVA log to `~/Downloads`.
+

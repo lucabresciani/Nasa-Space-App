@@ -118,6 +118,7 @@ namespace NasaSpaceApp.Mission
         public event Action<MissionStatus> StatusChanged;
         public event Action MissionComplete;
 
+        private bool completedThisTick;     // MissionComplete is raised after the status is up to date
         private float o2LeftL = float.NaN;
         private float o2StartL = float.NaN;
         private float lastProjectionMin = float.NegativeInfinity;
@@ -212,6 +213,11 @@ namespace NasaSpaceApp.Mission
             UpdatePlanned();
             UpdateMargin();
             UpdateStatus();
+            if (completedThisTick)
+            {
+                completedThisTick = false;
+                MissionComplete?.Invoke();
+            }
         }
 
         // ------------------------------------------------------------------ waypoints
@@ -373,7 +379,7 @@ namespace NasaSpaceApp.Mission
                 Complete = true;
                 CompleteAtMin = EvaMin;
                 Version++;
-                MissionComplete?.Invoke();
+                completedThisTick = true;
             }
         }
 
