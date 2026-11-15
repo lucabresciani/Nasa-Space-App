@@ -1,8 +1,8 @@
-# MARVIS with the HOMELINE mission plan: user guide
+# MARVIS: user guide
 
-MARVIS is a first-person Mars EVA simulator on real terrain of lower Mount Sharp (Gale crater). This build adds the
-mission plans of the HOMELINE planner: you choose a plan, generate its waypoints, and then walk it or watch it,
-with the planner's oxygen and margin on the helmet.
+MARVIS is a first-person Mars EVA simulator on real terrain of lower Mount Sharp (Gale crater), with its mission
+planner in the same window: you plan a route on the map, send it to the simulator, and walk it with the planned
+oxygen and margin on the helmet.
 
 Every view says **Simulated EVA · real terrain and data**: the terrain, the routes and the numbers come from real
 data and from the planner; the crew, the EVA and the suit are simulated.
@@ -11,19 +11,48 @@ data and from the planner; the crew, the EVA and the suit are simulated.
 
 1. Unzip the folder and run `MARVIS.exe` (Windows 10 or 11, 64-bit). Windows may show "Windows protected your PC"
    because the app is not signed: choose **More info**, then **Run anyway**.
-2. Keep the `HomelineData` folder next to the exe. Without it the app still runs, but without plans.
+2. Keep the folders `MarvisWeb`, `MarvisPlanner` and `HomelineData` next to the exe.
+3. Use a PC that is online. The planner is the web site `https://marvis.vxliu.com/`, shown inside the MARVIS window.
+   Without a connection MARVIS shows a copy of the planner that is shipped in `MarvisPlanner`.
+
+The planner window needs the Microsoft Edge WebView2 Runtime, which is part of Windows 11 and of an up-to-date
+Windows 10. Without it **MISSION PLAN** opens the built-in planning screen described further down.
 
 ## Flow
 
 | Step | What you do |
 | --- | --- |
-| Title | **MISSION PLAN** opens the mission planning screen. **START SIMULATION** goes straight to free exploration, without a plan |
+| Title | **MISSION PLAN** opens the planner. **START SIMULATION** goes straight to free exploration, without a plan |
+| Planner | Click the map to add waypoints; the times, the oxygen and the margins of the route are estimated at once |
+| Send | **Send to MARVIS** in the planner's right-hand panel: the planner closes and the EVA starts at the rover pad |
+| EVA | Walk the route; the helmet shows the next waypoint, the schedule, the oxygen against the plan and the margin |
+| Pause | `Esc` opens the menu; **MISSION PLAN** reopens the planner; **RESUME SIMULATION** continues |
+| After the EVA | A few seconds after a completed EVA the planner comes back; **Last EVA**, top right, compares the walk with the plan |
+
+In the planner:
+
+- **Back to MARVIS menu**, top right, or the key `F10`, closes the planner and shows the MARVIS menu again.
+- **Send to MARVIS** needs at least one waypoint. The rover pad is chosen at the top of the right-hand panel.
+- **Download mission.json** saves the same plan as a file in your Downloads folder and does not start the EVA.
+  A saved file can be loaded later from the EVA map (`G`, tab **Missions**) or with `F5`.
+- The first time, the planner can take up to about half a minute to load its terrain data.
+- When the planner site has a newer version, MARVIS loads it by itself; a route being drawn is then started again.
+
+At the start point stand two models that mark it: a crew rover about 10 m away and a habitat about 28 m away.
+
+## The built-in planning screen
+
+When the planner cannot be shown (no WebView2 Runtime, or MARVIS started with `-noWebPlanner`), **MISSION PLAN**
+opens a planning screen inside the simulator itself. The sections from here to "Planner alarms" describe that
+screen and its plans.
+
+| Step | What you do |
+| --- | --- |
 | Mission planning | Pick one of the plans, press **GENERATE WAYPOINTS FROM PLAN**, read the waypoint table |
 | Start | **START EVA · REPLAY** (watch the planned walk) or **START EVA · FREE WALK** (walk it yourself) |
-| Pause | `Esc` opens the menu; **MISSION PLAN** reopens the planning screen; **RESUME SIMULATION** continues |
 
-The plans were computed by the HOMELINE planner engine before this build, for the nominal crew with a 104 kg
-suit. Nothing is planned inside the app: it loads the engine's route and timeline. There are five plans: the
+The plans were computed by the planner engine before this build, for the nominal crew with a 104 kg
+suit. Nothing is planned on this screen: it loads the engine's route and timeline. There are five plans: the
 official pad and four alternative rover parking spots (two of them are 21 m apart).
 
 **Waypoints.** The main waypoints are the planner's own: the rover (pad) and each science station, with the
@@ -99,15 +128,18 @@ the dose leash, **CAUTION TURN-BACK IN N MIN** when the margin is under 10 minut
 (position uncertainty, partner-haul range) are not evaluated. The helmet's RAD read-out follows the planner's
 storm on the EVA clock: the helmet's quiet-time value multiplied by the storm's rate over its quiet rate.
 
-## Missions from the web planner
+## Missions from the planner
 
-The build also contains the Mission link (see `Assets/Mars/Scripts/Mission/README.md` in the repository): a
-`mission.json` downloaded from the web planner's Mission page is loaded from the EVA map (`G`, tab **Missions**)
-or with `F5`. It has its own HUD panel, a **Waypoints** tab with the notes and tags written on the web, a HiRISE
-satellite layer on the map and an EVA log. One mission runs at a time: starting a plan from the planning screen
-ends a web mission, and loading a web mission ends the plan.
+A mission sent with **Send to MARVIS**, or a `mission.json` saved with **Download mission.json** and loaded from
+the EVA map (`G`, tab **Missions**) or with `F5`, runs through the Mission link (see
+`Assets/Mars/Scripts/Mission/README.md` in the repository). It has its own HUD panel, a **Waypoints** tab with the
+notes and tags written in the planner, a HiRISE satellite layer on the map and an EVA log. One mission runs at a
+time: starting a plan from the built-in planning screen ends a planner mission, and loading a planner mission ends
+the plan.
 
 ## Keys during the EVA
+
+The keys `V`, `[`, `]`, `T` and `R` belong to an EVA started from the built-in planning screen.
 
 | Key | Action |
 | --- | --- |
@@ -182,6 +214,10 @@ or `FAIL`), a numeric trace and screenshots, then quits.
 
 ## Data
 
-Plans, timelines and the simulator bundle: HOMELINE planner (`LuxKaiwalker/home-line`), computed from NASA and
-USGS data (MSL Gale merged elevation model, HiRISE, Curiosity RAD and REMS). See `DATA_SOURCES.md` in the
+Plans, timelines and the simulator bundle: the MARVIS planner (repository `LuxKaiwalker/home-line`), computed from
+NASA and USGS data (MSL Gale merged elevation model, HiRISE, Curiosity RAD and REMS). See `DATA_SOURCES.md` in the
 repository for the terrain, sky and weather sources of the simulator itself.
+
+Models at the start point: NASA Space Exploration Vehicle (credit NASA/LaRC/Advanced Concepts Lab) and NASA Habitat
+Demonstration Unit, from NASA 3D Resources, used under the NASA Images and Media Usage Guidelines; NASA is
+acknowledged as the source and no endorsement is implied.
