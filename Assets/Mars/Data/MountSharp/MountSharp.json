@@ -7,14 +7,63 @@
   "play": {
     "heightFile": "play_height.r16.gz",
     "resolution": 4097,
-    "sizeX": 4081.620616,
-    "sizeZ": 4096.0,
-    "minElevation": -4092.966235,
-    "maxElevation": -3253.909212,
+    "sizeX": 6122.430924,
+    "sizeZ": 6144.0,
+    "minElevation": -4209.846037,
+    "maxElevation": -2979.792497,
     "splatFile": "play_splat.png",
     "splatResolution": 2048,
-    "swLat": -4.83691334,
-    "swLon": 137.35005552
+    "swLat": -4.85418884,
+    "swLon": 137.33278002,
+    "extendPx": 1024,
+    "sourcePixels": 6144,
+    "postSpacingM": [
+      1.494734,
+      1.5
+    ],
+    "nodataFilled": 0,
+    "derivation": "USGS MSL Gale DEM 1 m v3, DEM columns 12365..18509, rows 36805..42949, area-averaged to 4097 posts (1.5 DEM pixels per post), minus the curvature drop r^2/2R from the spawn; the outer 144 m are blended into the 32 m backdrop surface (derived, not measured). Tools/mountsharp/build_play_terrain.py",
+    "splatDerivation": "inside the original 4 km (144 m or more from its border): the original map, resampled; elsewhere: derived by rule from the DEM slope and the HiRISE image brightness (table learned on the original area, Tools/mountsharp/build_play_terrain.py derive_splat), which reproduces the original map's dominant layer on 84.8% of the original area; the outer 144 m fade into backdrop_splat.png",
+    "splatRuleAgreement": {
+      "dominantLayerAgreementPct": 84.8,
+      "layers": {
+        "Dust": {
+          "foundPct": 84.0,
+          "rightPct": 82.1,
+          "meanWeightErrorPct": 9.1,
+          "sharePctOriginal": 23.6,
+          "sharePctRule": 24.2
+        },
+        "Gravel": {
+          "foundPct": 84.0,
+          "rightPct": 81.9,
+          "meanWeightErrorPct": 13.0,
+          "sharePctOriginal": 41.0,
+          "sharePctRule": 42.1
+        },
+        "Bedrock": {
+          "foundPct": 91.2,
+          "rightPct": 93.6,
+          "meanWeightErrorPct": 5.3,
+          "sharePctOriginal": 26.2,
+          "sharePctRule": 25.6
+        },
+        "DarkSand": {
+          "foundPct": 72.0,
+          "rightPct": 80.6,
+          "meanWeightErrorPct": 4.9,
+          "sharePctOriginal": 9.1,
+          "sharePctRule": 8.2
+        }
+      },
+      "measuredOn": "the original area, 144 m or more inside its border (1612900 texels)",
+      "ringSharePct": {
+        "Dust": 30.4,
+        "Gravel": 35.5,
+        "Bedrock": 22.4,
+        "DarkSand": 11.6
+      }
+    }
   },
   "backdrop": {
     "heightFile": "backdrop_height.r16.gz",
@@ -25,24 +74,24 @@
     "maxElevation": 518.136294,
     "splatFile": "backdrop_splat.png",
     "splatResolution": 1024,
-    "offsetX": -30962.918895,
-    "offsetZ": -35520.0,
-    "holeX0": 971,
-    "holeZ0": 1110,
-    "holeX1": 1099,
-    "holeZ1": 1238
+    "offsetX": -29942.513741,
+    "offsetZ": -34496.0,
+    "holeX0": 939,
+    "holeZ0": 1078,
+    "holeX1": 1131,
+    "holeZ1": 1270
   },
   "spawn": {
-    "x": 2041.27,
-    "z": 2047.707,
+    "x": 3061.675154,
+    "z": 3071.707,
     "elevation": -3643.078,
     "yawDeg": 139.883,
     "sol": 4573,
     "label": "HOMELINE pad - Curiosity boxwork (sol 4573)"
   },
   "summit": {
-    "x": 30325.166,
-    "z": -31520.0,
+    "x": 31345.571154,
+    "z": -30496.0,
     "elevation": 518.136,
     "lat": -5.368675,
     "lon": 137.863462

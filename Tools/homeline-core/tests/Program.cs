@@ -11,8 +11,8 @@ namespace NasaSpaceApp.Homeline.Tests
     {
         /// <summary>The lat/lon mapping of the Unity scene (Assets/Mars/Data/MountSharp/MountSharp.json, MarsGeoReference).</summary>
         public static readonly SceneGeo Scene = new SceneGeo(
-            swLat: -4.83691334, swLon: 137.35005552, metersPerDegree: 59274.6975, eastScale: 0.996489,
-            swX: -2041.27, swZ: -2047.707);
+            swLat: -4.85418884, swLon: 137.33278002, metersPerDegree: 59274.6975, eastScale: 0.996489,
+            swX: -3061.675154, swZ: -3071.707);
 
         public static int Main(string[] args)
         {
