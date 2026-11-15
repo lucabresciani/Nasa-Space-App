@@ -11,7 +11,8 @@ namespace NasaSpaceApp.MarsGen
 {
     /// <summary>
     /// Loads the real Mount Sharp (Gale crater) terrain prepared from NASA/USGS data in Assets/Mars/Data/MountSharp:
-    /// a 4 km play area at 1 m (Murray Buttes, Vera Rubin Ridge, Glen Torridon) and a 65 km backdrop at 32 m that
+    /// a 6 km play area at 1.5 m per post (the USGS 1 m DEM area-averaged by Tools/mountsharp/build_play_terrain.py;
+    /// Murray Buttes, Vera Rubin Ridge, Glen Torridon, the boxwork region) and a 65 km backdrop at 32 m that
     /// reaches the real summit of Mount Sharp, with a hole where the play area sits.
     ///
     /// World frame: origin = spawn, +X = east, +Z = north, y = 0 at the spawn ground. Heights are stored with the

@@ -18,14 +18,14 @@ namespace NasaSpaceApp.MarsGen
         const string Root = "Assets/Mars/Generated";
         const int TextureSize = 1024;           // same as MarsSceneBuilder
         const float CameraFarClip = 150000f;    // the summit of Mount Sharp is ~48 km away
-        const float RespawnBelowY = -1000f;     // play area spans about -60..+450 m around the spawn
+        const float RespawnBelowY = -1000f;     // play area spans about -570..+665 m around the spawn
 
         // ------------------------------------------------------------------ terrains
 
         /// <summary>Creates "Mars Terrain" (play, with <see cref="MarsGeoReference"/>) then "Mars Backdrop"; returns the play terrain.</summary>
         public static Terrain CreateTerrains(Transform environment, MarsTerrain.Result r, Material material)
         {
-            // Pixel error 1: keep the 1 m DEM's full vertical detail (1-2 m boxwork ridges) instead of letting LOD flatten it.
+            // Pixel error 1: keep the DEM's full vertical detail (1-2 m boxwork ridges, 1.5 m posts) instead of letting LOD flatten it.
             Terrain play = CreateTerrain(environment, PlayName, r.play, r.playPosition, material, 1f, 600f);
             MarsTerrain.Info i = r.info;
             play.gameObject.AddComponent<MarsGeoReference>()
