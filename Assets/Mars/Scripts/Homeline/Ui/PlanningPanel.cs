@@ -15,9 +15,12 @@ namespace NasaSpaceApp.Homeline.Ui
     ///   1. choose one of the plans the HOMELINE planner engine precomputed (official pad, alternative pads, and any
     ///      engine-service result found on disk);
     ///   2. GENERATE WAYPOINTS FROM PLAN: loads the engine's route and timeline and derives the waypoints;
-    ///   3. START EVA, as a replay of the plan or as a free walk from the pad.
+    ///   3. optionally move a station by dragging it on the map (official plan only): the simulator re-routes the
+    ///      plan with the planner's cost model and says so; RESET TO PLANNER PLAN undoes it;
+    ///   4. START EVA, as a replay of the plan or as a free walk from the pad.
     ///
-    /// The wording never suggests that a new plan is computed here: the route, timings and O2 are the planner's.
+    /// The wording never suggests that the planner engine computed something here: an unedited plan is the planner's,
+    /// an edited plan is labelled as the simulator's re-computation.
     /// </summary>
     public sealed class PlanningPanel : MenuPanel
     {
@@ -29,7 +32,8 @@ namespace NasaSpaceApp.Homeline.Ui
         readonly HomelineApp app;
         readonly List<Button> rows = new List<Button>();
         readonly List<Image> rowMarks = new List<Image>();
-        MenuButton generate, startReplay, startWalk;
+        MenuButton generate, reset, startReplay, startWalk;
+        string editProblem;
         Text table, result;
         PlanMap map;
         int chosen;
@@ -104,6 +108,8 @@ namespace NasaSpaceApp.Homeline.Ui
             float y0 = ListTop + n * (RowH + RowGap) + 26f;
             generate = MenuButton.Create(ctx, content, "GENERATE WAYPOINTS FROM PLAN", MenuTokens.SizeTab, topLeft,
                                          new Vector2(0f, 0.5f), new Vector2(0f, -y0), Generate);
+            reset = MenuButton.Create(ctx, content, "RESET TO PLANNER PLAN", MenuTokens.SizeTab, topLeft,
+                                      new Vector2(0f, 0.5f), new Vector2(generate.Width + 60f, -y0), ResetEdit);
 
             float tableTop = y0 + 30f;
             table = MenuUi.Paragraph("Table", content, mono, MenuTokens.SizeHint, MenuTokens.Sand, TextAnchor.UpperLeft,
@@ -122,6 +128,8 @@ namespace NasaSpaceApp.Homeline.Ui
 
             // The map of the generated plan sits to the right of the panel box.
             map = new PlanMap(ctx, content, new Vector2(W + MenuTokens.PanelPad + 28f, MenuTokens.PanelHeaderHeight - 4f), 600f);
+            map.StationMoved = (id, x, y) => MoveStation(id, x, y);
+            map.Probe = (x, y) => app.ProbeStationPoint(generated, x, y);
 
             WireNavigation();
             Choose(DefaultIndex());
@@ -140,6 +148,7 @@ namespace NasaSpaceApp.Homeline.Ui
             {
                 generated = null;
                 generateFailed = false;
+                editProblem = null;
             }
             chosen = index;
             RefreshState();
@@ -151,6 +160,7 @@ namespace NasaSpaceApp.Homeline.Ui
             if (chosen < 0 || chosen >= app.Catalog.Plans.Count) return;
             generated = app.Generate(app.Catalog.Plans[chosen]);
             generateFailed = generated == null;
+            editProblem = null;
             RefreshState();
             if (generated != null && startReplay != null && UnityEngine.EventSystems.EventSystem.current != null)
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(startReplay.gameObject);
@@ -164,6 +174,32 @@ namespace NasaSpaceApp.Homeline.Ui
         }
 
         public MissionPlan Generated { get { return generated; } }
+
+        /// <summary>
+        /// Moves a station of the generated plan to a point of the frame (what dropping its mark on the map does):
+        /// the simulator re-routes the plan through it. Returns false, with the reason on screen, when it cannot.
+        /// </summary>
+        public bool MoveStation(string stationId, double x, double y)
+        {
+            if (generated == null) return false;
+            string problem;
+            MissionPlan edited = app.MoveStation(generated, stationId, x, y, out problem);
+            editProblem = edited == null ? problem : null;
+            if (edited != null) generated = edited;
+            RefreshState();
+            return edited != null;
+        }
+
+        /// <summary>RESET TO PLANNER PLAN: drops every manual edit.</summary>
+        public void ResetEdit()
+        {
+            if (generated == null || !generated.Edited) return;
+            generated = generated.BasePlan;
+            editProblem = null;
+            RefreshState();
+            if (generate != null && UnityEngine.EventSystems.EventSystem.current != null)
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(generate.gameObject);
+        }
 
         int DefaultIndex()
         {
@@ -179,11 +215,13 @@ namespace NasaSpaceApp.Homeline.Ui
             bool ready = generated != null;
             if (startReplay != null) startReplay.SetInteractable(ready);
             if (startWalk != null) startWalk.SetInteractable(ready);
+            if (reset != null) reset.SetInteractable(ready && generated.Edited);
             if (table == null) return;
 
             PlanEntry e = chosen >= 0 && chosen < app.Catalog.Plans.Count ? app.Catalog.Plans[chosen] : null;
             if (map != null)
             {
+                map.Editable = ready && app.CanEdit(generated);
                 if (ready) map.Show(generated);
                 else map.Hide();
             }
@@ -196,8 +234,20 @@ namespace NasaSpaceApp.Homeline.Ui
                 return;
             }
             table.text = TableText(generated);
+            if (generated.Edited)
+            {
+                EditedPlanData d = generated.EditData;
+                string margin = d.Feasible
+                    ? "Smallest margin " + HlJson.F(d.MinMarginMin, 0) + "\u00a0min (limit: " + d.MinMarginBinding + ") at " + d.MinMarginWhere + "."
+                    : "NOT FEASIBLE: the margin falls to " + HlJson.F(d.MinMarginMin, 0) + "\u00a0min (limit: " + d.MinMarginBinding + ") at " +
+                      d.MinMarginWhere + ". Move the station closer or reset.";
+                result.text = generated.Waypoints.CountText() + ". " + PlanEditor.LabelRerouted + "\n" + margin +
+                              (editProblem != null ? " Last move refused: " + editProblem : "");
+                return;
+            }
             result.text = generated.GenerationText() + "\n" + generated.Entry.OriginLabel +
-                          (generated.HasReturnFields ? "" : " · Off the planned track: " + MissionPlan.LabelNoReturnField + ".");
+                          (generated.HasReturnFields ? "" : " · Off the planned track: " + MissionPlan.LabelNoReturnField + ".") +
+                          (editProblem != null ? "\nMove refused: " + editProblem : "");
         }
 
         static string TableText(MissionPlan plan)
@@ -266,7 +316,15 @@ namespace NasaSpaceApp.Homeline.Ui
             g.mode = Navigation.Mode.Explicit;
             g.selectOnUp = rows.Count > 0 ? rows[rows.Count - 1] : null;
             g.selectOnDown = startReplay;
+            g.selectOnRight = reset;
             generate.navigation = g;
+
+            Navigation x = reset.navigation;
+            x.mode = Navigation.Mode.Explicit;
+            x.selectOnUp = rows.Count > 0 ? rows[rows.Count - 1] : null;
+            x.selectOnDown = startWalk;
+            x.selectOnLeft = generate;
+            reset.navigation = x;
 
             Navigation r = startReplay.navigation;
             r.mode = Navigation.Mode.Explicit;

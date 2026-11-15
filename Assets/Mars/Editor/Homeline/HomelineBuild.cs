@@ -149,7 +149,7 @@ namespace NasaSpaceApp.Homeline.EditorTools
                                 n += CopyFile(f, Path.Combine(padsTo, Path.GetFileName(dir), Path.GetFileName(f)));
                 }
             }
-            foreach (string sub in new[] { "bundle", "results" })
+            foreach (string sub in new[] { "bundle", "results", "router" })
             {
                 string dir = Path.Combine(from, sub);
                 if (!Directory.Exists(dir)) continue;

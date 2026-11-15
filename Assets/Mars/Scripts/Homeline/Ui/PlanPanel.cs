@@ -122,7 +122,9 @@ namespace NasaSpaceApp.Homeline.Ui
                 if (!string.IsNullOrEmpty(binding)) sb.Append("  limit: ").Append(binding);
                 sb.Append('\n');
                 if (d.THomeMin.HasValue) sb.Append("HOME    ").Append(HlJson.F(d.THomeMin.Value, 0)).Append(" min walk").Append('\n');
-                footer.text = "O2: planner timeline. Margin: timeline, interpolated.\nSuit vitals, weather and dose rate: SIM.\n[ ] speed   T pause   V walk freely";
+                footer.text = (plan.Edited ? "O2, margin: simulator re-route, planner model."
+                                           : "O2: planner timeline. Margin: timeline, interpolated.") +
+                              "\nSuit vitals, weather and dose rate: SIM.\n[ ] speed   T pause   V walk freely";
             }
             else if (d.Live != null)
             {
@@ -160,7 +162,8 @@ namespace NasaSpaceApp.Homeline.Ui
 
         static string ShortOrigin(PlanEntry e)
         {
-            return e.Origin == PlanOrigin.Live ? "Computed live, not validated" : "Precomputed, alternative pad";
+            return e.Origin == PlanOrigin.Edited ? "Edited here, re-routed by the simulator"
+                 : e.Origin == PlanOrigin.Live ? "Computed live, not validated" : "Precomputed, alternative pad";
         }
 
         static string Clock(double minutes)

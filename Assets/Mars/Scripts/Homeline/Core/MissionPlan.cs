@@ -40,6 +40,15 @@ namespace NasaSpaceApp.Homeline
         public GridF32 THome { get; private set; }
         public GridF32 O2Home { get; private set; }
         public bool HasReturnFields { get { return THome != null && O2Home != null; } }
+        /// <summary>The storm timed for THIS route (edited plans only); null = use the official plan's.</summary>
+        public StormTrack Storm { get; private set; }
+        /// <summary>True when stations were moved by hand and the plan was re-routed by the simulator.</summary>
+        public bool Edited { get { return Entry.Origin == PlanOrigin.Edited; } }
+        /// <summary>The plan this one was edited from (itself when not edited).</summary>
+        public MissionPlan BasePlan { get; private set; }
+        /// <summary>Smallest margin of an edited plan's timeline and where it occurs; null when not edited.</summary>
+        public EditedPlanData EditData { get; private set; }
+        IDictionary<string, string> stationNames;
         /// <summary>Planned end of the EVA: the return to the pad, EVA minutes.</summary>
         public double EndMin { get { return Track.EndMin; } }
 
@@ -92,6 +101,8 @@ namespace NasaSpaceApp.Homeline
             var plan = new MissionPlan();
             plan.Entry = entry;
             plan.Frame = frame;
+            plan.BasePlan = plan;
+            plan.stationNames = stationNames;
             plan.Route = GeoRoute.Load(entry.RoutePath, frame, entry.ScenarioId);
             plan.Timeline = Timeline.Parse(HlJson.Parse(File.ReadAllText(entry.TimelinePath)));
             if (entry.Stops == null || entry.Stops.Length == 0) entry.Stops = plan.Route.Stops;
@@ -117,6 +128,45 @@ namespace NasaSpaceApp.Homeline
                     plan.O2Home = officialBundle.ReadGrid("fields/o2_home.f32");
                 }
             }
+            return plan;
+        }
+
+        /// <summary>
+        /// The plan re-built by <see cref="PlanEditor"/> after stations of <paramref name="basePlan"/> were moved.
+        /// Same pad, same frame, same way-home maps; the route and the timeline are the editor's.
+        /// </summary>
+        public static MissionPlan FromEdited(MissionPlan basePlan, EditedPlanData data, double navToleranceM)
+        {
+            MissionPlan root = basePlan.BasePlan;
+            var entry = new PlanEntry();
+            entry.Id = root.Entry.Id + "+edit";
+            entry.Title = root.Entry.Title + " (edited)";
+            entry.Origin = PlanOrigin.Edited;
+            entry.OriginLabel = PlanCatalog.LabelEdited;
+            entry.ScenarioId = root.Entry.ScenarioId;
+            entry.PadLon = root.Entry.PadLon;
+            entry.PadLat = root.Entry.PadLat;
+            entry.PadElevM = root.Entry.PadElevM;
+            var plan = new MissionPlan();
+            plan.Entry = entry;
+            plan.Frame = root.Frame;
+            plan.BasePlan = root;
+            plan.stationNames = root.stationNames;
+            plan.Route = GeoRoute.Parse(data.RouteGeoJson, root.Frame, root.Entry.ScenarioId);
+            plan.Timeline = Timeline.Parse(data.TimelineRows);
+            entry.Stops = plan.Route.Stops;
+            entry.TotalMin = plan.Track.EndMin;
+            IDictionary<string, string> names = root.stationNames;
+            Func<string, string> nameOf = id =>
+            {
+                string n;
+                return names != null && names.TryGetValue(id, out n) ? n : null;
+            };
+            plan.Waypoints = WaypointPlan.Build(plan.Track, plan.Timeline, nameOf, navToleranceM);
+            plan.THome = root.THome;
+            plan.O2Home = root.O2Home;
+            plan.Storm = data.Storm;
+            plan.EditData = data;
             return plan;
         }
 
@@ -156,7 +206,7 @@ namespace NasaSpaceApp.Homeline
         /// <summary>"4 stations + 25 navigation points. Route, timings, O2: planner engine (...). Navigation points: derived ..."</summary>
         public string GenerationText()
         {
-            return Waypoints.CountText() + ". " + LabelRoute + " " + LabelNav;
+            return Waypoints.CountText() + ". " + (Edited ? PlanEditor.LabelRerouted : LabelRoute) + " " + LabelNav;
         }
     }
 }

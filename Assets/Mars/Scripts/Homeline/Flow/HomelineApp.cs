@@ -218,6 +218,127 @@ namespace NasaSpaceApp.Homeline.Flow
             }
         }
 
+        GridRouter router;
+        bool routerTried;
+
+        /// <summary>The simulator's re-router (HomelineData/router); null when its data is not there.</summary>
+        public GridRouter Router
+        {
+            get
+            {
+                if (routerTried) return router;
+                routerTried = true;
+                try
+                {
+                    if (Paths.PlanBundle != null)
+                        router = GridRouter.Load(System.IO.Path.Combine(System.IO.Directory.GetParent(System.IO.Path.GetDirectoryName(Paths.PlanBundle)).FullName, "router"));
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[HOMELINE] router data not usable: " + e.Message);
+                }
+                Debug.Log("[HOMELINE] re-router " + (router != null ? "ready (" + router.Rows + " x " + router.Cols + " cells of " + HlJson.F(router.CellM, 0) + " m)" : "not available"));
+                return router;
+            }
+        }
+
+        /// <summary>
+        /// True when the stations of a plan can be moved by hand: the plan needs the planner's way-home maps (the
+        /// official pad), the planner's numbers and the router data.
+        /// </summary>
+        public bool CanEdit(MissionPlan plan)
+        {
+            return plan != null && plan.HasReturnFields && Config != null && Router != null;
+        }
+
+        /// <summary>"way home 41 min, 52 L O2" for a point where a station may stand; null where it may not.</summary>
+        public string ProbeStationPoint(MissionPlan plan, double x, double y)
+        {
+            if (!CanEdit(plan)) return null;
+            int r, c;
+            if (!Router.NearestPassable(x, y, StationSnapM, out r, out c)) return null;
+            Router.CentreOf(r, c, out x, out y);
+            double? th = plan.THomeAt(x, y), o2 = plan.O2HomeAt(x, y);
+            if (!th.HasValue || !o2.HasValue) return null;
+            return "way home " + HlJson.F(th.Value, 0) + "\u00a0min, " + HlJson.F(o2.Value, 0) + "\u00a0L O2";
+        }
+
+        /// <summary>A dropped station snaps to walkable ground within this distance, metres (assumption of the simulator).</summary>
+        public const double StationSnapM = 15.0;
+
+        /// <summary>
+        /// The plan with one station moved to a point of the frame and every leg re-routed by the simulator
+        /// (<see cref="PlanEditor"/>). Station order and work times stay as planned. Null, with the reason, when
+        /// the point is not walkable, lies outside the planner's way-home map, or cannot be reached.
+        /// </summary>
+        public MissionPlan MoveStation(MissionPlan plan, string stationId, double x, double y, out string problem)
+        {
+            problem = null;
+            if (!CanEdit(plan))
+            {
+                problem = "stations can be moved on the official plan only.";
+                return null;
+            }
+            int r, c;
+            if (!Router.NearestPassable(x, y, StationSnapM, out r, out c))
+            {
+                problem = "no walkable ground within " + HlJson.F(StationSnapM, 0) + " m of that point.";
+                return null;
+            }
+            Router.CentreOf(r, c, out x, out y);
+            if (!plan.THomeAt(x, y).HasValue)
+            {
+                problem = "that point is outside the planner's way-home map.";
+                return null;
+            }
+            var stops = new List<EditStop>();
+            RouteTrack track = plan.Track;
+            bool found = false;
+            for (int i = 0; i < track.Legs.Count - 1; i++)
+            {
+                RouteLeg leg = track.Legs[i];
+                int n = leg.X.Length;
+                var stop = new EditStop { Id = leg.To, X = leg.X[n - 1], Y = leg.Y[n - 1], DwellMin = track.Legs[i + 1].StartMin - leg.EndMin };
+                if (stop.Id == stationId)
+                {
+                    stop.X = x;
+                    stop.Y = y;
+                    found = true;
+                }
+                stops.Add(stop);
+            }
+            if (!found)
+            {
+                problem = "the plan has no station " + stationId + ".";
+                return null;
+            }
+            try
+            {
+                var ctx = new EditContext
+                {
+                    Router = Router, Config = Config, TDarkMin = TDarkMin, Storm = Storm, THome = plan.THome, O2Home = plan.O2Home,
+                    PadX = plan.Route.PadX, PadY = plan.Route.PadY, Scenario = plan.Entry.ScenarioId,
+                };
+                float t0 = Time.realtimeSinceStartup;
+                EditedPlanData data = PlanEditor.Build(ctx, plan.Frame, stops);
+                if (data == null)
+                {
+                    problem = "no walkable route reaches that point.";
+                    return null;
+                }
+                MissionPlan edited = MissionPlan.FromEdited(plan, data, WaypointPlan.AssumedNavToleranceM);
+                Debug.Log("[HOMELINE] " + stationId + " moved, plan re-routed in " + HlJson.F((Time.realtimeSinceStartup - t0) * 1000f, 0) + " ms: " +
+                          HlJson.F(edited.EndMin, 2) + " min, smallest margin " + HlJson.F(data.MinMarginMin, 1) + " min (" + data.MinMarginBinding + ")");
+                return edited;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[HOMELINE] re-route failed: " + e);
+                problem = "the plan could not be re-routed.";
+                return null;
+            }
+        }
+
         /// <summary>START EVA: leaves the menu and starts the mission when the menu has actually closed.</summary>
         public void Begin(MissionPlan plan, EvaMode mode)
         {

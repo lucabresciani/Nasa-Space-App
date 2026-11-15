@@ -71,6 +71,20 @@ namespace NasaSpaceApp.Homeline
             return new StormTrack(t.ToArray(), r.ToArray(), allow.Value, HlJson.NumOrNull(storm, "t_star_min"));
         }
 
+        /// <summary>
+        /// The same storm with its tripwire at another EVA minute: what the planner does for another route
+        /// (the tripwire fires at the route minute where the way home is longest). Unchanged when the file
+        /// did not state the tripwire minute.
+        /// </summary>
+        public StormTrack Retimed(double tStarMin)
+        {
+            if (!TStarMin.HasValue) return this;
+            double shift = tStarMin - TStarMin.Value;
+            var t = new double[evaMin.Length];
+            for (int i = 0; i < t.Length; i++) t[i] = evaMin[i] + shift;
+            return new StormTrack(t, rateMGyH, DAllowMGy, tStarMin);
+        }
+
         /// <summary>Dose rate at an EVA minute, mGy/h.</summary>
         public double RateMGyH(double tMin)
         {

@@ -14,6 +14,8 @@ namespace NasaSpaceApp.Homeline
         Alternative,
         /// <summary>A result tree written by the planner's engine service for a custom pad.</summary>
         Live,
+        /// <summary>A planner plan whose stations were moved by hand in the simulator and re-routed there.</summary>
+        Edited,
     }
 
     /// <summary>One plan the user can choose on the mission planning screen.</summary>
@@ -55,6 +57,7 @@ namespace NasaSpaceApp.Homeline
     {
         public const string LabelOfficial = "Precomputed · official plan";
         public const string LabelAlternative = "Precomputed by the planner engine · alternative pad · not the official plan";
+        public const string LabelEdited = "Edited in the simulator · re-routed with the planner's cost model · not planner engine output";
         public const string LabelLive = "Computed live · not part of the validated scorecard";
         public const string DefaultScenario = "nom_104";
 

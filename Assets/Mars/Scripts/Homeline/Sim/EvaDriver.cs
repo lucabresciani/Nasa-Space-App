@@ -322,10 +322,11 @@ namespace NasaSpaceApp.Homeline.Sim
                 best = duration;
                 binding = "EVA duration";
             }
-            if (app.Storm != null)
+            StormTrack storm = Plan.Storm ?? app.Storm; // an edited plan carries the storm re-timed for its route
+            if (storm != null)
             {
                 LiveMarginHasDose = true;
-                double dose = app.Storm.TauDoseMin(TMin) - THomeMin.Value;
+                double dose = storm.TauDoseMin(TMin) - THomeMin.Value;
                 if (dose < best)
                 {
                     best = dose;

@@ -31,6 +31,23 @@ planned arrival, departure, oxygen left and margin. The navigation points betwee
 planner's track, derived by the simulator (a bend is kept when dropping it would move the track by more than
 30 m); they are not planner output.
 
+## Moving a station by hand
+
+On the official plan, after **GENERATE WAYPOINTS FROM PLAN**, drag a station (a diamond) on the map with the
+mouse and release it. The caption reads the way home from the point under the mark; dark ground is outside the
+planner's way-home map, and a station cannot be dropped there. On release the simulator re-routes the whole plan
+through the new point (about half a second) and the table, the map and the EVA use the new plan. **RESET TO
+PLANNER PLAN** undoes every move.
+
+- The new route is the simulator's own computation with the planner's cost model on the planner's 3 m terrain
+  grid, not output of the planner engine, and the screen says so. With no station moved it reproduces the
+  planner's timeline within 0.6 min of margin and 0.05 L of oxygen.
+- The order of the stations and the work time at each stay as planned; the engine would also re-optimise the order.
+- The rover cannot be moved, and stations of the alternative pads cannot be moved: the way-home maps exist for
+  the official pad only.
+- Where the planner's data has no 1 m terrain, the re-routed leg times are about 2 % off.
+- Dragging needs the mouse; there is no keyboard or gamepad equivalent yet.
+
 ## Keys during the EVA
 
 | Key | Action |

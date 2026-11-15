@@ -20,7 +20,7 @@ namespace NasaSpaceApp.Homeline.Sim
     /// </summary>
     public sealed class SelfTest : MonoBehaviour
     {
-        const float WatchdogSeconds = 230f;
+        const float WatchdogSeconds = 260f;
 
         public static bool Requested
         {
@@ -79,6 +79,35 @@ namespace NasaSpaceApp.Homeline.Sim
             Check(plan.Waypoints.StationCount == 4, "4 stations (" + plan.Waypoints.StationCount + ")");
             Check(plan.Waypoints.NavCount == 25, "25 navigation points (" + plan.Waypoints.NavCount + ")");
             Check(plan.HasReturnFields, "return fields attached to the official plan");
+
+            // Move a station by hand (what dragging its mark on the map does): the simulator re-routes the plan,
+            // the panel shows it, an impossible move is refused, RESET brings the planner's plan back.
+            MissionPlan editedPlan = null;
+            Waypoint s6 = null;
+            foreach (Waypoint w in plan.Waypoints.Main) if (w.Id == "S6") s6 = w;
+            Check(app.CanEdit(plan), "stations of the official plan can be moved (router data present)");
+            if (s6 != null && app.Panel != null && app.CanEdit(plan))
+            {
+                float t0 = Time.realtimeSinceStartup;
+                bool moved = app.Panel.MoveStation("S6", s6.X, s6.Y - 90);
+                float ms = (Time.realtimeSinceStartup - t0) * 1000f;
+                editedPlan = moved ? app.Panel.Generated : null;
+                Check(moved && editedPlan != null && editedPlan.Edited, "S6 moved 90 m south: plan re-routed in " + F(ms) + " ms");
+                if (editedPlan != null && editedPlan.Edited)
+                {
+                    Note("edited plan: " + F(editedPlan.EndMin) + " min (planner plan " + F(plan.EndMin) + "), smallest margin " +
+                         F(editedPlan.EditData.MinMarginMin) + " min (" + editedPlan.EditData.MinMarginBinding + ") at " + editedPlan.EditData.MinMarginWhere);
+                    Check(Math.Abs(editedPlan.EndMin - 323.31) < 0.5, "edited plan lasts 323.3 min, as the reference re-route (" + F(editedPlan.EndMin) + ")");
+                    Check(editedPlan.EditData.Feasible, "edited plan keeps a positive margin");
+                    Check(editedPlan.HasReturnFields && editedPlan.Storm != null, "edited plan keeps the way-home maps and carries its own storm timing");
+                    yield return new WaitForSecondsRealtime(0.5f);
+                    yield return Shot("planning_edited");
+                    Check(!app.Panel.MoveStation("S6", s6.X + 4000, s6.Y), "a move onto unreachable ground is refused");
+                    Check(app.Panel.Generated == editedPlan, "a refused move leaves the plan as it was");
+                    app.Panel.ResetEdit();
+                    Check(app.Panel.Generated == plan, "RESET TO PLANNER PLAN restores the planner's plan");
+                }
+            }
 
             app.Begin(plan, EvaMode.Replay);
             waitUntil = Time.realtimeSinceStartup + 10f;
@@ -200,6 +229,31 @@ namespace NasaSpaceApp.Homeline.Sim
                 app.Driver.Seek(60);
                 yield return new WaitForSecondsRealtime(1.5f);
                 yield return Shot("eva_alternative_pad");
+            }
+
+            // The simulation runs the edited plan: at the planned arrival the crew stands on the moved station.
+            if (editedPlan != null && editedPlan.Edited)
+            {
+                Waypoint e6 = null;
+                foreach (Waypoint w in editedPlan.Waypoints.Main) if (w.Id == "S6") e6 = w;
+                app.Begin(editedPlan, EvaMode.Replay);
+                yield return new WaitForSecondsRealtime(1.0f);
+                Check(app.Driver.Active && app.Driver.Plan == editedPlan, "edited plan started in the simulation");
+                if (e6 != null)
+                {
+                    app.Driver.SetSpeed(1);
+                    app.Driver.Seek(e6.ArriveMin + 1.0);
+                    yield return new WaitForSecondsRealtime(1.0f);
+                    double wx, wz;
+                    editedPlan.Frame.LocalToWorld(e6.X, e6.Y, out wx, out wz);
+                    float off = Dist(player.position, (float)wx, (float)wz);
+                    Check(off < 5f, "replay of the edited plan stands on the moved S6 at its arrival (" + F(off) + " m off)");
+                    double? o2 = editedPlan.O2LeftAt(app.Driver.TMin);
+                    SuitTelemetry telE = Telemetry();
+                    Check(o2.HasValue && telE != null && Math.Abs(telE.O2LeftL - o2.Value) < 1.0, "helmet O2 follows the edited plan (" +
+                          (telE != null ? F(telE.O2LeftL) : "?") + " L)");
+                    yield return Shot("eva_edited_plan_S6");
+                }
             }
 
             // RESTART SIMULATION from the pause menu reloads the scene: the title must come back with no mission
