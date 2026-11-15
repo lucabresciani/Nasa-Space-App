@@ -5,14 +5,14 @@ using UnityEngine;
 namespace NasaSpaceApp.Menu
 {
     /// <summary>
-    /// Player settings of the MARTIS menu, stored in PlayerPrefs ("martis.settings.&lt;name&gt;"; reduced motion uses
+    /// Player settings of the MARVIS menu, stored in PlayerPrefs ("marvis.settings.&lt;name&gt;"; reduced motion uses
     /// <see cref="HudTokens.ReducedMotionPrefKey"/>). A setting without a stored key keeps its default: a fixed value for
     /// volume and reduced motion, otherwise what the scene / engine had before the menu touched it. Property setters save
     /// the key and apply only their own setting; call <see cref="Save"/> to flush PlayerPrefs to disk.
     /// </summary>
     public static class MenuSettings
     {
-        private const string Prefix = "martis.settings.";
+        private const string Prefix = "marvis.settings.";
         private const string KeyVolume = Prefix + "MasterVolume";
         private const string KeySensitivity = Prefix + "MouseSensitivity";
         private const string KeyInvertY = Prefix + "InvertY";

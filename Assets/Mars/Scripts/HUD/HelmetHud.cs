@@ -536,7 +536,7 @@ namespace NasaSpaceApp.HUD
         }
 
         /// <summary>
-        /// Reads NasaSpaceApp.Menu.MartisMenu.IsOpen (the title/pause menu, owned by another module) by reflection, so
+        /// Reads NasaSpaceApp.Menu.MarvisMenu.IsOpen (the title/pause menu, owned by another module) by reflection, so
         /// the HUD compiles and runs with or without it. One lookup per domain; the getter is a cached delegate (no GC).
         /// </summary>
         private static class MenuGate
@@ -551,7 +551,7 @@ namespace NasaSpaceApp.HUD
                     if (!resolved)
                     {
                         resolved = true;
-                        System.Type type = System.Type.GetType("NasaSpaceApp.Menu.MartisMenu, Assembly-CSharp");
+                        System.Type type = System.Type.GetType("NasaSpaceApp.Menu.MarvisMenu, Assembly-CSharp");
                         System.Reflection.MethodInfo getter = type?.GetProperty("IsOpen",
                             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetGetMethod();
                         if (getter != null && getter.ReturnType == typeof(bool))

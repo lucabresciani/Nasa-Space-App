@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace NasaSpaceApp.Homeline.Ui
 {
     /// <summary>
-    /// MISSION PLANNING: the screen shown before the EVA, hosted by the MARTIS menu as one of its panels (so the menu
+    /// MISSION PLANNING: the screen shown before the EVA, hosted by the MARVIS menu as one of its panels (so the menu
     /// keeps handling focus, keyboard, gamepad, Back and fades).
     ///
     ///   1. choose a plan: one the HOMELINE planner engine precomputed (PLANNER PLANS), or one of the routes saved

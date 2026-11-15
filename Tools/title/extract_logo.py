@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cut the MARTIS logotype out of the approved title mockup and draw the menu chevron.
+"""Cut the MARVIS logotype out of the approved title mockup and draw the menu chevron.
 
 Outputs (white RGB everywhere, the shape lives in alpha):
     logo_m.png  logo_a.png  logo_r.png  logo_t_slab.png  logo_t_helmet.png  logo_i.png  logo_s.png
@@ -372,7 +372,7 @@ def main():
     cap_bottom = by1 - float(np.median(list(bottoms.values())))
 
     lines = [
-        "# MARTIS logotype layout. Units: sprite px (0.6x the 8550x4800 mockup); origin bottom-left of the box, y up.",
+        "# MARVIS logotype layout. Units: sprite px (0.6x the 8550x4800 mockup); origin bottom-left of the box, y up.",
         "# Written by Tools/title/extract_logo.py; the glyph order is the draw order.",
         "box %d %d" % (box_w, box_h),
         "cap %s %s" % (("%.1f" % cap_bottom).rstrip("0").rstrip("."), ("%.1f" % cap_top).rstrip("0").rstrip(".")),

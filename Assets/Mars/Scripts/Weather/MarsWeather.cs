@@ -626,7 +626,7 @@ namespace NasaSpaceApp
 
         void OnGUI()
         {
-            if (NasaSpaceApp.Menu.MartisMenu.IsOpen) return; // the title / pause screen covers the view
+            if (NasaSpaceApp.Menu.MarvisMenu.IsOpen) return; // the title / pause screen covers the view
             if (label == null || !Application.isPlaying) return;
             float alpha = Mathf.Clamp01(labelUntil - Time.unscaledTime); // fades out over the last second
             if (alpha <= 0f) return;

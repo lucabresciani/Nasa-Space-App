@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# build_star_strip.py - star-field strip for the MARTIS title / pause backdrop.
+# build_star_strip.py - star-field strip for the MARVIS title / pause backdrop.
 #
 # PRODUCT
 #   NASA Goddard Scientific Visualization Studio, "Deep Star Maps 2020" (SVS ID 4851)

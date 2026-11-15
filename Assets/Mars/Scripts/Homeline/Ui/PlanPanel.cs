@@ -87,7 +87,7 @@ namespace NasaSpaceApp.Homeline.Ui
             // Hidden under the menu and under the helmet's full-screen map (G), which it would otherwise cover.
             HelmetHud hud = HelmetHud.Instance;
             bool mapOpen = hud != null && hud.Context != null && hud.Context.MapScreenOpen;
-            bool show = d != null && d.Active && !MartisMenu.IsOpen && !mapOpen;
+            bool show = d != null && d.Active && !MarvisMenu.IsOpen && !mapOpen;
             if (canvas.enabled != show) canvas.enabled = show;
             if (!show || Time.unscaledTime < nextRefresh) return;
             nextRefresh = Time.unscaledTime + RefreshSeconds;

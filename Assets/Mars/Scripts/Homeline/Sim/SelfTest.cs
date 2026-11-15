@@ -12,7 +12,7 @@ namespace NasaSpaceApp.Homeline.Sim
 {
     /// <summary>
     /// Unattended check of the whole flow, for builds made when nobody is at the machine:
-    ///   MARTIS.exe -homelineSelfTest [-homelineSelfTestDir DIR]
+    ///   MARVIS.exe -homelineSelfTest [-homelineSelfTestDir DIR]
     /// The app opens the planning panel, generates the waypoints of the official plan, replays the EVA at 300x while
     /// comparing the plan read-out and the helmet HUD with the planner's timeline, then walks freely for a moment,
     /// loads an alternative plan, and quits. It writes result.txt (first line PASS or FAIL), hud_trace.csv and
@@ -55,9 +55,9 @@ namespace NasaSpaceApp.Homeline.Sim
 
             // The menu builds itself after the scene has loaded.
             float waitUntil = Time.realtimeSinceStartup + 40f;
-            while ((MartisMenu.Instance == null || !MartisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
-            Check(MartisMenu.Instance != null && MartisMenu.IsOpen, "title screen is up");
-            Check(MartisMenu.StartInterceptor == null && MartisMenu.PlanRequested != null,
+            while ((MarvisMenu.Instance == null || !MarvisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
+            Check(MarvisMenu.Instance != null && MarvisMenu.IsOpen, "title screen is up");
+            Check(MarvisMenu.StartInterceptor == null && MarvisMenu.PlanRequested != null,
                   "START SIMULATION goes straight to free exploration; MISSION PLAN opens the planning");
             Check(EvaDriver.MissionStress(90, 200) == 0f && Math.Abs(EvaDriver.MissionStress(0, 200) - 12f) < 0.01f && EvaDriver.MissionStress(-5, 0) >= 22f,
                   "mission stress: none with a wide margin, +12 bpm at zero margin, capped at +22 bpm with a broken limit and no O2 above the reserve");
@@ -178,7 +178,7 @@ namespace NasaSpaceApp.Homeline.Sim
                         Check(!app.Panel.SaveRoute(), "a plan that breaks the limits cannot be saved");
                         app.Panel.Begin(EvaMode.Replay);
                         yield return null;
-                        Check(!app.Driver.Active && MartisMenu.IsOpen, "pressing START on such a plan starts nothing");
+                        Check(!app.Driver.Active && MarvisMenu.IsOpen, "pressing START on such a plan starts nothing");
                         yield return new WaitForSecondsRealtime(0.4f);
                         yield return Shot("planning_limits_broken");
                     }
@@ -420,17 +420,17 @@ namespace NasaSpaceApp.Homeline.Sim
 
             // RESTART SIMULATION from the pause menu reloads the scene: the title must come back with no mission
             // running, and the whole flow must work again on the new scene objects, this time straight into free walk.
-            MartisMenu oldMenu = MartisMenu.Instance;
-            System.Reflection.MethodInfo restart = typeof(MartisMenu).GetMethod("Restart",
+            MarvisMenu oldMenu = MarvisMenu.Instance;
+            System.Reflection.MethodInfo restart = typeof(MarvisMenu).GetMethod("Restart",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             Check(oldMenu != null && restart != null, "menu restart entry reachable");
             if (oldMenu != null && restart != null)
             {
                 restart.Invoke(oldMenu, null);
                 waitUntil = Time.realtimeSinceStartup + 30f;
-                while ((MartisMenu.Instance == null || MartisMenu.Instance == oldMenu) && Time.realtimeSinceStartup < waitUntil) yield return null;
+                while ((MarvisMenu.Instance == null || MarvisMenu.Instance == oldMenu) && Time.realtimeSinceStartup < waitUntil) yield return null;
                 yield return new WaitForSecondsRealtime(2.0f);
-                Check(MartisMenu.Instance != null && MartisMenu.Instance != oldMenu && !MartisMenu.IsOpen,
+                Check(MarvisMenu.Instance != null && MarvisMenu.Instance != oldMenu && !MarvisMenu.IsOpen,
                       "RESTART SIMULATION reloads the scene into free exploration (no title, no planning screen)");
                 Check(!app.Driver.Active, "no mission running after the restart");
                 MissionPlan again = app.Generate(app.Catalog.Find("rank1"));
@@ -498,7 +498,7 @@ namespace NasaSpaceApp.Homeline.Sim
             // The window may lose focus while the test runs (someone is using the PC): the menu then opens its
             // pause screen and the EVA clock stops. The test never wants the pause screen during a mission.
             HomelineApp running = HomelineApp.Instance;
-            if (!finished && !expectMenu && running != null && MartisMenu.IsOpen) MartisMenu.StartNow();
+            if (!finished && !expectMenu && running != null && MarvisMenu.IsOpen) MarvisMenu.StartNow();
             if (!finished && Time.realtimeSinceStartup - startedAt > WatchdogSeconds)
             {
                 Check(false, "watchdog: the self-test did not finish in " + WatchdogSeconds + " s");

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace NasaSpaceApp.Menu
 {
-    /// <summary>One piece of the MARTIS logotype: a white-on-alpha sprite and its place in the logo box.</summary>
+    /// <summary>One piece of the MARVIS logotype: a white-on-alpha sprite and its place in the logo box.</summary>
     public struct LogoGlyph
     {
         /// <summary>m, a, r, t_slab, t_helmet, i or s.</summary>
@@ -37,7 +37,7 @@ namespace NasaSpaceApp.Menu
         /// <summary>Equirectangular Mars maps (longitude -180..180 left to right, north up) and the star strip. May be null.</summary>
         public Texture2D MarsColor, MarsNormal, StarStrip;
 
-        /// <summary>UI shaders "Martis/TitlePlanet" and "Martis/TitleBackdrop". May be null.</summary>
+        /// <summary>UI shaders "Marvis/TitlePlanet" and "Marvis/TitleBackdrop". May be null.</summary>
         public Shader PlanetShader, BackdropShader;
 
         /// <summary>White chevron pointing right. May be null.</summary>
@@ -77,8 +77,8 @@ namespace NasaSpaceApp.Menu
             a.MarsColor = Resources.Load<Texture2D>(Root + "mars_color");
             a.MarsNormal = Resources.Load<Texture2D>(Root + "mars_normal");
             a.StarStrip = Resources.Load<Texture2D>(Root + "stars_strip");
-            a.PlanetShader = Resources.Load<Shader>(Root + "MartisPlanet");
-            a.BackdropShader = Resources.Load<Shader>(Root + "MartisBackdrop");
+            a.PlanetShader = Resources.Load<Shader>(Root + "MarvisPlanet");
+            a.BackdropShader = Resources.Load<Shader>(Root + "MarvisBackdrop");
             a.Chevron = Resources.Load<Sprite>(Root + "icon_chevron");
             a.Credits = Resources.Load<TextAsset>(Root + "credits");
 
@@ -164,7 +164,7 @@ namespace NasaSpaceApp.Menu
     /// </summary>
     public static class MenuShader
     {
-        // ---- Martis/TitlePlanet (square quad; the lit disc has diameter = quad size * DiscFraction)
+        // ---- Marvis/TitlePlanet (square quad; the lit disc has diameter = quad size * DiscFraction)
         public static readonly int MainTex = Shader.PropertyToID("_MainTex");                // equirect color, sRGB
         public static readonly int NormalTex = Shader.PropertyToID("_NormalTex");            // equirect normal (east, north, up), linear
         public static readonly int RotX = Shader.PropertyToID("_RotX");                      // rows of the view -> planet rotation
@@ -180,7 +180,7 @@ namespace NasaSpaceApp.Menu
         public static readonly int HaloStrength = Shader.PropertyToID("_HaloStrength");
         public static readonly int HaloWidth = Shader.PropertyToID("_HaloWidth");
 
-        // ---- Martis/TitleBackdrop (full-screen quad)
+        // ---- Marvis/TitleBackdrop (full-screen quad)
         public static readonly int Aspect = Shader.PropertyToID("_Aspect");                  // quad width / height
         public static readonly int Zoom = Shader.PropertyToID("_Zoom");                      // strip height fraction covered by the quad height
         public static readonly int Tilt = Shader.PropertyToID("_Tilt");                      // radians

@@ -1,4 +1,4 @@
-# MARTIS
+# MARVIS
 ## Mars surface EVA simulator
 A NASA Space Apps Challenge project. Walk the lower slopes of Mount Sharp in Gale crater, scan the rocks and read what Curiosity measured there.
 

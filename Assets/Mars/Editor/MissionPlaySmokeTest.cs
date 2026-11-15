@@ -91,18 +91,18 @@ namespace NasaSpaceApp.MarsGen
             switch (phase)
             {
                 case 0:   // let the scene and the HUD start; leave the title menu (it pauses the HUD)
-                    if (phaseFrame == 30 && NasaSpaceApp.Menu.MartisMenu.IsOpen)
+                    if (phaseFrame == 30 && NasaSpaceApp.Menu.MarvisMenu.IsOpen)
                     {
-                        NasaSpaceApp.Menu.MartisMenu.StartNow();
+                        NasaSpaceApp.Menu.MarvisMenu.StartNow();
                     }
-                    if (phaseFrame == 61 && hud != null && !NasaSpaceApp.Menu.MartisMenu.IsOpen)
+                    if (phaseFrame == 61 && hud != null && !NasaSpaceApp.Menu.MarvisMenu.IsOpen)
                     {
                         CallHud(hud, "OpenMap");   // load through the map's Missions tab, as a player would
                         Invoke(Tab(hud), "SetTab", 2);
                         Capture("0_missions_tab");
                         return;
                     }
-                    if (phaseFrame > 70 && hud != null && MissionLink.Instance != null && !NasaSpaceApp.Menu.MartisMenu.IsOpen)
+                    if (phaseFrame > 70 && hud != null && MissionLink.Instance != null && !NasaSpaceApp.Menu.MarvisMenu.IsOpen)
                     {
                         object view = Tab(hud)?.GetType().GetField("missions", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(Tab(hud));
                         if (view == null)

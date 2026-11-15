@@ -4,7 +4,7 @@ using UnityEngine;
 namespace NasaSpaceApp.Menu
 {
     /// <summary>
-    /// Design tokens of the MARTIS title / pause screen: canvas, color, type, layout and motion. Sizes are px on a
+    /// Design tokens of the MARVIS title / pause screen: canvas, color, type, layout and motion. Sizes are px on a
     /// 1080-high reference canvas (the canvas matches height, so the width grows with the aspect ratio). Colors are
     /// final values for <see cref="UnityEngine.UI.Graphic.color"/>; translucent ones go through the HUD's perceptual
     /// alpha helpers so they read the same in linear and gamma color space. Values were measured on the approved

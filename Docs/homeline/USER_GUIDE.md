@@ -1,6 +1,6 @@
-# MARTIS with the HOMELINE mission plan: user guide
+# MARVIS with the HOMELINE mission plan: user guide
 
-MARTIS is a first-person Mars EVA simulator on real terrain of lower Mount Sharp (Gale crater). This build adds the
+MARVIS is a first-person Mars EVA simulator on real terrain of lower Mount Sharp (Gale crater). This build adds the
 mission plans of the HOMELINE planner: you choose a plan, generate its waypoints, and then walk it or watch it,
 with the planner's oxygen and margin on the helmet.
 
@@ -9,7 +9,7 @@ data and from the planner; the crew, the EVA and the suit are simulated.
 
 ## Start
 
-1. Unzip the folder and run `MARTIS.exe` (Windows 10 or 11, 64-bit). Windows may show "Windows protected your PC"
+1. Unzip the folder and run `MARVIS.exe` (Windows 10 or 11, 64-bit). Windows may show "Windows protected your PC"
    because the app is not signed: choose **More info**, then **Run anyway**.
 2. Keep the `HomelineData` folder next to the exe. Without it the app still runs, but without plans.
 
@@ -177,7 +177,7 @@ The planner's own review of this simulator lists these; they are still true in t
 
 ## Unattended check
 
-`MARTIS.exe -homelineSelfTest` runs the whole flow by itself and writes `selftest/result.txt` (first line `PASS`
+`MARVIS.exe -homelineSelfTest` runs the whole flow by itself and writes `selftest/result.txt` (first line `PASS`
 or `FAIL`), a numeric trace and screenshots, then quits.
 
 ## Data

@@ -11,16 +11,16 @@ using UnityEngine.UI;
 namespace NasaSpaceApp.Menu
 {
     /// <summary>
-    /// Root of the MARTIS title / pause screen: one overlay canvas (backdrop, planet, logo, main list, panel host,
+    /// Root of the MARVIS title / pause screen: one overlay canvas (backdrop, planet, logo, main list, panel host,
     /// footer, boot fade) and the Hidden / Title / Pause state machine. While open the simulation is suspended
     /// (timeScale 0, audio paused, Player map off, cursor free, gameplay keys masked by <see cref="MenuInputGate"/>).
     /// Built at runtime by <see cref="MenuBootstrap"/>; lives in the active scene and dies with it.
     /// </summary>
     [DefaultExecutionOrder(-100)]
-    public sealed class MartisMenu : MonoBehaviour
+    public sealed class MarvisMenu : MonoBehaviour
     {
         /// <summary>EditorPrefs bool: start every play session with the title skipped (editor only).</summary>
-        public const string SkipTitleEditorPrefKey = "martis.menu.skipTitleInEditor";
+        public const string SkipTitleEditorPrefKey = "marvis.menu.skipTitleInEditor";
 
         private const int UiLayer = 5;
         private const float FocusGrace = 0.3f;        // input ignored this long after the window regains focus
@@ -49,7 +49,7 @@ namespace NasaSpaceApp.Menu
         }
 
         /// <summary>The menu of the active scene, or null.</summary>
-        public static MartisMenu Instance { get; private set; }
+        public static MarvisMenu Instance { get; private set; }
 
         /// <summary>True while the title or the pause screen is up (simulation suspended).</summary>
         public static bool IsOpen { get; private set; }
@@ -90,7 +90,7 @@ namespace NasaSpaceApp.Menu
         /// </summary>
         public static void StartNow()
         {
-            MartisMenu m = Instance;
+            MarvisMenu m = Instance;
             if (m == null || !m.built || !IsOpen || m.state == State.Hidden)
             {
                 return;
@@ -161,7 +161,7 @@ namespace NasaSpaceApp.Menu
         /// Builds the menu (title state, unless the title is skipped once after RESTART or by the editor pref). A build
         /// error is logged, nothing stays suspended and null is returned: a broken menu never locks the player out.
         /// </summary>
-        internal static MartisMenu Create()
+        internal static MarvisMenu Create()
         {
             if (Instance)
             {
@@ -174,9 +174,9 @@ namespace NasaSpaceApp.Menu
             skip |= UnityEditor.EditorPrefs.GetBool(SkipTitleEditorPrefKey, false);
 #endif
 
-            var go = new GameObject("MartisMenu", typeof(RectTransform));
+            var go = new GameObject("MarvisMenu", typeof(RectTransform));
             go.layer = UiLayer;
-            MartisMenu menu = null;
+            MarvisMenu menu = null;
             try
             {
                 var canvas = go.AddComponent<Canvas>();
@@ -191,7 +191,7 @@ namespace NasaSpaceApp.Menu
                 go.AddComponent<GraphicRaycaster>();
                 CanvasGroup group = HudFactory.AddGroup(go, 1f, true);
 
-                menu = go.AddComponent<MartisMenu>();
+                menu = go.AddComponent<MarvisMenu>();
                 menu.canvas = canvas;
                 menu.rootGroup = group;
                 Instance = menu;

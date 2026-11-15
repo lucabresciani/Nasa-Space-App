@@ -241,7 +241,7 @@ namespace NasaSpaceApp.Homeline.Sim
 
         void Update()
         {
-            if (!Active || MartisMenu.IsOpen) return;
+            if (!Active || MarvisMenu.IsOpen) return;
             if (player == null)
             {
                 StopMission();
@@ -277,15 +277,15 @@ namespace NasaSpaceApp.Homeline.Sim
             {
                 RoutePose pose = Plan.Track.PoseAt(TMin);
                 Place(pose.X, pose.Y);
-                if (!MartisMenu.IsOpen && pose.HeadingDeg.HasValue) FollowHeading((float)pose.HeadingDeg.Value);
+                if (!MarvisMenu.IsOpen && pose.HeadingDeg.HasValue) FollowHeading((float)pose.HeadingDeg.Value);
                 THomeMin = Plan.THomeAt(LocalX, LocalY);
                 O2HomeL = Plan.O2HomeAt(LocalX, LocalY);
                 LiveMarginMin = null;
                 LiveBinding = null;
                 bool running = Playing && !ReplayFinished;
                 // The helmet's physiology runs on the EVA clock: at 60x a minute of effort passes every second.
-                SuitTelemetry.MissionTimeScale = MartisMenu.IsOpen ? 1f : (running ? (float)Speed : (ReplayFinished ? 1f : 0f));
-                if (probe != null && !MartisMenu.IsOpen && Time.deltaTime > 0f && (running || ReplayFinished))
+                SuitTelemetry.MissionTimeScale = MarvisMenu.IsOpen ? 1f : (running ? (float)Speed : (ReplayFinished ? 1f : 0f));
+                if (probe != null && !MarvisMenu.IsOpen && Time.deltaTime > 0f && (running || ReplayFinished))
                     probe.Step(Time.deltaTime * (running ? Speed : 1.0), pose.X, pose.Y, player.transform.position.y);
                 SuitTelemetry.MissionStressBpm = MissionStress(Plan.MarginAt(TMin), MinutesToReserve());
                 UpdateAlarm(Plan.MarginAt(TMin));
@@ -305,7 +305,7 @@ namespace NasaSpaceApp.Homeline.Sim
                 else if (body == null || body.isGrounded) lastSafe = p;
             }
 
-            if (Live != null && !MartisMenu.IsOpen && Time.deltaTime > 0f)
+            if (Live != null && !MarvisMenu.IsOpen && Time.deltaTime > 0f)
             {
                 Live.Step(Time.deltaTime, x, y, groundY);
                 TMin = Live.TMin;
@@ -320,7 +320,7 @@ namespace NasaSpaceApp.Homeline.Sim
             SuitTelemetry.MissionStressBpm = MissionStress(LiveMarginMin, MinutesToReserve());
             UpdateAlarm(LiveMarginMin);
             // Weather work, cold and stress cost oxygen on top of the planner's model: the tank pays for them.
-            if (Live != null && !MartisMenu.IsOpen && Time.deltaTime > 0f)
+            if (Live != null && !MarvisMenu.IsOpen && Time.deltaTime > 0f)
                 Live.AddExtra((ExtraWeatherLpm + ExtraStressLpm) * Time.deltaTime / 60.0);
         }
 

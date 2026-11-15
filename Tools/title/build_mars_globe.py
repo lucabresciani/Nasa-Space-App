@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-build_mars_globe.py - Mars globe textures for the MARTIS title / pause screen.
+build_mars_globe.py - Mars globe textures for the MARVIS title / pause screen.
 
 Outputs (written to --out-dir)
 ------------------------------

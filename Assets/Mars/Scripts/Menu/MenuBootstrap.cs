@@ -6,7 +6,7 @@ namespace NasaSpaceApp.Menu
 {
     /// <summary>
     /// Runtime entry point of the title / pause screen: after every scene load it applies the saved settings and builds
-    /// one <see cref="MartisMenu"/> when the scene has a <see cref="FirstPersonController"/>. No scene edits; the menu
+    /// one <see cref="MarvisMenu"/> when the scene has a <see cref="FirstPersonController"/>. No scene edits; the menu
     /// lives in the active scene and dies with it.
     /// </summary>
     public static class MenuBootstrap
@@ -43,7 +43,7 @@ namespace NasaSpaceApp.Menu
                 Debug.LogException(e);
             }
 
-            if (MartisMenu.Instance)
+            if (MarvisMenu.Instance)
             {
                 return;
             }
@@ -51,7 +51,7 @@ namespace NasaSpaceApp.Menu
             {
                 return;
             }
-            MartisMenu.Create();
+            MarvisMenu.Create();
         }
     }
 }

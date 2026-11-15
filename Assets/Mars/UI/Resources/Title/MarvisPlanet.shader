@@ -1,4 +1,4 @@
-// MARTIS title / pause screen: the planet.
+// MARVIS title / pause screen: the planet.
 //
 // An analytically ray-cast sphere drawn on a SQUARE UnityEngine.UI.RawImage (ScreenSpaceOverlay canvas). There is
 // no mesh and no camera: every fragment of the quad computes where an orthographic ray hits a unit sphere, looks the
@@ -19,7 +19,7 @@
 //
 // Structure follows Unity's built-in UI/Default (stencil block, GUI ZTest, vertex colour) so that masks and
 // CanvasGroup fades behave; RectMask2D clipping is deliberately not implemented (no keywords in this shader).
-Shader "Martis/TitlePlanet"
+Shader "Marvis/TitlePlanet"
 {
     Properties
     {

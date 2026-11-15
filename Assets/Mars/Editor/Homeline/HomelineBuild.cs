@@ -24,7 +24,7 @@ namespace NasaSpaceApp.Homeline.EditorTools
     public static class HomelineBuild
     {
         const string Scene = "Assets/Scenes/MarsLandscape.unity";
-        const string DefaultExeName = "MARTIS";
+        const string DefaultExeName = "MARVIS";
         public const string DataFolderName = "HomelineData";
 
         [MenuItem("Tools/Mars/HOMELINE/Build Windows Player")]

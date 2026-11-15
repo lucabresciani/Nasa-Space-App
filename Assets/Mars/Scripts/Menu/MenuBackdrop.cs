@@ -12,7 +12,7 @@ namespace NasaSpaceApp.Menu
     public sealed class MenuBackdrop
     {
         // ---- tunables (the lead tunes these against the mockup)
-        // Star window (Martis/TitleBackdrop).
+        // Star window (Marvis/TitleBackdrop).
         private const float StarZoom = 0.62f;          // strip height fraction covered by the screen height
         private const float StarTilt = -0.14f;         // window rotation, radians
         private const float StarVCenter = 0.47f;       // strip v at the screen centre
@@ -58,7 +58,7 @@ namespace NasaSpaceApp.Menu
                 stars = rt.gameObject.AddComponent<RawImage>();
                 stars.raycastTarget = false;
                 stars.texture = a.StarStrip;
-                starMaterial = new Material(a.BackdropShader) { name = "MartisBackdrop (menu)", hideFlags = HideFlags.DontSave };
+                starMaterial = new Material(a.BackdropShader) { name = "MarvisBackdrop (menu)", hideFlags = HideFlags.DontSave };
                 starMaterial.SetFloat(MenuShader.Zoom, StarZoom);
                 starMaterial.SetFloat(MenuShader.Tilt, StarTilt);
                 starMaterial.SetFloat(MenuShader.VCenter, StarVCenter);
@@ -83,7 +83,7 @@ namespace NasaSpaceApp.Menu
                 planet = planetRect.gameObject.AddComponent<RawImage>();
                 planet.raycastTarget = false;
                 planet.texture = a.MarsColor;
-                planetMaterial = new Material(a.PlanetShader) { name = "MartisPlanet (menu)", hideFlags = HideFlags.DontSave };
+                planetMaterial = new Material(a.PlanetShader) { name = "MarvisPlanet (menu)", hideFlags = HideFlags.DontSave };
                 if (a.MarsNormal != null)
                 {
                     planetMaterial.SetTexture(MenuShader.NormalTex, a.MarsNormal);
