@@ -48,7 +48,7 @@
   //                    false = no such button: for when the planner site has a send button of its own.
   //                    Either way, a button of the site whose label matches SEND_LABEL starts the EVA,
   //                    and the site's "Download mission.json" stays a plain download.
-  const START_EVA_BUTTON = true;
+  const START_EVA_BUTTON = false;
   // The site's export control that "Start EVA in MARVIS" presses, found by its visible label.
   const EXPORT_LABEL = /download mission\.json|send to (the )?simulator/i;
   // Buttons of the site that start the EVA when the user presses them (the file they produce is sent

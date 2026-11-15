@@ -3,7 +3,7 @@
 MARVIS shows the mission planner web app inside its own window, takes the planned mission from it,
 runs the EVA, and hands the EVA log back to the page for the debrief. Windows only.
 
-The page is the **live planner site** (`https://homeline.vxliu.com/`, made by the web team). When
+The page is the **live planner site** (`https://marvis.vxliu.com/`, made by the web team). When
 the site changes, the game shows the new version: nothing in Unity has to be rebuilt. A copy of the
 planner shipped with the game is the fallback when the site cannot be reached.
 
@@ -13,7 +13,7 @@ Order: live site -> local copy -> built-in planning panel.
 
 1. **Live site.** Its address is, in this order: the switch `-plannerUrl <value>`, the environment
    variable `MARVIS_PLANNER_URL`, the file `planner-url.txt` next to `MarvisWeb.exe` (editor:
-   `Tools/marvis-web/live/planner-url.txt`), else `https://homeline.vxliu.com/`. In the file, lines
+   `Tools/marvis-web/live/planner-url.txt`), else `https://marvis.vxliu.com/`. In the file, lines
    starting with `#` are comments and the first other non-empty line is the address. The word
    `local` means "no site, only the local copy". A value that is not an http or https address is
    logged and treated as `local`. To point MARVIS at a web developer's own machine, put for example

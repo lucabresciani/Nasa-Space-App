@@ -39,7 +39,7 @@ namespace NasaSpaceApp.Homeline.Web
 
         /// <summary>The planner address: the switch, else the environment variable, else the file, else the default.</summary>
         public const string PlannerUrlArg = "-plannerUrl", PlannerUrlEnvVar = "MARVIS_PLANNER_URL";
-        public const string PlannerUrlFileName = "planner-url.txt", DefaultPlannerUrl = "https://homeline.vxliu.com/";
+        public const string PlannerUrlFileName = "planner-url.txt", DefaultPlannerUrl = "https://marvis.vxliu.com/";
         /// <summary>The script the viewer runs in every page: the MARVIS menu button, the debrief, the toasts.</summary>
         public const string InjectFileName = "marvis-inject.js";
         /// <summary>Where those two files are kept, relative to the project (editor, and the build step's source).</summary>

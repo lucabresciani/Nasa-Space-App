@@ -8,7 +8,7 @@ protocol) are in `Assets/Mars/Scripts/Homeline/Web/` (see the README there) and
 
 ## Live site first
 
-The page is the web team's live site, `https://homeline.vxliu.com/`. When the site changes, the
+The page is the web team's live site, `https://marvis.vxliu.com/`. When the site changes, the
 game shows the new version: nothing in Unity, and nothing here, has to be rebuilt.
 
 - `live/planner-url.txt` holds the address. Lines starting with `#` are comments, the first other
