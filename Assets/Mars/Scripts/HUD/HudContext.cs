@@ -27,7 +27,8 @@ namespace NasaSpaceApp.HUD
         public RectTransform StaticLayer;          // nested Canvas: caption, vitals
         public RectTransform DialLayer, ReticleLayer, LeaderLayer, CardLayer, LocatorLayer, AlertLayer, TooltipLayer; // inside nested Canvas "Dynamic"
 
-        public SuitTelemetry Telemetry;            // WP3
+        public SuitTelemetry Telemetry;            // WP3 (replaced by a fresh one when a web mission starts)
+        public NasaSpaceApp.Mission.MissionTracker Mission;   // web mission tracker; never null after Create, inactive without a mission
         public HudTooltip Tooltip;                 // WP3
         public RockCardSystem Cards;               // WP4 (null-safe consumers)
         public MarsElevationMap ElevationMap;      // published by CompassDial (one build, shared with the map screen); may be null

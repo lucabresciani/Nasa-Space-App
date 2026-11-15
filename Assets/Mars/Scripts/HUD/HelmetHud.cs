@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using NasaSpaceApp.Mission;
 using NasaSpaceApp.Science;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -35,6 +36,7 @@ namespace NasaSpaceApp.HUD
         private static bool s_OverlayVisibleResolved;
 
         private SuitTelemetry telemetry;
+        private int missionVersion = -1;   // MissionLink.Version the tracker follows
         private HudTooltip tooltip;
         private MissionCaption caption;
         private VitalsStack vitals;
@@ -204,6 +206,7 @@ namespace NasaSpaceApp.HUD
             // 7. Widgets. Telemetry and tooltip first: vitals, caption and alerts read them in their constructors.
             telemetry = new SuitTelemetry();
             ctx.Telemetry = telemetry;
+            ctx.Mission = new MissionTracker();
             tooltip = new HudTooltip(ctx);
             ctx.Tooltip = tooltip;
             caption = new MissionCaption(ctx);
@@ -396,7 +399,15 @@ namespace NasaSpaceApp.HUD
             FillWeather(ref ti);
             float targetDarkness = TargetDarkness();
             ti.Darkness = targetDarkness;
+            SyncMission();
             telemetry.Tick(simDt, in ti);
+
+            // 2b. Web mission: compare the live EVA with the plan (after telemetry: MET and O₂ of this frame).
+            if (ctx.Mission != null && ctx.Mission.Active)
+            {
+                Vector3 feet = player != null ? player.transform.position : ctx.CameraPosition;
+                ctx.Mission.Tick(feet, telemetry.MetSeconds / 60f, telemetry.O2LeftL);
+            }
 
             // 3. Night dimming: ink and scrim dim together through the root group.
             darkness = Mathf.MoveTowards(darkness, targetDarkness, dt / HudTokens.DayNightSmoothS);
@@ -425,6 +436,28 @@ namespace NasaSpaceApp.HUD
                 mapScreen.Tick(dt);
                 ApplyLayersAlpha(1f - mapScreen.Visibility);
             }
+        }
+
+        // A new mission (MissionLink) starts a fresh EVA: new suit model (MET 0, full O₂, battery, cooling water) and a
+        // new tracker run. Widgets read ctx.Telemetry every frame, so swapping the instance is enough.
+        private void SyncMission()
+        {
+            HudContext ctx = Context;
+            if (ctx.Mission == null || MissionLink.Version == missionVersion)
+            {
+                return;
+            }
+            missionVersion = MissionLink.Version;
+            MissionPlan plan = MissionLink.Current;
+            if (plan == null)
+            {
+                ctx.Mission.End();
+                return;
+            }
+            telemetry = new SuitTelemetry();
+            ctx.Telemetry = telemetry;
+            ctx.Mission.Begin(plan);
+            Debug.Log("[Mission] fresh EVA: suit refilled, mission clock 0");
         }
 
         private void OnDestroy()
