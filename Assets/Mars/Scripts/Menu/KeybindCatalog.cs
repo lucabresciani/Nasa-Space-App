@@ -129,6 +129,7 @@ namespace NasaSpaceApp.Menu
                 auto.Rows.Add(new Binding { Action = "AUTO WALK / FREE WALK", Keys = new[] { "V" } });
                 auto.Rows.Add(new Binding { Action = "PAUSE AUTO WALK", Keys = new[] { "T" } });
                 auto.Rows.Add(new Binding { Action = "AUTO WALK SPEED", Keys = new[] { "[", "]" } });
+                auto.Rows.Add(new Binding { Action = "ROUTE LINE", Keys = new[] { "R" } });
                 Add(groups, auto);
             }
 

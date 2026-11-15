@@ -142,7 +142,7 @@ the plan.
 A mission sent from the planner starts in **auto walk**: the crew is carried along the planned route at the planned
 times, and a line at the bottom of the screen shows the state and the keys. `V` hands the walk to you (**free
 walk**) and back; going back, the auto walk resumes from the point of the route you are nearest to. An EVA started
-from the built-in planning screen has the same keys, there called replay, plus `R`.
+from the built-in planning screen has the same keys, there called replay.
 
 | Key | Action |
 | --- | --- |
@@ -150,7 +150,11 @@ from the built-in planning screen has the same keys, there called replay, plus `
 | `V` | Switch between the auto walk (replay) and the free walk |
 | `[` `]` | Speed of the auto walk (replay): 1x, 30x, 60x, 300x |
 | `T` | Pause or resume the auto walk (replay) |
-| `R` | Built-in plans only: route guidance in the world, on or off (off at the start) |
+| `R` | The route on the ground near you, a thin amber line with a post at the pad and at each waypoint: hide it or show it again (shown at the start for a planner mission, hidden at the start for a built-in plan) |
+
+When you walk yourself the view sways a little with every step and you hear the crew breathing inside the helmet,
+slower at rest and faster with effort (the sound is synthesized from the helmet's physiology model, not recorded).
+Neither is there while the crew is carried along the route.
 | `G` | Full-screen EVA map |
 | `E` | Scan the rock under the reticle |
 | `Esc` | Menu |

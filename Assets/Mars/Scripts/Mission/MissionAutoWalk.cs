@@ -21,6 +21,8 @@ namespace NasaSpaceApp.Mission
     /// FREE WALK: nothing here touches the player; the mission is tracked as before.
     /// Keys: V switches between the two, T pauses or resumes the auto walk, [ and ] change its speed. Going back to
     /// the auto walk resumes from the point of the route the crew is nearest to.
+    /// In both, the route is drawn on the ground near the crew as a thin amber line (<see cref="MissionRouteLine"/>);
+    /// R hides it and shows it again.
     ///
     /// Nothing of the mission link, the tracker or the HUD is changed: on rails this component re-places the player
     /// every LateUpdate, before the HUD (execution order 100) reads the position. Started from code, once per run.
@@ -49,7 +51,14 @@ namespace NasaSpaceApp.Mission
         public double EndMin { get { return endMin; } }
         /// <summary>A mission with a route to follow is loaded.</summary>
         public bool HasRoute { get { return plan != null && count >= 2; } }
+        /// <summary>True while this component moves the crew: auto walk on a mission that is not complete yet.</summary>
+        public bool Carrying { get { return plan != null && Following && count >= 2 && !Complete(); } }
+        /// <summary>The amber route line on the ground: switched on, and how many of its points are drawn now.</summary>
+        public bool RouteLineVisible { get { return lineOn; } }
+        public int RouteLineShownPoints { get { return line != null ? line.ShownPoints : 0; } }
 
+        MissionRouteLine line;
+        bool lineOn = true;
         MissionPlan plan;
         bool startFollowing = true, keysOff;
         double tau, endMin;
@@ -130,9 +139,15 @@ namespace NasaSpaceApp.Mission
                 count = 0;
                 Following = false;
                 ReleaseSuit();
+                if (line != null) line.Clear();
                 return;   // the mission link has already given the sky back to the scene's own clock
             }
             BuildSchedule(loaded);
+            ground = new GroundSampler();
+            if (line == null) line = MissionRouteLine.Create(transform);
+            line.Viewer = null;   // set when the player of this scene is found
+            line.Show(loaded, ground);
+            line.SetVisible(lineOn);
             Following = startFollowing && count >= 2;
             SuitTelemetry.MissionActivityVo2 = activityHook;
             sky = FindAnyObjectByType<DayNightCycle>();
@@ -180,12 +195,30 @@ namespace NasaSpaceApp.Mission
             Playing = playing;
         }
 
+        /// <summary>Shows or hides the amber route line on the ground (key R).</summary>
+        public void SetRouteLineVisible(bool visible)
+        {
+            lineOn = visible;
+            if (line != null) line.SetVisible(visible);
+        }
+
+        void FindPlayer()
+        {
+            if (player != null) return;
+            player = FindAnyObjectByType<FirstPersonController>();
+            body = player != null ? player.GetComponent<CharacterController>() : null;
+            if (player == null) return;
+            lastSetYaw = player.transform.eulerAngles.y;
+            if (line != null) line.Viewer = player.transform;
+        }
+
         void ReadKeys()
         {
             if (keysOff) return;
             Keyboard k = Keyboard.current;
             if (k == null) return;
             if (k.vKey.wasPressedThisFrame) SetFollowing(!Following);
+            if (k.rKey.wasPressedThisFrame) SetRouteLineVisible(!lineOn);
             if (!Following) return;
             if (k.tKey.wasPressedThisFrame) Playing = !Playing;
             if (k.rightBracketKey.wasPressedThisFrame) StepSpeed(1);
@@ -216,7 +249,9 @@ namespace NasaSpaceApp.Mission
 
         void Update()
         {
-            if (plan == null || count < 2 || MarvisMenu.IsOpen) return;   // scaled time stands still under the menu
+            if (plan == null) return;
+            FindPlayer();
+            if (count < 2 || MarvisMenu.IsOpen) return;   // scaled time stands still under the menu
             ReadKeys();
 
             bool complete = Complete();
@@ -232,13 +267,8 @@ namespace NasaSpaceApp.Mission
         void LateUpdate()
         {
             if (plan == null || !Following || count < 2 || Complete()) return;
-            if (player == null)
-            {
-                player = FindAnyObjectByType<FirstPersonController>();
-                body = player != null ? player.GetComponent<CharacterController>() : null;
-                if (player == null) return;
-                lastSetYaw = player.transform.eulerAngles.y;
-            }
+            FindPlayer();
+            if (player == null) return;
             Vector3 p;
             float bearing;
             bool moving = Sample(tau, out p, out bearing);
@@ -397,7 +427,6 @@ namespace NasaSpaceApp.Mission
 
         void Place(Vector3 p)
         {
-            if (ground == null) ground = new GroundSampler();
             float groundY;
             bool detailed;
             if (!ground.TryHeight(p.x, p.z, out groundY, out detailed)) groundY = p.y;
@@ -449,9 +478,10 @@ namespace NasaSpaceApp.Mission
                          : Playing ? "AUTO WALK · " + Speed.ToString("0", CultureInfo.InvariantCulture) + "x"
                          : "AUTO WALK · PAUSED";
             // Pairs: key cap, what it does.
+            string route = lineOn ? "hide route" : "show route";
             string[] hints = Following
-                ? new[] { "V", "walk yourself", "T", Playing ? "pause" : "resume", "[ ]", "speed" }
-                : new[] { "V", "follow the route" };
+                ? new[] { "V", "walk yourself", "T", Playing ? "pause" : "resume", "[ ]", "speed", "R", route }
+                : new[] { "V", "follow the route", "R", route };
 
             float pad = 10f * s, gap = 8f * s, capPad = 6f * s, height = 30f * s;
             float width = pad + titleStyle.CalcSize(new GUIContent(title)).x + gap * 1.5f;

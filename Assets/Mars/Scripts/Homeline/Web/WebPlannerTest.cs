@@ -268,6 +268,42 @@ namespace NasaSpaceApp.Homeline.Web
                     until = Now + 1f;
                     while (!File.Exists(frame) && Now < until) yield return null;
                     Note("INFO game frame during the auto walk: " + (File.Exists(frame) ? frame : "not written"));
+
+                    // The amber route line on the ground, and what walking feels like (WalkFeel.cs): the breath is
+                    // heard in the free walk and not while the crew is carried. Then back to the auto walk.
+                    Check(walk.RouteLineVisible && walk.RouteLineShownPoints > 1,
+                          "route line drawn on the ground near the crew (" + walk.RouteLineShownPoints + " points)");
+                    global::NasaSpaceApp.WalkFeel feel = global::NasaSpaceApp.WalkFeel.Instance;
+                    if (feel != null)
+                    {
+                        Check(!feel.Breathing && feel.BreathLevel < 0.004f,
+                              "no breathing sound in the auto walk (level " + feel.BreathLevel.ToString("0.000", inv) + ")");
+                        walk.SetSpeed(1);
+                        walk.SetFollowing(false);
+                        float loudest = 0f;
+                        until = Now + 6f;   // more than one breath at rest
+                        while (Now < until)
+                        {
+                            if (feel.BreathLevel > loudest) loudest = feel.BreathLevel;
+                            yield return null;
+                        }
+                        Check(feel.Breathing && loudest > 0.01f,
+                              "breathing sound in the free walk (peak " + loudest.ToString("0.000", inv) + " of full scale)");
+                        frame = Path.Combine(dir, "freewalk-game.png");
+                        ScreenCapture.CaptureScreenshot(frame);
+                        until = Now + 1f;
+                        while (!File.Exists(frame) && Now < until) yield return null;
+                        Note("INFO game frame in the free walk: " + (File.Exists(frame) ? frame : "not written"));
+                        float plannedHere = tracker.PlannedMin;
+                        walk.SetFollowing(true);
+                        Check(walk.Following && Mathf.Abs((float)walk.RouteMin - plannedHere) < 0.2f,
+                              "back to the auto walk from where the crew stands (minute " + walk.RouteMin.ToString("0.0", inv) +
+                              " of the plan, the route says " + plannedHere.ToString("0.0", inv) + ")");
+                    }
+                    else
+                    {
+                        Check(false, "WalkFeel is running");
+                    }
                     string logBefore = global::NasaSpaceApp.Mission.EvaLogger.LastWrittenPath;
                     walk.SetSpeed(300);
                     until = Now + 45f;
