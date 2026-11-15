@@ -11,7 +11,7 @@ namespace NasaSpaceApp.Homeline.EditorTools
 {
     /// <summary>
     /// After every Windows player build, puts what the web planner needs next to the exe:
-    ///   {project}/HomelineData/web            ->  {output}/HomelineWeb   (the built web app, served by the game)
+    ///   {project}/HomelineData/web            ->  {output}/MarvisPlanner   (the built web app, served by the game)
     ///   {project}/Tools/marvis-web/viewer/dist ->  {output}/MarvisWeb     (MarvisWeb.exe, the WebView2 window)
     /// A missing source is a warning, not an error: the folder of an earlier build is removed and the exe keeps the
     /// built-in MISSION PLAN panel. A copy that fails (a file in use in the output) fails the build.

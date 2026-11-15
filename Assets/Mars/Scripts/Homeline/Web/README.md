@@ -26,7 +26,7 @@ Windows only. Nothing is loaded from the network: the game serves the built web 
 
 ```
 MARVIS.exe
-HomelineWeb/     the built web app: index.html, assets/, data/, marvis-bridge.json
+MarvisPlanner/     the built web app: index.html, assets/, data/, marvis-bridge.json
 MarvisWeb/       MarvisWeb.exe and its WebView2 dlls
 HomelineData/    planner data of the built-in panel (not used by the web planner)
 ```
@@ -52,7 +52,7 @@ the editor. WebView2 keeps its profile in `{persistentDataPath}/WebView2`.
 | `-homelineSelfTest` | same (the HOMELINE self-test drives the built-in panel); batch mode too |
 | `-marvisWebTest <mission.json>` | unattended hand-off test (`WebPlannerTest`): writes `result.txt` (first line PASS or FAIL), `planner.png`, `planner-late.png` (4 s later) and `eva.png`, exits with 0 or 1. Run it with `Tools/marvis-web/test/Run-HandoffTest.ps1`, which puts the game window in front so the screenshots show it |
 | `-marvisWebTestDir <dir>` | output folder of the test (default `webtest` next to the exe) |
-| env `MARVIS_WEB` | web root to serve instead of `HomelineWeb` |
+| env `MARVIS_WEB` | web root to serve instead of `MarvisPlanner` |
 | env `MARVIS_WEBVIEW` | path of `MarvisWeb.exe` |
 
 ## Fallback

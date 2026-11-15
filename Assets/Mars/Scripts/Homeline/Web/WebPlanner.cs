@@ -27,7 +27,7 @@ namespace NasaSpaceApp.Homeline.Web
     public sealed class WebPlanner : MonoBehaviour
     {
         public const string WebEnvVar = "MARVIS_WEB", ViewerEnvVar = "MARVIS_WEBVIEW";
-        public const string WebFolderName = "HomelineWeb", ViewerFolderName = "MarvisWeb", ViewerExeName = "MarvisWeb.exe";
+        public const string WebFolderName = "MarvisPlanner", ViewerFolderName = "MarvisWeb", ViewerExeName = "MarvisWeb.exe";
         /// <summary>Where the viewer is built, relative to the project (editor, and the build step's source).</summary>
         public const string ViewerDevFolder = "Tools/marvis-web/viewer/dist";
         /// <summary>The file at the root of a web build that says "this build contains the MARVIS bridge".</summary>
@@ -228,7 +228,7 @@ namespace NasaSpaceApp.Homeline.Web
             }
         }
 
-        // MARVIS_WEB, else HomelineWeb next to the exe, else (editor, development) the web folder of the planner data.
+        // MARVIS_WEB, else MarvisPlanner next to the exe, else (editor, development) the web folder of the planner data.
         static string ResolveWebRoot(string appRoot)
         {
             string env = Environment.GetEnvironmentVariable(WebEnvVar);

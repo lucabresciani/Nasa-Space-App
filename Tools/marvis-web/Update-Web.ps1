@@ -5,7 +5,7 @@
 #
 #   -Ref       what the web team published: a branch name or a commit of the HOMELINE repository's origin.
 #   -WebRepo   the web worktree, on the branch that carries the MARVIS bridge.
-#   -Build     the folder of a built game (the one with MARVIS.exe): its HomelineWeb folder is replaced too and,
+#   -Build     the folder of a built game (the one with MARVIS.exe): its MarvisPlanner folder is replaced too and,
 #              unless -SkipTest, the hand-off test runs on it (the game opens in front for about 20 seconds).
 #   -Continue  after a merge conflict was resolved and committed by hand: skips the fetch and the merge.
 #   -WhatIf    shows the steps that would change something without running them; the checks still run.
@@ -16,16 +16,18 @@
 #    3. git merge --no-edit FETCH_HEAD
 #    4. web\public\marvis-bridge.json is still there
 #    5. npx tsc --noEmit                      (a failure is a warning only)
-#    6. npx vite build
+#    6. node scripts/build-marvis.mjs when the worktree has it (build + visible name MARVIS + checks), else npx vite build
 #    7. web\dist  ->  HomelineData\web of this project   (robocopy /MIR; the next game build ships it)
 #    8. web-patch\marvis-embed.patch = git diff FETCH_HEAD HEAD   (the bridge on top of the web team's version)
-#    9. with -Build: web\dist  ->  <Build>\HomelineWeb   (robocopy /MIR)
+#    9. with -Build: web\dist  ->  <Build>\MarvisPlanner   (robocopy /MIR)
 #   10. with -Build, without -SkipTest: test\Run-HandoffTest.ps1 -Exe <Build>\MARVIS.exe, reported as PASS or FAIL
 # Exit code: 0 = done, 1 = stopped or hand-off test FAIL.
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [string]$Ref,
-    [string]$WebRepo = 'C:\Users\bresc\home-line-martis',   # the folder keeps its old name on disk
+    # The web team's new design plus the Mission Planer page and the bridge (branch marvis-main). The previous
+    # layout lives in C:\Users\bresc\home-line-martis (branch marvis-embed; the folder keeps its old name on disk).
+    [string]$WebRepo = 'C:\Users\bresc\home-line-marvis',
     [string]$Build,
     [switch]$SkipTest,
     [switch]$Continue
@@ -135,6 +137,14 @@ if (-not (Test-Path (Join-Path $WebRepo 'web\package.json'))) {
 $WebRepo = (Resolve-Path $WebRepo).Path.TrimEnd('\')
 $Web = Join-Path $WebRepo 'web'
 $Dist = Join-Path $Web 'dist'
+# A worktree with web\scripts\build-marvis.mjs builds through it (the new design); otherwise a plain vite build.
+$GameBuild = Test-Path (Join-Path $Web 'scripts\build-marvis.mjs')
+$BuildName = 'npx vite build'
+if ($GameBuild) {
+    $BuildName = 'node scripts/build-marvis.mjs (build, visible name MARVIS, checks)'
+    $Patch = Join-Path $PSScriptRoot 'web-patch\marvis-embed-newdesign.patch'
+    if (-not (Get-Command 'node.exe' -ErrorAction SilentlyContinue)) { Stop-Update 'node.exe was not found in PATH.' }
+}
 if (-not (Test-Path (Join-Path $Web 'node_modules\.bin\vite.cmd'))) {
     Stop-Update "the web app's packages are not installed: run 'npm install' in $Web first."
 }
@@ -230,10 +240,17 @@ Step 'npx tsc --noEmit (a failure is a warning only)' {
     }
 }
 
-Step 'npx vite build' {
-    if (-not $PSCmdlet.ShouldProcess($Web, 'npx vite build')) { return }
+Step $BuildName {
+    if (-not $PSCmdlet.ShouldProcess($Web, $BuildName)) { return }
     $started = Get-Date
-    Invoke-Tool $Web 'npx.cmd' @('vite', 'build') | Out-Null
+    if ($GameBuild) {
+        # Builds, then writes MARVIS where the bundled text says HOMELINE in capitals (the product name; the
+        # lower-case contract names stay), and checks the result.
+        Invoke-Tool $Web 'node.exe' @('scripts/build-marvis.mjs') | Out-Null
+    }
+    else {
+        Invoke-Tool $Web 'npx.cmd' @('vite', 'build') | Out-Null
+    }
     if ($LASTEXITCODE -ne 0) { Stop-Update 'the build failed (its reason is in the lines above). Nothing was copied.' }
     if (-not (Test-WebRoot $Dist)) {
         Stop-Update "$Dist is not a usable build (index.html, assets\ and $Marker are needed). Nothing was copied."
@@ -274,7 +291,7 @@ Step 'web-patch\marvis-embed.patch = git diff FETCH_HEAD HEAD' {
 # ---------------------------------------------------------------- 9. and 10. a built game
 
 if ($Build) {
-    $BuildWeb = Join-Path $Build 'HomelineWeb'
+    $BuildWeb = Join-Path $Build 'MarvisPlanner'
     Step "web\dist -> $BuildWeb" {
         $running = Get-Process -Name MARVIS -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$Build\*" }
         if ($running) { Stop-Update "the game in $Build is running: close it first, then run this script again with -Continue." }
@@ -301,7 +318,7 @@ if ($WhatIfPreference) {
     exit 0
 }
 Write-Host "DONE in $(Seconds $TotalWatch)." -ForegroundColor Green
-Write-Host "    web app   $WebData (the next build of the game ships it as HomelineWeb)"
+Write-Host "    web app   $WebData (the next build of the game ships it as MarvisPlanner)"
 Write-Host "    patch     $Patch"
 if ($Build) { Write-Host "    game      $BuildWeb" }
 foreach ($warning in $Warnings) { Write-Host "    WARNING   $warning" -ForegroundColor Yellow }
