@@ -20,7 +20,7 @@ namespace NasaSpaceApp.Homeline.Sim
     /// </summary>
     public sealed class SelfTest : MonoBehaviour
     {
-        const float WatchdogSeconds = 190f;
+        const float WatchdogSeconds = 230f;
 
         public static bool Requested
         {
@@ -183,6 +183,65 @@ namespace NasaSpaceApp.Homeline.Sim
                 app.Driver.Seek(60);
                 yield return new WaitForSecondsRealtime(1.5f);
                 yield return Shot("eva_alternative_pad");
+            }
+
+            // RESTART SIMULATION from the pause menu reloads the scene: the title must come back with no mission
+            // running, and the whole flow must work again on the new scene objects, this time straight into free walk.
+            MartisMenu oldMenu = MartisMenu.Instance;
+            System.Reflection.MethodInfo restart = typeof(MartisMenu).GetMethod("Restart",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Check(oldMenu != null && restart != null, "menu restart entry reachable");
+            if (oldMenu != null && restart != null)
+            {
+                restart.Invoke(oldMenu, null);
+                waitUntil = Time.realtimeSinceStartup + 30f;
+                while ((MartisMenu.Instance == null || MartisMenu.Instance == oldMenu || !MartisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
+                yield return new WaitForSecondsRealtime(2.0f);
+                Check(MartisMenu.Instance != null && MartisMenu.Instance != oldMenu && MartisMenu.IsOpen, "title screen is back after RESTART SIMULATION");
+                Check(!app.Driver.Active, "no mission running after the restart");
+
+                app.OpenPlanning();
+                yield return new WaitForSecondsRealtime(0.5f);
+                Check(app.Panel != null, "planning panel opens on the reloaded scene");
+                MissionPlan again = app.Generate(app.Catalog.Find("rank1"));
+                Check(again != null, "official plan generates again after the restart");
+                if (again != null)
+                {
+                    app.Begin(again, EvaMode.FreeWalk);
+                    waitUntil = Time.realtimeSinceStartup + 10f;
+                    while (!app.Driver.Active && Time.realtimeSinceStartup < waitUntil) yield return null;
+                    yield return new WaitForSecondsRealtime(1.5f);
+                    FirstPersonController fpc = FindAnyObjectByType<FirstPersonController>();
+                    player = fpc != null ? fpc.transform : null;
+                    Check(app.Driver.Active && app.Driver.Mode == EvaMode.FreeWalk, "free walk started from the planning screen");
+                    Check(player != null && Dist(player.position, 1014.1f, 1475.2f) < 15f, "player at the official pad after the restart" + (player != null ? " " + V(player.position) : ""));
+                    LiveState live = app.Driver.Live;
+                    Check(live != null && live.O2LeftL > 480.0, "free walk starts with the full planner tank" + (live != null ? " (" + F(live.O2LeftL) + " L)" : ""));
+                    CharacterController body = player != null ? player.GetComponent<CharacterController>() : null;
+                    if (live != null && body != null)
+                    {
+                        // Walk for four seconds at 0.8 m/s: the planner model must see the motion.
+                        double before = live.O2LeftL;
+                        Vector3 from = player.position;
+                        Vector3 ahead = Vector3.ProjectOnPlane(player.forward, Vector3.up).normalized;
+                        float until = Time.time + 4f;
+                        double peakRate = 0;
+                        while (Time.time < until)
+                        {
+                            body.Move((ahead * 0.8f + Vector3.down * 3f) * Time.deltaTime);
+                            if (live.RateLMin > peakRate) peakRate = live.RateLMin;
+                            yield return null;
+                        }
+                        float walked = Dist(player.position, from.x, from.z);
+                        Note("walked " + F(walked) + " m; O2 " + F(before) + " -> " + F(live.O2LeftL) + " L; peak rate " + F(peakRate) + " L/min; slope " + F(live.GradeDeg) + " deg");
+                        Check(walked > 1.5f, "the crew member can walk in free walk (" + F(walked) + " m in 4 s)");
+                        Check(peakRate > 0.55, "walking raises the planner O2 rate above resting (" + F(peakRate) + " L/min)");
+                        Check(live.O2LeftL < before, "walking consumes planner O2");
+                    }
+                    SuitTelemetry tel2 = Telemetry();
+                    Check(tel2 != null && tel2.DistanceHomeM < 15f, "helmet HOME is the pad after the restart" + (tel2 != null ? " (" + F(tel2.DistanceHomeM) + " m)" : ""));
+                    yield return Shot("eva_free_walk_after_restart");
+                }
             }
 
             Finish();

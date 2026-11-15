@@ -21,7 +21,8 @@ namespace NasaSpaceApp.Homeline.Ui
     /// </summary>
     public sealed class PlanPanel : MonoBehaviour
     {
-        const float Width = 460f, Height = 326f, Left = 28f, TopFromMiddle = 250f;
+        // Height: up to 11 body lines (free walk at a station on coarse terrain) above a 3-line footer.
+        const float Width = 460f, Height = 354f, Left = 28f, TopFromMiddle = 250f;
         const float RefreshSeconds = 0.2f;
 
         Canvas canvas;
@@ -135,12 +136,12 @@ namespace NasaSpaceApp.Homeline.Ui
                 {
                     sb.Append("HOME    ").Append(HlJson.F(d.THomeMin.Value, 0)).Append(" min  ").Append(HlJson.F(d.O2HomeL.Value, 1)).Append(" L").Append('\n');
                     sb.Append("MARGIN  ").Append(HlJson.F(d.LiveMarginMin.Value, 0)).Append(" min  limit: ").Append(d.LiveBinding).Append('\n');
-                    footer.text = "O2: planner model on the ground walked (no weather term).\nMargin: O2, daylight, EVA duration; dose term not live.\nV back to replay";
+                    footer.text = "O2: planner model on the ground walked; no weather.\nMargin: O2, daylight, EVA time. Dose term not live.\nV back to replay";
                 }
                 else
                 {
                     sb.Append("MARGIN  n/a (no return field ").Append(plan.HasReturnFields ? "here" : "for this pad").Append(")\n");
-                    footer.text = "O2: planner model on the ground walked (no weather term).\nSuit vitals, weather and dose rate: SIM.\nV back to replay";
+                    footer.text = "O2: planner model on the ground walked; no weather.\nSuit vitals, weather and dose rate: SIM.\nV back to replay";
                 }
             }
             else
