@@ -13,7 +13,7 @@ namespace NasaSpaceApp.Menu
     /// </summary>
     public sealed class CreditsPanel : MenuPanel
     {
-        private const string Fallback = "# MARTIS\nA NASA Space Apps Challenge project\nData: NASA. See DATA_SOURCES.md.";
+        private const string Fallback = "# MARVIS\nA NASA Space Apps Challenge project\nData: NASA. See DATA_SOURCES.md.";
 
         private const float Gutter = 20f;                 // scrollbar column on the right of the text
         private const float BarWidth = 4f, BarHitWidth = 16f, BarRadius = 2f;

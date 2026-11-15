@@ -20,11 +20,11 @@ namespace NasaSpaceApp.Menu
         public RectTransform CanvasRect;
 
         /// <summary>The menu root.</summary>
-        public MartisMenu Menu;
+        public MarvisMenu Menu;
     }
 
     /// <summary>
-    /// A sub-screen of the menu (settings, credits). The host (<see cref="MartisMenu"/>) draws the panel box, the
+    /// A sub-screen of the menu (settings, credits). The host (<see cref="MarvisMenu"/>) draws the panel box, the
     /// header with <see cref="Title"/> and the Back button; the panel only fills the content rect, which is
     /// <see cref="MenuTokens.ContentWidth"/> x <see cref="MenuTokens.ContentHeight"/> px with its pivot at the top-left.
     /// </summary>

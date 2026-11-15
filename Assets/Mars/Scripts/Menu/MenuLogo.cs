@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace NasaSpaceApp.Menu
 {
     /// <summary>
-    /// The MARTIS logotype: one Image per <see cref="LogoGlyph"/> (or the word in Bold as a fallback), placed so the
+    /// The MARVIS logotype: one Image per <see cref="LogoGlyph"/> (or the word in Bold as a fallback), placed so the
     /// logo box's left edge is at <see cref="MenuTokens.MarginLeft"/> and the cap top at
     /// <see cref="MenuTokens.LogoCapTop"/>. Boot intro: the pieces rise in one after the other, the "T" (slab + helmet)
     /// last. Idle: a brightness wave runs over the bronze pieces every <see cref="MenuTokens.GlintPeriod"/> seconds.
@@ -108,7 +108,7 @@ namespace NasaSpaceApp.Menu
                 Root = HudFactory.CreateRect("Logo", parent, topLeft, topLeft, new Vector2(MenuTokens.MarginLeft, top),
                                              new Vector2(FallbackSize * 4f, FallbackSize * 1.3f));
                 Text word = MenuUi.Label("Word", Root, a.Bold, FallbackSize, MenuTokens.Bronze, TextAnchor.UpperLeft,
-                                         topLeft, topLeft, Vector2.zero, Root.sizeDelta, "MARTIS");
+                                         topLeft, topLeft, Vector2.zero, Root.sizeDelta, "MARVIS");
                 graphics = new Graphic[] { word };
                 rects = new[] { word.rectTransform };
                 basePos = new[] { Vector2.zero };

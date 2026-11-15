@@ -19,7 +19,7 @@ namespace NasaSpaceApp.Homeline.Flow
 
     /// <summary>
     /// Entry point of the HOMELINE integration. Started from code (no scene edits), it survives scene reloads and
-    /// puts a mission planning stage between the MARTIS title screen and the EVA:
+    /// puts a mission planning stage between the MARVIS title screen and the EVA:
     ///
     ///   START SIMULATION  ->  MISSION PLANNING (a panel of the menu)  ->  START EVA  ->  the 3D simulation
     ///   pause (Esc)       ->  MISSION PLAN reopens the planning panel
@@ -76,7 +76,7 @@ namespace NasaSpaceApp.Homeline.Flow
         PadFrame frame;
         Dictionary<string, string> stationNames;
         PlanningPanel panel;
-        MartisMenu panelOwner;
+        MarvisMenu panelOwner;
         bool pendingStart;
         EvaMode pendingMode;
 
@@ -116,8 +116,8 @@ namespace NasaSpaceApp.Homeline.Flow
             if (Catalog.Plans.Count > 0)
             {
                 // START SIMULATION goes straight to free exploration; MISSION PLAN (title and pause) opens the planning.
-                MartisMenu.PlanRequested = OpenPlanning;
-                MartisMenu.Closed += OnMenuClosed;
+                MarvisMenu.PlanRequested = OpenPlanning;
+                MarvisMenu.Closed += OnMenuClosed;
             }
             SceneManager.sceneLoaded += OnSceneLoaded;
             global::NasaSpaceApp.Mission.MissionLink.Changed += OnWebMissionChanged;
@@ -128,7 +128,7 @@ namespace NasaSpaceApp.Homeline.Flow
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             global::NasaSpaceApp.Mission.MissionLink.Changed -= OnWebMissionChanged;
-            MartisMenu.Closed -= OnMenuClosed;
+            MarvisMenu.Closed -= OnMenuClosed;
             if (Driver != null) Driver.StopMission();
             if (Instance == this) Instance = null;
         }
@@ -607,11 +607,11 @@ namespace NasaSpaceApp.Homeline.Flow
             Mission = plan;
             pendingMode = mode;
             pendingStart = true;
-            MartisMenu menu = MartisMenu.Instance;
-            if (menu != null && MartisMenu.IsOpen)
+            MarvisMenu menu = MarvisMenu.Instance;
+            if (menu != null && MarvisMenu.IsOpen)
             {
                 menu.Back();
-                MartisMenu.StartNow();
+                MarvisMenu.StartNow();
             }
             else
             {
@@ -633,7 +633,7 @@ namespace NasaSpaceApp.Homeline.Flow
 
         bool OpenPlanningPanel()
         {
-            MartisMenu menu = MartisMenu.Instance;
+            MarvisMenu menu = MarvisMenu.Instance;
             if (menu == null || Catalog.Plans.Count == 0 || Frame == null) return false;
             if (panel == null || panelOwner != menu)
             {

@@ -1,1 +1,2 @@
 x,z,radius
+# extend=1024 x and z are metres east and north of the play area's south-west post (Tools/mountsharp/build_play_terrain.py); mapped in the original 4 km only

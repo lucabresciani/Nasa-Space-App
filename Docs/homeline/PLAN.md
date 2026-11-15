@@ -1,4 +1,4 @@
-# HOMELINE dentro MARTIS (.exe): piano e stato
+# HOMELINE dentro MARVIS (.exe): piano e stato
 
 Aggiornato domenica 15/11 alle 02:30. Consegna: oggi entro le 20:30 (limite 21:00). Dalle 15:00 non si aggiunge più nulla.
 
@@ -6,7 +6,7 @@ Aggiornato domenica 15/11 alle 02:30. Consegna: oggi entro le 20:30 (limite 21:0
 
 Un solo `.exe` Windows con un flusso a fasi:
 
-1. **Titolo** MARTIS.
+1. **Titolo** MARVIS.
 2. **Pianificazione della missione**, in una schermata a parte: si sceglie uno dei 5 piani calcolati dal motore del planner, si generano i waypoint, si vede la tabella e la mappa del percorso.
 3. **Simulazione 3D** dell'attività extraveicolare: replay del piano su binari oppure cammino libero, con ossigeno e margine del planner sul casco.
 4. **Pausa:** si può riaprire la pianificazione o riavviare dal titolo.
@@ -39,7 +39,7 @@ Verifica: l'exe si controlla da solo con `-homelineSelfTest`. L'ultima build pas
 
 | Tema | Scelta | Motivo |
 |---|---|---|
-| Schermata di pianificazione | Pannello del menu MARTIS, non il planner web | Via più sicura; il planner web dentro l'exe è stato tolto dalla consegna |
+| Schermata di pianificazione | Pannello del menu MARVIS, non il planner web | Via più sicura; il planner web dentro l'exe è stato tolto dalla consegna |
 | "Generazione dei waypoint" | Si caricano percorso e timeline già calcolati dal motore; i waypoint principali sono pad e stazioni, i punti di navigazione sono le svolte del tracciato (tolleranza 30 m) | Nel planner non esiste un oggetto "waypoint"; il motore non gira su Windows e i suoi dati (2–3 GB) non sono in git |
 | Testo a schermo | Dice sempre "precomputed; no new plan computed" e che i punti di navigazione sono "derived by the simulator, not planner output" | Onestà verso l'autore del planner e verso i giudici |
 | Ossigeno in replay | Timeline del planner | È il dato del motore |

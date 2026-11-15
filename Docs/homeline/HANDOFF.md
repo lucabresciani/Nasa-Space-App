@@ -11,9 +11,9 @@ Everything needed is in this branch; no chat history is required. State: Sunday 
 
 ## What works today
 
-One Windows `.exe` (`Builds/MARTIS/MARTIS.exe`), checked by its own unattended self-test (47 checks pass):
+One Windows `.exe` (`Builds/MARVIS/MARVIS.exe`), checked by its own unattended self-test (47 checks pass):
 
-1. MARTIS title screen. **START SIMULATION** opens the **MISSION PLANNING** screen (a panel of the menu).
+1. MARVIS title screen. **START SIMULATION** opens the **MISSION PLANNING** screen (a panel of the menu).
 2. Planning: five plans precomputed by the planner engine (official pad and four alternative pads). Pick one, press
    **GENERATE WAYPOINTS FROM PLAN**: the table of waypoints and a north-up map of the route appear.
 3. **START EVA · REPLAY** (the planned walk on rails, 1x to 300x) or **START EVA · FREE WALK**.
@@ -54,12 +54,12 @@ not run on Windows today, so a new plan cannot be computed on this PC.
 
 ```
 "C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe" -batchmode -quit -projectPath "<clone>" -logFile build.log -executeMethod NasaSpaceApp.Homeline.EditorTools.HomelineBuild.Win64
-Builds\MARTIS\MARTIS.exe -homelineSelfTest -screen-fullscreen 0 -screen-width 1920 -screen-height 1080
+Builds\MARVIS\MARVIS.exe -homelineSelfTest -screen-fullscreen 0 -screen-width 1920 -screen-height 1080
 ```
 
-- The build writes `Builds/MARTIS/` (about 370 MB) with `HomelineData` and a `README.md` (the user guide) next to
+- The build writes `Builds/MARVIS/` (about 370 MB) with `HomelineData` and a `README.md` (the user guide) next to
   the exe. A warm build takes under a minute; the first import of the project takes much longer.
-- The self-test takes about 100 seconds and writes `Builds/MARTIS/selftest/`: `result.txt` (first line `PASS` or
+- The self-test takes about 100 seconds and writes `Builds/MARVIS/selftest/`: `result.txt` (first line `PASS` or
   `FAIL`, then one line per check), `hud_trace.csv` and eleven screenshots. Exit code 0 = pass.
 - The build was made on a clone whose `Packages/manifest.json` had these unused packages removed **locally, not
   committed**: `com.coplaydev.unity-mcp`, `com.unity.ai.assistant`, `com.unity.ai.inference`, `com.unity.pipeline`,
@@ -90,7 +90,7 @@ Builds\MARTIS\MARTIS.exe -homelineSelfTest -screen-fullscreen 0 -screen-width 19
 | Folder (under `Assets/Mars/Scripts/Homeline/`) | Content |
 | --- | --- |
 | `Core/` | Pure C#, also compiled and tested by `dotnet`: bundle and grid readers, `GeoRoute`, `PlanCatalog`, `WaypointPlan`, `MissionPlan`, `Timeline`, `Physio` and `HlConfig` (the planner's oxygen model), `StormTrack` (the dose leash), `LiveState` (free-walk oxygen), `PadFrame` (planner metres to Unity world) |
-| `Flow/HomelineApp.cs` | Boot object (lives across scene loads), link to the MARTIS menu, plan catalog, start of a mission |
+| `Flow/HomelineApp.cs` | Boot object (lives across scene loads), link to the MARVIS menu, plan catalog, start of a mission |
 | `Sim/` | `EvaDriver` (replay, free walk, helmet feed, live margin), `SkySync`, `GroundSampler`, `HomelinePaths`, `SelfTest` |
 | `Ui/` | `PlanningPanel` and `PlanMap` (planning screen), `PlanPanel` (read-out in the EVA), `MapRouteOverlay` (route on the helmet's maps) |
 | `World/RouteWorldView.cs` | Ribbon and beacons on the terrain |

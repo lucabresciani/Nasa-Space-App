@@ -1,4 +1,4 @@
-# MARTIS logotype layout. Units: sprite px (0.6x the 8550x4800 mockup); origin bottom-left of the box, y up.
+# MARVIS logotype layout. Units: sprite px (0.6x the 8550x4800 mockup); origin bottom-left of the box, y up.
 # Written by Tools/title/extract_logo.py; the glyph order is the draw order.
 box 2178 436
 cap 105.9 410.1

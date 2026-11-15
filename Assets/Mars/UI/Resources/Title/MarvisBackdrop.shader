@@ -1,4 +1,4 @@
-// MARTIS title / pause screen: the star backdrop.
+// MARVIS title / pause screen: the star backdrop.
 //
 // A slowly scrolling window into a star strip, drawn on a full-screen UnityEngine.UI.RawImage (ScreenSpaceOverlay
 // canvas). The strip is 8192 x 2048: 360 deg of galactic longitude along U (repeats) by +-45 deg of latitude along V
@@ -17,7 +17,7 @@
 //
 // Structure follows Unity's built-in UI/Default (stencil block, GUI ZTest, vertex colour) so that CanvasGroup fades
 // behave; RectMask2D clipping is deliberately not implemented (no keywords in this shader).
-Shader "Martis/TitleBackdrop"
+Shader "Marvis/TitleBackdrop"
 {
     Properties
     {

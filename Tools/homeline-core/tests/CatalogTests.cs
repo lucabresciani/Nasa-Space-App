@@ -87,7 +87,7 @@ namespace NasaSpaceApp.Homeline.Tests
                         for (int i = 1; i < wp.All.Count; i++) if (wp.All[i].ArriveMin < wp.All[i - 1].ArriveMin - 1e-9) ordered = false;
                         T.True(ordered, w.Id + " waypoints are in time order");
 
-                        // Every vertex inside the detailed 1 m terrain of the Unity scene.
+                        // Every vertex inside the detailed terrain of the Unity scene (6.1 km, MountSharp.json).
                         bool inside = true;
                         foreach (RouteLeg leg in plan.Track.Legs)
                         {
@@ -95,7 +95,7 @@ namespace NasaSpaceApp.Homeline.Tests
                             {
                                 double wx, wz;
                                 frame.LocalToWorld(leg.X[i], leg.Y[i], out wx, out wz);
-                                if (wx < -2041.27 || wx > 2040.35 || wz < -2047.70 || wz > 2048.29) inside = false;
+                                if (wx < -3061.67 || wx > 3060.75 || wz < -3071.70 || wz > 3072.29) inside = false;
                             }
                         }
                         T.True(inside, w.Id + " route lies inside the detailed terrain");

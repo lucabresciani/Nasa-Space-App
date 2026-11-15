@@ -1,6 +1,6 @@
-"""Offline reference renderer for the MARTIS title planet (shader "Martis/TitlePlanet").
+"""Offline reference renderer for the MARVIS title planet (shader "Marvis/TitlePlanet").
 
-numpy + Pillow port of the fragment math in Assets/Mars/UI/Resources/Title/MartisPlanet.shader, used to check
+numpy + Pillow port of the fragment math in Assets/Mars/UI/Resources/Title/MarvisPlanet.shader, used to check
 orientation and the normal map's sign conventions without opening Unity.
 
 Conventions (identical to the shader and the game):
@@ -37,7 +37,7 @@ from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None
 
-# Shader property defaults (Properties block of Martis/TitlePlanet).
+# Shader property defaults (Properties block of Marvis/TitlePlanet).
 DISC_FRACTION = 0.8
 NIGHT = 0.012
 ATMO_STRENGTH = 0.55

@@ -12,7 +12,7 @@ namespace NasaSpaceApp.Homeline.Sim
 {
     /// <summary>
     /// Unattended check of the whole flow, for builds made when nobody is at the machine:
-    ///   MARTIS.exe -homelineSelfTest [-homelineSelfTestDir DIR]
+    ///   MARVIS.exe -homelineSelfTest [-homelineSelfTestDir DIR]
     /// The app opens the planning panel, generates the waypoints of the official plan, replays the EVA at 300x while
     /// comparing the plan read-out and the helmet HUD with the planner's timeline, then walks freely for a moment,
     /// loads an alternative plan, and quits. It writes result.txt (first line PASS or FAIL), hud_trace.csv and
@@ -55,9 +55,41 @@ namespace NasaSpaceApp.Homeline.Sim
 
             // The menu builds itself after the scene has loaded.
             float waitUntil = Time.realtimeSinceStartup + 40f;
-            while ((MartisMenu.Instance == null || !MartisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
-            Check(MartisMenu.Instance != null && MartisMenu.IsOpen, "title screen is up");
-            Check(MartisMenu.StartInterceptor == null && MartisMenu.PlanRequested != null,
+            while ((MarvisMenu.Instance == null || !MarvisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
+            Check(MarvisMenu.Instance != null && MarvisMenu.IsOpen, "title screen is up");
+            // No key may be bound to two commands (the list of the menu's Controls page).
+            var seenKeys = new System.Collections.Generic.Dictionary<string, string>();
+            string clashes = "";
+            int keyRows = 0;
+            foreach (KeybindCatalog.Group kg in KeybindCatalog.Read())
+            {
+                foreach (KeybindCatalog.Binding kb in kg.Rows)
+                {
+                    if (kb.Keys == null || kb.Keys.Length == 0) continue;
+                    keyRows++;
+                    // "SHIFT" + key is one combination; otherwise every key of the row counts on its own (W A S D, [ ]).
+                    bool combo = kb.Keys.Length == 2 && kb.Keys[0] == "SHIFT";
+                    string[] tokens = combo ? new[] { kb.Keys[0] + "+" + kb.Keys[1] } : kb.Keys;
+                    foreach (string token in tokens)
+                    {
+                        string other;
+                        if (seenKeys.TryGetValue(token, out other)) clashes += token + " (" + other + " / " + kb.Action + ") ";
+                        else seenKeys[token] = kb.Action;
+                    }
+                }
+            }
+            Check(clashes.Length == 0 && keyRows >= 20, "no key is bound to two commands (" + keyRows + " commands, " + seenKeys.Count + " keys)" + (clashes.Length > 0 ? ": " + clashes : ""));
+            System.Reflection.MethodInfo showControls = typeof(MarvisMenu).GetMethod("ShowControls",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (showControls != null && MarvisMenu.Instance != null)
+            {
+                showControls.Invoke(MarvisMenu.Instance, null);
+                yield return new WaitForSecondsRealtime(0.8f);
+                yield return Shot("controls");
+                MarvisMenu.Instance.Back();
+                yield return new WaitForSecondsRealtime(0.4f);
+            }
+            Check(MarvisMenu.StartInterceptor == null && MarvisMenu.PlanRequested != null,
                   "START SIMULATION goes straight to free exploration; MISSION PLAN opens the planning");
             Check(EvaDriver.MissionStress(90, 200) == 0f && Math.Abs(EvaDriver.MissionStress(0, 200) - 12f) < 0.01f && EvaDriver.MissionStress(-5, 0) >= 22f,
                   "mission stress: none with a wide margin, +12 bpm at zero margin, capped at +22 bpm with a broken limit and no O2 above the reserve");
@@ -178,7 +210,7 @@ namespace NasaSpaceApp.Homeline.Sim
                         Check(!app.Panel.SaveRoute(), "a plan that breaks the limits cannot be saved");
                         app.Panel.Begin(EvaMode.Replay);
                         yield return null;
-                        Check(!app.Driver.Active && MartisMenu.IsOpen, "pressing START on such a plan starts nothing");
+                        Check(!app.Driver.Active && MarvisMenu.IsOpen, "pressing START on such a plan starts nothing");
                         yield return new WaitForSecondsRealtime(0.4f);
                         yield return Shot("planning_limits_broken");
                     }
@@ -225,6 +257,8 @@ namespace NasaSpaceApp.Homeline.Sim
             double nextSample = 0;
             bool shotS7 = false, shotMid = false;
             float hrWalk = 0f, hrStation = 0f, radPeak = 0f;
+            int frames = 0;
+            float frameSum = 0f, frameWorst = 0f;
             bool alarmOnOfficial = false;
             waitUntil = Time.realtimeSinceStartup + 110f;
             while (!app.Driver.ReplayFinished && Time.realtimeSinceStartup < waitUntil)
@@ -262,8 +296,12 @@ namespace NasaSpaceApp.Homeline.Sim
                     shotMid = true;
                     yield return Shot("eva_leg3");
                 }
+                frames++;
+                frameSum += Time.unscaledDeltaTime;
+                if (Time.unscaledDeltaTime > frameWorst) frameWorst = Time.unscaledDeltaTime;
                 yield return null;
             }
+            if (frames > 0) Note("frame time during the replay: average " + F(1000f * frameSum / frames) + " ms (" + F(frames / frameSum) + " fps), worst " + F(1000f * frameWorst) + " ms, " + frames + " frames");
             Check(app.Driver.ReplayFinished, "replay reached the planned return (t = " + F(app.Driver.TMin) + " min)");
             Note("heart rate in the replay: " + F(hrWalk) + " bpm walking to S7, " + F(hrStation) + " bpm working at S7 (rest " + F(SuitTelemetry.HeartRateRest) + ")");
             Check(radPeak > 1.0f, "helmet RAD follows the planner's storm (" + F(radPeak) + " mSv/h near its peak; quiet level " + F(SuitTelemetry.DoseRateGaleMsvH) + ")");
@@ -414,17 +452,17 @@ namespace NasaSpaceApp.Homeline.Sim
 
             // RESTART SIMULATION from the pause menu reloads the scene: the title must come back with no mission
             // running, and the whole flow must work again on the new scene objects, this time straight into free walk.
-            MartisMenu oldMenu = MartisMenu.Instance;
-            System.Reflection.MethodInfo restart = typeof(MartisMenu).GetMethod("Restart",
+            MarvisMenu oldMenu = MarvisMenu.Instance;
+            System.Reflection.MethodInfo restart = typeof(MarvisMenu).GetMethod("Restart",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             Check(oldMenu != null && restart != null, "menu restart entry reachable");
             if (oldMenu != null && restart != null)
             {
                 restart.Invoke(oldMenu, null);
                 waitUntil = Time.realtimeSinceStartup + 30f;
-                while ((MartisMenu.Instance == null || MartisMenu.Instance == oldMenu) && Time.realtimeSinceStartup < waitUntil) yield return null;
+                while ((MarvisMenu.Instance == null || MarvisMenu.Instance == oldMenu) && Time.realtimeSinceStartup < waitUntil) yield return null;
                 yield return new WaitForSecondsRealtime(2.0f);
-                Check(MartisMenu.Instance != null && MartisMenu.Instance != oldMenu && !MartisMenu.IsOpen,
+                Check(MarvisMenu.Instance != null && MarvisMenu.Instance != oldMenu && !MarvisMenu.IsOpen,
                       "RESTART SIMULATION reloads the scene into free exploration (no title, no planning screen)");
                 Check(!app.Driver.Active, "no mission running after the restart");
                 MissionPlan again = app.Generate(app.Catalog.Find("rank1"));
@@ -492,7 +530,7 @@ namespace NasaSpaceApp.Homeline.Sim
             // The window may lose focus while the test runs (someone is using the PC): the menu then opens its
             // pause screen and the EVA clock stops. The test never wants the pause screen during a mission.
             HomelineApp running = HomelineApp.Instance;
-            if (!finished && !expectMenu && running != null && MartisMenu.IsOpen) MartisMenu.StartNow();
+            if (!finished && !expectMenu && running != null && MarvisMenu.IsOpen) MarvisMenu.StartNow();
             if (!finished && Time.realtimeSinceStartup - startedAt > WatchdogSeconds)
             {
                 Check(false, "watchdog: the self-test did not finish in " + WatchdogSeconds + " s");
