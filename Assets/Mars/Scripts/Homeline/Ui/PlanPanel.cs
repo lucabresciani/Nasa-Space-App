@@ -136,7 +136,10 @@ namespace NasaSpaceApp.Homeline.Ui
                 {
                     sb.Append("HOME    ").Append(HlJson.F(d.THomeMin.Value, 0)).Append(" min  ").Append(HlJson.F(d.O2HomeL.Value, 1)).Append(" L").Append('\n');
                     sb.Append("MARGIN  ").Append(HlJson.F(d.LiveMarginMin.Value, 0)).Append(" min  limit: ").Append(d.LiveBinding).Append('\n');
-                    footer.text = "O2: planner model on the ground walked; no weather.\nMargin: O2, daylight, EVA time. Dose term not live.\nV back to replay";
+                    footer.text = "O2: planner model on the ground walked; no weather.\n" +
+                                  (d.LiveMarginHasDose ? "Margin: planner formula at your place and time."
+                                                       : "Margin: O2, daylight, EVA time. Dose term not live.") +
+                                  "\nV back to replay";
                 }
                 else
                 {

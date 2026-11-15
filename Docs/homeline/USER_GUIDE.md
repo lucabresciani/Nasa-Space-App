@@ -55,7 +55,7 @@ HOME (the rover); on the bottom-left dial as an amber line with a ring for each 
 | EVA clock, next waypoint | Planner timeline | Your own clock, at real time |
 | O2 left (plan panel and helmet) | Planner timeline | Planner oxygen model applied to the ground you walk: slope and carried mass, 0.84 L/min while working at a station, resting rate when standing |
 | Walking speed | Planner route | Capped at the planner's governed speed for the slope (0.91 m/s on the level, 0.36 m/s at +10 degrees) |
-| Margin | Planner timeline, interpolated between its rows | Official plan only: the smallest of the oxygen, daylight and EVA-duration limits, using the planner's "time and oxygen to get home" maps. The radiation-dose limit is not evaluated live |
+| Margin | Planner timeline, interpolated between its rows | Official plan only: the planner's formula at your place and time. It is the smallest of the oxygen, daylight, radiation-dose and EVA-duration limits, from the planner's "time and oxygen to get home" maps and its replay of the solar storm |
 | HOME on the helmet | The plan's pad | The plan's pad |
 | "O2 minutes to reserve" on the helmet | (O2 left - 40.5 L) / 1.35 L/min: the oxygen limit only | Same |
 | Sun and sky | The real sky for that minute of the plan (EVA start 2026-11-14 10:51:18 UTC, 09:00 local mean solar time) | Same |
@@ -72,7 +72,8 @@ The planner's own review of this simulator lists these; they are still true in t
   it includes the planet's curvature. Waypoints are placed on this app's ground.
 - On alternative pads the planner provides no "way home" maps, so off the planned track the margin reads "n/a".
 - In a replay the margin between two timeline rows is interpolated (the planner's own web HUD does the same); the
-  free walk uses the planner's formula, so the two can differ by some minutes at the hand-over.
+  free walk uses the planner's formula, so the two can differ by some minutes at the hand-over (at station S7,
+  two minutes after arrival: 66 min interpolated, 61 min by the formula, both limited by the dose).
 - The radiation read-out on the helmet is a constant background value, while the planner's margin uses the solar
   storm of 20 May 2024 replayed on the EVA clock.
 - Station arrival within 5 m, the resting rate when standing still, and the 10 m distance over which the slope is

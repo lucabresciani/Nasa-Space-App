@@ -168,6 +168,23 @@ namespace NasaSpaceApp.Homeline.Sim
             }
             yield return Shot("eva_free_walk");
 
+            // Hand-over at station S7, where the planner's margin is bound by the storm dose: the live margin must
+            // name the same limit and stay close to the timeline (which is interpolated between its rows).
+            app.Driver.SetMode(EvaMode.Replay);
+            app.Driver.SetSpeed(1);
+            app.Driver.Seek(46);
+            yield return new WaitForSecondsRealtime(0.6f);
+            double? planned = plan.MarginAt(app.Driver.TMin);
+            string plannedLimit = plan.BindingAt(app.Driver.TMin);
+            app.Driver.SetMode(EvaMode.FreeWalk);
+            yield return new WaitForSecondsRealtime(1.0f);
+            Note("hand-over at t = " + F(app.Driver.TMin) + " min: planner margin " + (planned.HasValue ? F(planned.Value) : "null") + " min (" + plannedLimit +
+                 "), live margin " + (app.Driver.LiveMarginMin.HasValue ? F(app.Driver.LiveMarginMin.Value) : "null") + " min (" + app.Driver.LiveBinding + ")");
+            Check(app.Driver.LiveMarginHasDose, "live margin includes the planner's dose term");
+            Check(app.Driver.LiveBinding == "dose" && plannedLimit == "dose", "at S7 the live margin is bound by the dose, like the planner's");
+            Check(planned.HasValue && app.Driver.LiveMarginMin.HasValue && Math.Abs(planned.Value - app.Driver.LiveMarginMin.Value) < 10.0,
+                  "live margin at S7 within 10 min of the planner's interpolated timeline");
+
             // An alternative pad: same flow, different start, no return fields.
             PlanEntry alt = app.Catalog.Find("pad_default");
             MissionPlan altPlan = alt != null ? app.Generate(alt) : null;

@@ -20,9 +20,9 @@ Si lavora solo nella repo `lucabresciani/Nasa-Space-App`, branch `homeline-integ
 | 1. Pianificazione + EVA sul piano | Schermata di pianificazione, generazione dei waypoint, percorso e fari sul terreno, replay e cammino libero, pannello del piano | Fatto |
 | 2. Casco e mappa | Casa = pad, O₂ e tempo di missione del planner sul casco, percorso sulla mappa `G` e sulla bussola, mappa nella schermata di pianificazione, sole sincronizzato all'orologio EVA | Fatto |
 | 3. O₂ del planner in cammino libero | Consumo con la formula del planner (pendenza, massa, lavoro alle stazioni), velocità governata, margine dal vivo sul piano ufficiale | Fatto |
-| Extra | Termine di dose nel margine dal vivo | Non fatto |
+| Extra | Termine di dose nel margine dal vivo (tempesta solare sull'orologio EVA) | Fatto |
 
-Verifica: l'exe si controlla da solo con `-homelineSelfTest`. L'ultima build passa 44 controlli su 44, senza eccezioni nel log. I test di logica sono 313 su 313.
+Verifica: l'exe si controlla da solo con `-homelineSelfTest`. L'ultima build passa 47 controlli su 47, senza eccezioni nel log. I test di logica sono 342 su 342.
 
 ## Cosa manca
 
@@ -45,7 +45,7 @@ Verifica: l'exe si controlla da solo con `-homelineSelfTest`. L'ultima build pas
 | Ossigeno in replay | Timeline del planner | È il dato del motore |
 | Ossigeno in cammino libero | Formula del planner sul terreno percorso | Camminando il percorso previsto si arriva a 126,17 L contro i 124,87 L del planner (meno dell'1 %) |
 | Meteo | Resta un dato del simulatore, etichettato SIM | Nel planner il meteo non entra né nell'ossigeno né nel margine |
-| Margine dal vivo | Solo sul piano ufficiale; O₂, luce e durata dell'EVA; dose non valutata | I campi "tempo e O₂ per tornare" esistono solo per il pad ufficiale |
+| Margine dal vivo | Solo sul piano ufficiale; formula del planner con i quattro limiti (O₂, luce, dose, durata dell'EVA) | I campi "tempo e O₂ per tornare" esistono solo per il pad ufficiale |
 | File dell'HUD | Due agganci additivi in un commit separato (`db2aa6d`) | Si può annullare o riapplicare da solo |
 
 ## Aggancio per il backend del planner

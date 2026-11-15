@@ -72,9 +72,11 @@ namespace NasaSpaceApp.Homeline.Sim
         /// <summary>Time and O2 to get home from where the player stands (planner return fields); null off the official plan.</summary>
         public double? THomeMin { get; private set; }
         public double? O2HomeL { get; private set; }
-        /// <summary>Free walk on the official plan: min of the O2, daylight and EVA-duration terms (the dose term is not modelled live).</summary>
+        /// <summary>Free walk on the official plan: the planner margin, min of the O2, daylight, EVA-duration and (with the storm series) dose terms.</summary>
         public double? LiveMarginMin { get; private set; }
         public string LiveBinding { get; private set; }
+        /// <summary>True when the live margin includes the planner's dose term (the plan's storm series was read).</summary>
+        public bool LiveMarginHasDose { get; private set; }
 
         FirstPersonController player;
         CharacterController body;
@@ -288,7 +290,9 @@ namespace NasaSpaceApp.Homeline.Sim
         /// <summary>
         /// The planner's margin terms that can be evaluated from the live state (pipeline/engine/margin.py):
         /// O2 = (O2 left - O2 home - station work left - reserve) / effort rate; daylight = t_dark - t - T_home;
-        /// EVA duration = budget - t - T_home. The dose term needs the storm replay and is not evaluated live.
+        /// EVA duration = budget - t - T_home; dose = tau_dose(t) - T_home, with the plan's storm on the EVA clock
+        /// (<see cref="StormTrack"/>). Without the storm series the dose term is left out and
+        /// <see cref="LiveMarginHasDose"/> is false.
         /// </summary>
         void UpdateLiveMargin()
         {
@@ -296,6 +300,7 @@ namespace NasaSpaceApp.Homeline.Sim
             O2HomeL = Plan.O2HomeAt(LocalX, LocalY);
             LiveMarginMin = null;
             LiveBinding = null;
+            LiveMarginHasDose = false;
             HomelineApp app = HomelineApp.Instance;
             if (Live == null || app == null || app.Config == null || !THomeMin.HasValue || !O2HomeL.HasValue) return;
 
@@ -316,6 +321,16 @@ namespace NasaSpaceApp.Homeline.Sim
             {
                 best = duration;
                 binding = "EVA duration";
+            }
+            if (app.Storm != null)
+            {
+                LiveMarginHasDose = true;
+                double dose = app.Storm.TauDoseMin(TMin) - THomeMin.Value;
+                if (dose < best)
+                {
+                    best = dose;
+                    binding = "dose";
+                }
             }
             LiveMarginMin = best;
             LiveBinding = binding;

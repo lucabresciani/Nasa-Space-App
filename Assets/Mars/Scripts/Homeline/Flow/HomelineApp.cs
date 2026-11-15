@@ -46,6 +46,8 @@ namespace NasaSpaceApp.Homeline.Flow
         public Physio Physio { get; private set; }
         /// <summary>Minutes from EVA start to dark at the pad (planner conditions/sun.json); null if unknown.</summary>
         public double? TDarkMin { get; private set; }
+        /// <summary>The solar storm of the official plan on the EVA clock (planner conditions/storm.json); null if unknown.</summary>
+        public StormTrack Storm { get; private set; }
         /// <summary>The real instant the planned EVA starts (plan.json eva_start.utc: 09:00 local mean solar time); null if unknown.</summary>
         public DateTime? EvaStartUtc { get; private set; }
         /// <summary>The planning panel currently hosted by the menu; null until it has been opened.</summary>
@@ -120,6 +122,15 @@ namespace NasaSpaceApp.Homeline.Flow
                     Physio = new Physio(Config);
                     if (bundle.Has("conditions/sun.json"))
                         TDarkMin = HlJson.NumOrNull(bundle.ReadJson("conditions/sun.json"), "t_dark_min");
+                    try
+                    {
+                        Storm = StormTrack.FromBundle(bundle);
+                    }
+                    catch (Exception e)
+                    {
+                        // Without the storm the live margin simply has no dose term, and the plan panel says so.
+                        Debug.LogWarning("[HOMELINE] storm series not usable: " + e.Message);
+                    }
                     if (bundle.Has("plan.json"))
                     {
                         string utc = HlJson.Str(bundle.ReadJson("plan.json")["eva_start"], "utc");

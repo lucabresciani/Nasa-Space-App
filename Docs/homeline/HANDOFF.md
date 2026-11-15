@@ -11,7 +11,7 @@ Everything needed is in this branch; no chat history is required. State: Sunday 
 
 ## What works today
 
-One Windows `.exe` (`Builds/MARTIS/MARTIS.exe`), checked by its own unattended self-test (44 checks pass):
+One Windows `.exe` (`Builds/MARTIS/MARTIS.exe`), checked by its own unattended self-test (47 checks pass):
 
 1. MARTIS title screen. **START SIMULATION** opens the **MISSION PLANNING** screen (a panel of the menu).
 2. Planning: five plans precomputed by the planner engine (official pad and four alternative pads). Pick one, press
@@ -21,7 +21,8 @@ One Windows `.exe` (`Builds/MARTIS/MARTIS.exe`), checked by its own unattended s
    limit that binds); the helmet shows the planner's O2, mission time and HOME = the pad; the route is on the
    helmet's full-screen map (`G`) and dial; the sun follows the EVA clock.
 5. Free walk burns O2 with the planner's own model (slope, carried mass, station work) and caps the walking speed
-   at the planner's governed speed. The live margin exists on the official plan only.
+   at the planner's governed speed. The live margin is the planner's formula (O2, daylight, storm dose, EVA
+   duration) and exists on the official plan only.
 6. Pause menu: **MISSION PLAN** reopens planning; **RESTART SIMULATION** goes back to the title.
 
 Nothing is planned inside the app: it loads the engine's routes and timelines. The planner's engine service does
@@ -31,7 +32,6 @@ not run on Windows today, so a new plan cannot be computed on this PC.
 
 | Item | Note |
 | --- | --- |
-| Live margin: radiation-dose term | Replay shows the planner's value; free walk evaluates O2, daylight and EVA duration only, and says so on screen |
 | Live margin on alternative pads | The planner provides no "way home" maps for them: the panel reads "n/a" |
 | Computing a new plan | Hook ready: a folder `HomelineData/results/<hash>/` with `run_record.json`, `route_*.geojson` and `timeline_*.json` appears in the plan list as "Computed live". Tested with a synthetic folder only |
 | Planner web app inside the exe | Dropped for this delivery |
@@ -48,7 +48,7 @@ not run on Windows today, so a new plan cannot be computed on this PC.
    It fills `HomelineData/` (outside git) from planner commit `d943f39`. The app reads `HomelineData/web/data`
    (the five plans) and `HomelineData/bundle` (the official simulator bundle). Without access to the planner
    repository, copy the `HomelineData` folder of a delivered build into the project root instead.
-4. `dotnet run --project Tools/homeline-core/tests` must end with `313 passed, 0 failed`.
+4. `dotnet run --project Tools/homeline-core/tests` must end with `342 passed, 0 failed`.
 
 ## Build and check
 
@@ -89,7 +89,7 @@ Builds\MARTIS\MARTIS.exe -homelineSelfTest -screen-fullscreen 0 -screen-width 19
 
 | Folder (under `Assets/Mars/Scripts/Homeline/`) | Content |
 | --- | --- |
-| `Core/` | Pure C#, also compiled and tested by `dotnet`: bundle and grid readers, `GeoRoute`, `PlanCatalog`, `WaypointPlan`, `MissionPlan`, `Timeline`, `Physio` and `HlConfig` (the planner's oxygen model), `LiveState` (free-walk oxygen), `PadFrame` (planner metres to Unity world) |
+| `Core/` | Pure C#, also compiled and tested by `dotnet`: bundle and grid readers, `GeoRoute`, `PlanCatalog`, `WaypointPlan`, `MissionPlan`, `Timeline`, `Physio` and `HlConfig` (the planner's oxygen model), `StormTrack` (the dose leash), `LiveState` (free-walk oxygen), `PadFrame` (planner metres to Unity world) |
 | `Flow/HomelineApp.cs` | Boot object (lives across scene loads), link to the MARTIS menu, plan catalog, start of a mission |
 | `Sim/` | `EvaDriver` (replay, free walk, helmet feed, live margin), `SkySync`, `GroundSampler`, `HomelinePaths`, `SelfTest` |
 | `Ui/` | `PlanningPanel` and `PlanMap` (planning screen), `PlanPanel` (read-out in the EVA), `MapRouteOverlay` (route on the helmet's maps) |
