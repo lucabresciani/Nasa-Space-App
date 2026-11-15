@@ -85,6 +85,7 @@ namespace NasaSpaceApp.HUD
         private readonly RectTransform legendRect;
         private readonly HudLineMesh legendMesh;
         private readonly List<Text> legendTexts = new List<Text>(16);
+        private readonly MapWaypointsTab waypointsTab;   // web mission: Legend | Waypoints tabs (null if it failed)
 
         private bool open, mapBroken, fading;
         private float visibility, fadeFrom, fadeTo, fadeElapsed, fadeDuration;
@@ -192,11 +193,23 @@ namespace NasaSpaceApp.HUD
                                                TopLeft, RightMid, new Vector2(ColRight, -haulRowY), new Vector2(120f, RowH));
             doseValue = Row("Dose", "Daily dose rate", haulRowY + RowPitch, out _);
             Divider("Divider2", Divider2Y);
-            HudFactory.CreateText("LegendTitle", frame, medium, SizeRow, HudTokens.InkPrimary, TextAnchor.MiddleLeft,
-                                  TopLeft, LeftMid, new Vector2(ColX, -LegendHeadY), new Vector2(300f, RowH)).text = "Map legend";
+            Text legendTitle = HudFactory.CreateText("LegendTitle", frame, medium, SizeRow, HudTokens.InkPrimary, TextAnchor.MiddleLeft,
+                                                     TopLeft, LeftMid, new Vector2(ColX, -LegendHeadY), new Vector2(300f, RowH));
+            legendTitle.text = "Map legend";
             Vector2 legendSize = new Vector2(ColRight - ColX, LegendMaxRows * LegendPitch);
             legendRect = HudFactory.CreateRect("Legend", frame, TopLeft, TopLeft, new Vector2(ColX, -LegendTop), legendSize);
             legendMesh = HudFactory.CreateLineMesh("LegendIcons", legendRect, TopLeft, TopLeft, Vector2.zero, legendSize);
+            try
+            {
+                waypointsTab = new MapWaypointsTab(ctx, frame, skin, regular, medium, map, legendTitle, legendRect,
+                                                   new Vector2(ColX - 8f, -LegendHeadY), new Vector2(ColX, -LegendTop),
+                                                   new Vector2(ColRight - ColX, PanelY + PanelH - LegendTop - 16f));
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);   // the legend still works without the waypoint tab
+                waypointsTab = null;
+            }
             rangeText = Km(Mathf.RoundToInt(PartnerHaulRangeM / 100f));
 
             // ---- close button (32x32) in the panel's top-right corner, last so it is on top
@@ -289,6 +302,7 @@ namespace NasaSpaceApp.HUD
             RefreshClock();
             RefreshSun();
             RefreshStatus();
+            waypointsTab?.Refresh();
             if (map != null && !mapBroken)
             {
                 try

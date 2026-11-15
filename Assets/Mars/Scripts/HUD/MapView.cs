@@ -356,6 +356,18 @@ namespace NasaSpaceApp.HUD
             viewDirty = true;
         }
 
+        /// <summary>Centres the view on a world position (zoom kept, clamped to the HD area).</summary>
+        public void CenterOn(Vector3 world)
+        {
+            if (!mapReady)
+            {
+                return;
+            }
+            center = new Vector2(world.x, world.z);
+            ClampCenter();
+            viewDirty = true;
+        }
+
         /// <summary>Per frame (unscaled dt): binds the map when built, tracks scans, then input and redraws while shown.</summary>
         public void Tick(float dt)
         {
