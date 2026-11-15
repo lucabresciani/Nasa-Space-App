@@ -37,6 +37,7 @@ namespace NasaSpaceApp.HUD
 
         private SuitTelemetry telemetry;
         private int missionVersion = -1;   // MissionLink.Version the tracker follows
+        private readonly EvaLogger evaLog = new EvaLogger();
         private HudTooltip tooltip;
         private MissionCaption caption;
         private MissionPanel missionPanel;
@@ -409,6 +410,7 @@ namespace NasaSpaceApp.HUD
             {
                 Vector3 feet = player != null ? player.transform.position : ctx.CameraPosition;
                 ctx.Mission.Tick(feet, telemetry.MetSeconds / 60f, telemetry.O2LeftL);
+                evaLog.Sample();
             }
 
             // 3. Night dimming: ink and scrim dim together through the root group.
@@ -452,6 +454,7 @@ namespace NasaSpaceApp.HUD
             }
             missionVersion = MissionLink.Version;
             MissionPlan plan = MissionLink.Current;
+            evaLog.End(plan == null ? "mission cleared" : "another mission loaded");
             if (plan == null)
             {
                 ctx.Mission.End();
@@ -460,11 +463,13 @@ namespace NasaSpaceApp.HUD
             telemetry = new SuitTelemetry();
             ctx.Telemetry = telemetry;
             ctx.Mission.Begin(plan);
+            evaLog.Begin(ctx.Mission);
             Debug.Log("[Mission] fresh EVA: suit refilled, mission clock 0");
         }
 
         private void OnDestroy()
         {
+            evaLog.End("scene ended");
             if (mapOpen)
             {
                 RestoreAfterMap();

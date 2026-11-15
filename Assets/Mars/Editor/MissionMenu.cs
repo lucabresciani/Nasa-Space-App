@@ -44,6 +44,24 @@ namespace NasaSpaceApp.MarsGen
         [MenuItem("Tools/Mars/Clear Mission", true)]
         private static bool ClearMissionValid() => EditorApplication.isPlaying && MissionLink.Current != null;
 
+        [MenuItem("Tools/Mars/Export EVA Log")]
+        private static void ExportEvaLog()
+        {
+            EvaLogger log = EvaLogger.Active;
+            string path = log != null && log.HasData ? log.Write() : null;
+            if (path != null)
+            {
+                EditorUtility.RevealInFinder(path);
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Export EVA Log", "Nothing to export: load a mission in play mode and walk a bit first.", "OK");
+            }
+        }
+
+        [MenuItem("Tools/Mars/Export EVA Log", true)]
+        private static bool ExportEvaLogValid() => EditorApplication.isPlaying && MissionLink.Current != null;
+
         private static string DefaultDir()
         {
             string home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
