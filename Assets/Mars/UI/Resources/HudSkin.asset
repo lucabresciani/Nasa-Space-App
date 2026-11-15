@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4a6e4ad90db456287bc2c3f791c9ec4, type: 3}
+  m_Name: HudSkin
+  m_EditorClassIdentifier: 
+  panelFill: {fileID: 21300000, guid: ed76065fa3fcd62418677012fc4c1a38, type: 3}
+  panelOutline: {fileID: 21300000, guid: 60f87df6499666d49842ebed045a7a70, type: 3}
+  frameCorners: {fileID: 21300000, guid: e6ff52ae52f9c5b49b86a1a9be282b5b, type: 3}
+  discSolid: {fileID: 21300000, guid: 677344af09e023245ad247948960389e, type: 3}
+  ringTicks60: {fileID: 21300000, guid: eda5cb001abcd654ea7dd6bcb0f28231, type: 3}
+  ringHairline: {fileID: 21300000, guid: 0188ac6e0cffbc94391404e638cfd0aa, type: 3}
+  ringThin: {fileID: 21300000, guid: 093e08c0492fec842b0196ad60cebba9, type: 3}
+  compassPointer: {fileID: 21300000, guid: 6a6e9a1e9bab6a9458256de0d4b9fd73, type: 3}
+  offscreenArrow: {fileID: 21300000, guid: 8b22b8002452d7b418c30d309624583f, type: 3}
+  iconBattery: {fileID: 21300000, guid: bb085083d49f9c04fabd24748665b24d, type: 3}
+  iconClock: {fileID: 21300000, guid: d6562dc1efb460b448bf35f84b988656, type: 3}
+  iconCo2: {fileID: 21300000, guid: 1873f23eec6a3164a87417ea668c0678, type: 3}
+  iconFan: {fileID: 21300000, guid: 57d6253a66e517b4da8aac70a8009421, type: 3}
+  iconHeart: {fileID: 21300000, guid: 1da2608c751964143bff29a274ecf3bb, type: 3}
+  iconHelmet: {fileID: 21300000, guid: 534f1997b0f518d4eaf2c268e82fa416, type: 3}
+  iconOxygen: {fileID: 21300000, guid: 4ffc60cd8a8cabe498711d8ebff2f470, type: 3}
+  iconPower: {fileID: 21300000, guid: 29c0cf7d951d84446845fcb22c721088, type: 3}
+  iconPressure: {fileID: 21300000, guid: 41121c86b7ed862449b7245748b99546, type: 3}
+  iconRadiation: {fileID: 21300000, guid: 3e8f7c4751afbcc45a4ea19574db61ae, type: 3}
+  iconSignal: {fileID: 21300000, guid: b540fa002e500cb4eabfe1741b1ec4a5, type: 3}
+  iconTemperature: {fileID: 21300000, guid: ea78bc11009765d42bf810d385dbc7df, type: 3}
+  iconWarning: {fileID: 21300000, guid: 21d522d93bc9325458784a114fc71103, type: 3}
+  iconWater: {fileID: 21300000, guid: eb8a457413de58945b8991abcc644837, type: 3}
+  iconWaypoint: {fileID: 21300000, guid: 36efd5f6d9156c84f8c695c35aa300c4, type: 3}
+  monoRegular: {fileID: 12800000, guid: cd01028399eb4281840a59d17ff89980, type: 3}
+  monoMedium: {fileID: 12800000, guid: 7393c0f4f4484affa8ce6cc6a90083c7, type: 3}
+  monoSemiBold: {fileID: 12800000, guid: 5384d6b3003b4b129cfd3d93a835e0b5, type: 3}
+  monoFallback: {fileID: 12800000, guid: c7d505e9e8b74e5ebcae5f2bf55f2add, type: 3}

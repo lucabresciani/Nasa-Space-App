@@ -1,7 +1,39 @@
+using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace NasaSpaceApp
 {
+    /// <summary>
+    /// A point as the Mars maps give it (NASA Mars Trek, JPL MMGIS Curiosity traverse, USGS Gale maps): planetocentric
+    /// latitude and east longitude in degrees, the Mars equivalent of GPS coordinates, plus elevation above the MOLA areoid.
+    /// </summary>
+    public readonly struct MarsCoordinates
+    {
+        /// <summary>Degrees, north positive (Gale crater is south of the equator, so negative).</summary>
+        public readonly double Latitude;
+        /// <summary>Degrees east of the prime meridian (Gale crater ≈ 137.4).</summary>
+        public readonly double Longitude;
+        /// <summary>Metres above the MOLA areoid, the "sea level" of Mars (Gale crater floor ≈ -4500).</summary>
+        public readonly float Elevation;
+
+        public MarsCoordinates(double latitude, double longitude, float elevation)
+        {
+            Latitude = latitude;
+            Longitude = longitude;
+            Elevation = elevation;
+        }
+
+        /// <summary>"-4.685180, 137.355671": decimal degrees with a dot, ready to paste into a map's search box.</summary>
+        public string ToDecimalString() =>
+            string.Format(CultureInfo.InvariantCulture, "{0:0.000000}, {1:0.000000}", Latitude, Longitude);
+
+        /// <summary>"4.685180°S 137.355671°E -4418 m".</summary>
+        public override string ToString() =>
+            string.Format(CultureInfo.InvariantCulture, "{0:0.000000}°{1} {2:0.000000}°E {3:0} m",
+                Math.Abs(Latitude), Latitude < 0 ? 'S' : 'N', Longitude, Elevation);
+    }
+
     /// <summary>
     /// Ties the scene to real Mars coordinates (Gale crater, Mount Sharp; USGS MSL Gale DEM/ortho, sphere R = 3396190 m,
     /// equirectangular, centre longitude 0). Lives on the "Mars Terrain" GameObject, configured by
@@ -73,12 +105,23 @@ namespace NasaSpaceApp
         /// <summary>World y of a real MOLA elevation at the world XZ of <paramref name="world"/> (its y is ignored).</summary>
         public float WorldY(Vector3 world, float elevationMOLA) => elevationMOLA - datumElevation - CurvatureDrop(world.x, world.z);
 
-        /// <summary>Latitude (x, degrees, south negative) and longitude (y, degrees east) of a world position.</summary>
+        /// <summary>
+        /// Unity world position → map coordinates (latitude, east longitude, MOLA elevation), as shown on NASA/USGS Mars maps.
+        /// Exact over the whole scene (play area and backdrop): the terrain is the maps' equirectangular grid, only scaled
+        /// east-west by <see cref="EastScale"/>. Usage: <c>MarsGeoReference.Instance.ToMapCoordinates(player.position)</c>.
+        /// </summary>
+        public MarsCoordinates ToMapCoordinates(Vector3 world)
+        {
+            double lat = swLat + ((double)world.z - playSwWorld.y) / metersPerDegree;
+            double lon = swLon + ((double)world.x - playSwWorld.x) / (eastScale * metersPerDegree);
+            return new MarsCoordinates(lat, lon, ElevationMOLA(world));
+        }
+
+        /// <summary>Latitude (x) and longitude (y) in degrees. Float longitude only resolves ~1 m: prefer <see cref="ToMapCoordinates"/>.</summary>
         public Vector2 LatLon(Vector3 world)
         {
-            double lat = swLat + (world.z - playSwWorld.y) / metersPerDegree;
-            double lon = swLon + (world.x - playSwWorld.x) / (eastScale * metersPerDegree);
-            return new Vector2((float)lat, (float)lon);
+            MarsCoordinates c = ToMapCoordinates(world);
+            return new Vector2((float)c.Latitude, (float)c.Longitude);
         }
 
         /// <summary>World position (y = 0) of a latitude/longitude in degrees.</summary>

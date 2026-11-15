@@ -1,0 +1,11 @@
+# MARTIS logotype layout. Units: sprite px (0.6x the 8550x4800 mockup); origin bottom-left of the box, y up.
+# Written by Tools/title/extract_logo.py; the glyph order is the draw order.
+box 2178 436
+cap 105.9 410.1
+# glyph t_slab (removed: the helmet stands alone) 1193 0 277 420
+glyph m 0 103 277 310
+glyph a 485 103 255 310
+glyph r 948 103 217 310
+glyph t_helmet 1342 66 191 370
+glyph i 1688 103 88 310
+glyph s 1984 103 194 310
