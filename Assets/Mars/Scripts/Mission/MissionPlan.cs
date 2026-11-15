@@ -119,6 +119,13 @@ namespace NasaSpaceApp.Mission
         public float TDarkMin => Source.Conditions != null ? F(Source.Conditions.TDarkMin) : float.NaN;
         public bool StormReplay => Source.Conditions != null && Source.Conditions.StormReplay;
 
+        /// <summary>EVA start as a UTC instant (conditions.eva_start_utc), null when the file does not carry it.</summary>
+        public DateTime? EvaStartUtc { get; private set; }
+        /// <summary>EVA start local mean solar time in hours (conditions.eva_start_lmst), NaN when unknown.</summary>
+        public float EvaStartLmstHours { get; private set; } = float.NaN;
+        /// <summary>D39 dose series on the EVA clock (storm switch on), null otherwise.</summary>
+        public DoseSeries Dose { get; private set; }
+
         /// <summary>Things the user should know about this mission in this scene (shown/logged by the loader).</summary>
         public IReadOnlyList<string> Warnings => warnings;
 
@@ -271,6 +278,24 @@ namespace NasaSpaceApp.Mission
                 }
             }
 
+            // EVA clock: start instant, LMST, dose series.
+            MissionFile.ConditionsBlock cond = file.Conditions;
+            if (cond != null)
+            {
+                if (!string.IsNullOrEmpty(cond.EvaStartUtc)
+                    && DateTime.TryParse(cond.EvaStartUtc, CultureInfo.InvariantCulture,
+                                         DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime start))
+                {
+                    plan.EvaStartUtc = start;
+                }
+                plan.EvaStartLmstHours = ParseHms(cond.EvaStartLmst);
+                plan.Dose = DoseSeries.From(cond.Dose);
+                if (cond.StormReplay && plan.Dose == null)
+                {
+                    plan.warnings.Add("storm replay was on in the planner, but the file has no dose series: the dose term is left out");
+                }
+            }
+
             // What the user should know.
             if (file.Dummy) plan.warnings.Add("DUMMY data: built from the web app's placeholder data, not real results");
             if (unrouted > 0) plan.warnings.Add(unrouted + " leg(s) could not be routed in the planner: the mission is not feasible as planned");
@@ -342,6 +367,22 @@ namespace NasaSpaceApp.Mission
 
         private static float F(double? v) => v.HasValue ? (float)v.Value : float.NaN;
 
+        // "HH:MM:SS" → hours; NaN when missing or malformed.
+        private static float ParseHms(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return float.NaN;
+            string[] p = s.Split(':');
+            if (p.Length < 2) return float.NaN;
+            if (!int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int h)
+                || !int.TryParse(p[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int m))
+            {
+                return float.NaN;
+            }
+            float sec = 0f;
+            if (p.Length > 2) float.TryParse(p[2], NumberStyles.Float, CultureInfo.InvariantCulture, out sec);
+            return h + m / 60f + sec / 3600f;
+        }
+
         private static float Num(Newtonsoft.Json.Linq.JToken t) =>
             t == null || t.Type == Newtonsoft.Json.Linq.JTokenType.Null ? float.NaN : (float)t;
 
@@ -358,5 +399,56 @@ namespace NasaSpaceApp.Mission
                 default: return MissionPhase.Walk;
             }
         }
+    }
+
+    /// <summary>
+    /// The D39 storm dose rate on the EVA clock (mission/margin.ts DoseTiming): linear between knots, clamped outside
+    /// (numpy.interp). tau_dose(t) = 60 · D_allow / rate(t) minutes, the dose leash of the margin's dose term.
+    /// </summary>
+    public sealed class DoseSeries
+    {
+        public float DAllowMgy { get; private set; }
+        public float[] EvaMin { get; private set; }
+        public float[] RateMgyH { get; private set; }
+        /// <summary>Lowest rate in the series: the quiet background before the storm.</summary>
+        public float QuietRateMgyH { get; private set; }
+        public string Source { get; private set; }
+
+        public static DoseSeries From(MissionFile.DoseBlock b)
+        {
+            if (b == null || b.Series == null || !(b.DAllowMgy > 0)) return null;
+            var t = new List<float>(b.Series.Count);
+            var r = new List<float>(b.Series.Count);
+            foreach (double[] k in b.Series)
+            {
+                if (k == null || k.Length < 2 || double.IsNaN(k[0]) || !(k[1] > 0)) continue;
+                t.Add((float)k[0]);
+                r.Add((float)k[1]);
+            }
+            if (t.Count == 0) return null;
+            float quiet = float.MaxValue;
+            foreach (float v in r) quiet = Mathf.Min(quiet, v);
+            return new DoseSeries { DAllowMgy = (float)b.DAllowMgy, EvaMin = t.ToArray(), RateMgyH = r.ToArray(), QuietRateMgyH = quiet, Source = b.Source };
+        }
+
+        /// <summary>Dose rate (mGy/h) at EVA minute <paramref name="tMin"/>.</summary>
+        public float RateAt(float tMin)
+        {
+            float[] xs = EvaMin, ys = RateMgyH;
+            int n = xs.Length;
+            if (tMin <= xs[0]) return ys[0];
+            if (tMin >= xs[n - 1]) return ys[n - 1];
+            int lo = 0, hi = n - 1;
+            while (hi - lo > 1)
+            {
+                int mid = (lo + hi) >> 1;
+                if (xs[mid] <= tMin) lo = mid; else hi = mid;
+            }
+            float u = (tMin - xs[lo]) / (xs[hi] - xs[lo]);
+            return ys[lo] + u * (ys[hi] - ys[lo]);
+        }
+
+        /// <summary>Minutes until D_allow at the rate of EVA minute <paramref name="tMin"/> (the dose leash).</summary>
+        public float TauDoseMin(float tMin) => 60f * DAllowMgy / RateAt(tMin);
     }
 }

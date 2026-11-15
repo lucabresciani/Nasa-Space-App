@@ -31,9 +31,9 @@ namespace NasaSpaceApp.Mission
     /// <see cref="ScheduleDeltaMin"/> = live − planned (positive = behind). O₂ the same way, from the suit model.</para>
     ///
     /// <para><b>Margin</b> (the planner's terms, mission/margin.ts): O₂ = (O₂ left − O₂_home − tasks left − reserve) /
-    /// effort rate; daylight = t_dark − t − T_home; EVA duration = EVA limit − t − T_home; the smallest binds. T_home and
-    /// O₂_home come from the plan at the matched point plus the straight walk back to it at the leg's planned pace (an
-    /// estimate off route). The dose term is left out: the mission file has no dose series.</para>
+    /// effort rate; daylight = t_dark − t − T_home; dose = tau_dose(t) − T_home when the file carries the D39 storm
+    /// series; EVA duration = EVA limit − t − T_home; the smallest binds. T_home and O₂_home come from the plan at the
+    /// matched point plus the straight walk back to it at the leg's planned pace (an estimate off route).</para>
     ///
     /// <para><b>Projected margin</b> (REPLAN): the lowest margin over the rest of the planned timeline if the walker keeps
     /// the current delay and uses O₂ as planned from here.</para>
@@ -572,7 +572,7 @@ namespace NasaSpaceApp.Mission
             string binding = null;
             if (!float.IsNaN(THomeMin))
             {
-                // Engine order: O2, daylight, (dose: not available here), EVA duration; first wins on a tie.
+                // Engine order: O2, daylight, dose (storm replay only), EVA duration; first wins on a tie.
                 if (!float.IsNaN(o2LeftL) && !float.IsNaN(O2HomeL) && effort > 0f)
                 {
                     float tasksLeft = StopWaypoint >= 0 ? Mathf.Max(0f, StopPlannedMin - StopElapsedMin) * (float)c.StationRateLMin : 0f;
@@ -582,6 +582,10 @@ namespace NasaSpaceApp.Mission
                 if (!float.IsNaN(tDark))
                 {
                     Consider(tDark - EvaMin - THomeMin, "daylight", ref margin, ref binding);
+                }
+                if (Plan.Dose != null)
+                {
+                    Consider(Plan.Dose.TauDoseMin(EvaMin) - THomeMin, "dose", ref margin, ref binding);
                 }
                 if (c.EvaLimitMin > 0)
                 {
@@ -632,6 +636,7 @@ namespace NasaSpaceApp.Mission
                     Consider((o2Left - r.O2HomeL - r.TasksLeftL - (float)c.ReserveL) / effort, "O2", ref m, ref b);
                 }
                 if (!float.IsNaN(tDark)) Consider(tDark - t - r.THomeMin, "daylight", ref m, ref b);
+                if (Plan.Dose != null) Consider(Plan.Dose.TauDoseMin(t) - r.THomeMin, "dose", ref m, ref b);
                 if (c.EvaLimitMin > 0) Consider((float)c.EvaLimitMin - t - r.THomeMin, "EVA duration", ref m, ref b);
                 if (!float.IsNaN(m) && (float.IsNaN(best) || m < best))
                 {
@@ -701,7 +706,9 @@ namespace NasaSpaceApp.Mission
             switch (Status)
             {
                 case MissionStatus.ReturnNow:
-                    return "Margin gone (" + Binding + "): leave now and walk straight home";
+                    return Binding == "dose"
+                        ? "Radiation storm: dose leash gone, walk straight home now"
+                        : "Margin gone (" + Binding + "): leave now and walk straight home";
                 case MissionStatus.TurnBack:
                     return "Turn back within " + Mathf.Max(0, Mathf.FloorToInt(MarginMin)).ToString(System.Globalization.CultureInfo.InvariantCulture)
                            + " min (" + Binding + ")";

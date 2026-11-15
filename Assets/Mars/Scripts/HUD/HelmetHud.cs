@@ -411,6 +411,11 @@ namespace NasaSpaceApp.HUD
                 Vector3 feet = player != null ? player.transform.position : ctx.CameraPosition;
                 ctx.Mission.Tick(feet, telemetry.MetSeconds / 60f, telemetry.O2LeftL);
                 evaLog.Sample();
+                float dose = MissionEnvironment.DoseRateMsvH(ctx.Mission.Plan, ctx.Mission.EvaMin, SuitTelemetry.DoseRateGaleMsvH);
+                if (!float.IsNaN(dose))
+                {
+                    telemetry.DoseRateMsvH = dose;   // D39 storm replay on the EVA clock
+                }
             }
 
             // 3. Night dimming: ink and scrim dim together through the root group.

@@ -150,6 +150,7 @@ namespace NasaSpaceApp.Mission
                 Current = null;   // world positions belong to this scene
                 version++;
                 HomeBase.Reset();
+                MissionEnvironment.Restore();
             }
         }
 
@@ -193,6 +194,7 @@ namespace NasaSpaceApp.Mission
             LastError = null;
             version++;
             HomeBase.Reset();
+            MissionEnvironment.Restore();
             FirstPersonController player = FindAnyObjectByType<FirstPersonController>();
             if (player != null && sceneSpawnSaved)
             {
@@ -226,6 +228,7 @@ namespace NasaSpaceApp.Mission
             LastError = null;
             version++;
             StartAtPad(plan);
+            Debug.Log("[Mission] " + MissionEnvironment.Apply(plan));
             Debug.Log("[Mission] loaded " + plan + (source != null ? "\n  from " + source : string.Empty)
                       + "\n  " + plan.OriginLabel);
             foreach (string w in plan.Warnings)

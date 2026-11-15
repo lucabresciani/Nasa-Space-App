@@ -104,6 +104,18 @@ namespace NasaSpaceApp.Mission
             [JsonProperty("t_dark_min")] public double? TDarkMin;
             [JsonProperty("storm_replay")] public bool StormReplay;
             [JsonProperty("t_star_min")] public double? TStarMin;
+            // Optional (added 2026-11-15, additive): the EVA start as an instant, and the D39 dose series on the EVA clock.
+            [JsonProperty("eva_start_utc")] public string EvaStartUtc;
+            [JsonProperty("msl_sol")] public int? MslSol;
+            [JsonProperty("dose")] public DoseBlock Dose;
+        }
+
+        /// <summary>D39 storm replay: dose rate on the EVA clock (margin.ts DoseTiming), present when the storm switch was on.</summary>
+        public sealed class DoseBlock
+        {
+            [JsonProperty("d_allow_mgy")] public double DAllowMgy;
+            [JsonProperty("series")] public List<double[]> Series;   // [eva_min, mGy/h], ascending
+            [JsonProperty("source")] public string Source;
         }
 
         public sealed class WaypointEntry

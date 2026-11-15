@@ -254,6 +254,34 @@ namespace NasaSpaceApp
         /// <summary>Re-applies the current time to the sun, sky, ambient light and fog.</summary>
         public void Refresh() => Apply();
 
+        /// <summary>Real seconds per sol (0 stops the clock). The web mission link sets a real-time sol during an EVA.</summary>
+        public float SolDuration
+        {
+            get => solDuration;
+            set => solDuration = Mathf.Max(0f, value);
+        }
+
+        /// <summary>
+        /// Jumps the sky to the real instant <paramref name="utc"/> (no glide): sol 0 becomes the local sol containing it
+        /// and Time Of Day the local true solar time then. Real Sky only (returns false otherwise). Used by the web
+        /// mission link to start the EVA at the planned moment.
+        /// </summary>
+        public bool SetInstant(DateTime utc)
+        {
+            if (!realSky) return false;
+            utc = DateTime.SpecifyKind(utc, DateTimeKind.Utc);
+            startDateUtc = utc.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture);
+            sol = 0;
+            firstNoonValid = noonValid = false;
+            EnsureSite();
+            double d = MarsEphemeris.DaysTT(MarsEphemeris.JulianDateUtc(utc));
+            float tod = (float)(0.5 + MarsEphemeris.SunHourAngleDeg(d, siteLongitude) / 360.0);
+            timeOfDay = Mathf.Repeat(tod, 1f);
+            SnapTo(timeOfDay);
+            Apply();
+            return true;
+        }
+
         void Tick(float dt)
         {
             Keyboard keyboard = Keyboard.current;

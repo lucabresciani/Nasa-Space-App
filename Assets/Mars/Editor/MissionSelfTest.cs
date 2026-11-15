@@ -134,24 +134,55 @@ namespace NasaSpaceApp.MarsGen
                 Note("elevation: pad elev_m unknown in the file, skipped");
             }
 
-            // 3. Tracker on an exact on-plan walk (suit O₂ = capacity − planned use).
+            // 3. Sky: the EVA start instant has the planned LMST at the pad, and Unity's sun reaches the flat horizon at
+            //    EVA start + t_dark (the web's darkness definition: the sun's centre below a flat 0° horizon at the pad).
+            DateTime? start = MissionEnvironment.EvaStart(plan, out string how);
+            if (start.HasValue)
+            {
+                double lon = file.Frame.Pad.Lon, lat = file.Frame.Pad.Lat;
+                double lmst = MarsClock.LmstHours(start.Value, lon);
+                Note("sky: EVA start " + start.Value.ToString("yyyy-MM-dd HH:mm:ss", Inv) + " UTC (" + how + "), LMST " + MarsClock.Hms(lmst));
+                if (!float.IsNaN(plan.EvaStartLmstHours))
+                {
+                    double dh = Math.Abs(lmst - plan.EvaStartLmstHours) * 60.0;
+                    Check(dh < 1.0, string.Format(Inv, "EVA start LMST matches the plan ({0:0.00} min apart)", dh));
+                }
+                if (!float.IsNaN(plan.TDarkMin))
+                {
+                    double el = SunElevationDeg(start.Value.AddMinutes(plan.TDarkMin), lat, lon);
+                    Note(string.Format(Inv, "sky: Unity sun elevation at t_dark ({0:0.0} min) = {1:+0.00;-0.00}°", plan.TDarkMin, el));
+                    Check(Math.Abs(el) < 1.5, "Unity's sun is at the flat horizon when the plan says dark (|elevation| < 1.5°)");
+                }
+            }
+            else
+            {
+                Note("sky: no EVA start time in the file (" + how + ")");
+            }
+
+            // 4. Tracker on an exact on-plan walk (suit O₂ = capacity − planned use).
             var tr = new MissionTracker();
             tr.Begin(plan);
             float cap = (float)plan.Constants.O2CapacityL;
             float worstMargin = 0f, worstDelta = 0f;
             int offPlan = 0;
             float end = float.IsNaN(plan.EvaMin) ? 0f : plan.EvaMin + 0.5f;
-            for (float t = 0f; t <= end && !tr.Complete; t += 0.02f)
+            int nextRow = 0;   // margins are compared at the timeline's own rows: exact there (the dose leash is not linear between)
+            const float Step = 0.02f;
+            for (float t = 0f; t <= end && !tr.Complete; t += Step)
             {
                 At(plan, t, out Vector3 pos, out float used);
                 tr.Tick(pos, t, cap - used);
                 if (!float.IsNaN(tr.ScheduleDeltaMin)) worstDelta = Mathf.Max(worstDelta, Mathf.Abs(tr.ScheduleDeltaMin));
                 if (tr.Status != MissionStatus.OnPlan && tr.Status != MissionStatus.HeadingHome && tr.Status != MissionStatus.Complete) offPlan++;
-                if (NearStopEdge(plan, t) || t < 0.3f || t > plan.EvaMin - 0.5f) continue;
-                if (plan.TryPlannedAt(t, out MissionTimelineRow st) && !float.IsNaN(tr.MarginMin))
+                bool atRow = false;
+                MissionTimelineRow st = default;
+                while (nextRow < plan.Timeline.Count && plan.Timeline[nextRow].TMin < t + 0.5f * Step)
                 {
-                    worstMargin = Mathf.Max(worstMargin, Mathf.Abs(tr.MarginMin - st.MarginMin));
+                    st = plan.Timeline[nextRow++];
+                    atRow = Mathf.Abs(st.TMin - t) <= 0.5f * Step;
                 }
+                if (!atRow || NearStopEdge(plan, t) || t < 0.3f || t > plan.EvaMin - 0.5f || float.IsNaN(tr.MarginMin)) continue;
+                worstMargin = Mathf.Max(worstMargin, Mathf.Abs(tr.MarginMin - st.MarginMin));
             }
             Check(offPlan == 0, "on-plan walk stays ON PLAN / HEADING HOME (" + offPlan + " ticks off)");
             Check(worstDelta < 1f, string.Format(Inv, "on-plan walk: |schedule delta| ≤ {0:0.00} min", worstDelta));
@@ -165,6 +196,15 @@ namespace NasaSpaceApp.MarsGen
             if (fails == 0) Debug.Log("[MissionSelfTest] PASS\n" + report);
             else Debug.LogError("[MissionSelfTest] " + fails + " FAILED\n" + report);
             return fails;
+        }
+
+        // Sun elevation over the flat horizon at a site: sin h = sin φ sin δ + cos φ cos δ cos H (MarsEphemeris).
+        private static double SunElevationDeg(DateTime utc, double latDeg, double eastLonDeg)
+        {
+            double d = MarsEphemeris.DaysTT(MarsEphemeris.JulianDateUtc(utc));
+            double rad = Math.PI / 180.0;
+            double h = MarsEphemeris.SunHourAngleDeg(d, eastLonDeg) * rad, dec = MarsEphemeris.SunDeclinationDeg(d) * rad, phi = latDeg * rad;
+            return Math.Asin(Math.Sin(phi) * Math.Sin(dec) + Math.Cos(phi) * Math.Cos(dec) * Math.Cos(h)) / rad;
         }
 
         // Position and planned O₂ used on the plan at EVA minute t (on the route while walking, at the waypoint in a stop).

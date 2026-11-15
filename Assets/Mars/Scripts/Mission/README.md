@@ -44,6 +44,16 @@ draft) in home-line; the log back is `contracts/bundle/eva_log.schema.json`.
   (> 20 m, "left early") or with Complete. The 25 m / 5 min / 10 m / 20 m values are assumed for
   the simulator (`MissionTracker` constants).
 
+## Time and weather
+
+Loading a mission puts the sky at the planned EVA start (`conditions.eva_start_utc`, else the instant
+when LMST at the pad is `eva_start_lmst` on the scene's date; `Sky/MarsClock.cs`, Mars24) and runs
+the sol in real time (88 775 s instead of the scene's 1 200 s), so EVA minute t is the plan's minute t
+and the sun sets at the plan's `t_dark`. The weather snaps to Clear and stops evolving (the plan
+assumes today's clear sky; M still changes it). With the web's storm switch on (D39) the file
+carries the dose series: the suit's dose rate replays it (Gale background × rate / quiet rate) and the
+live margin gets the dose term. Clear Mission restores the scene's clock speed and weather.
+
 ## Check it
 
 **Tools ▸ Mars ▸ Mission Self-Test** (or batch:
