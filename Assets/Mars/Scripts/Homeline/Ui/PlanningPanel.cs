@@ -22,7 +22,8 @@ namespace NasaSpaceApp.Homeline.Ui
     public sealed class PlanningPanel : MenuPanel
     {
         const float W = MenuTokens.ContentWidth;
-        const float RowH = 38f, RowGap = 4f, ListTop = 30f;
+        const float RowH = 40f, RowGap = 3f, ListTop = 30f;
+        const int MaxTitleChars = 36;
         const int MaxRows = 6;
 
         readonly HomelineApp app;
@@ -33,6 +34,7 @@ namespace NasaSpaceApp.Homeline.Ui
         PlanMap map;
         int chosen;
         MissionPlan generated;
+        bool generateFailed;
 
         public PlanningPanel(HomelineApp app)
         {
@@ -72,8 +74,9 @@ namespace NasaSpaceApp.Homeline.Ui
                 ColorBlock colors = button.colors;
                 colors.normalColor = MenuTokens.Alpha(MenuTokens.RowFocus, 0.35f);
                 colors.highlightedColor = MenuTokens.RowFocus;
-                colors.selectedColor = HudTokens.Light(0xEAD8BE, 0.22f);
-                colors.pressedColor = HudTokens.Light(0xEAD8BE, 0.30f);
+                // Focus must read clearly above the rest state (keyboard and gamepad users see only this).
+                colors.selectedColor = HudTokens.Light(0xEAD8BE, 0.30f);
+                colors.pressedColor = HudTokens.Light(0xEAD8BE, 0.40f);
                 colors.disabledColor = MenuTokens.Alpha(MenuTokens.RowFocus, 0.15f);
                 colors.colorMultiplier = 1f;
                 colors.fadeDuration = MenuTokens.Dur(MenuTokens.DurFocus);
@@ -88,11 +91,11 @@ namespace NasaSpaceApp.Homeline.Ui
 
                 PlanEntry e = plans[i];
                 MenuUi.Label("Title", bg.transform, medium, MenuTokens.SizeBody, MenuTokens.Sand, TextAnchor.MiddleLeft,
-                             new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(20f, 0f), new Vector2(330f, RowH), e.Title);
+                             new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(20f, 0f), new Vector2(330f, RowH), Clip(e.Title));
                 string stops = e.Stops != null && e.Stops.Length > 0 ? string.Join(" › ", e.Stops) : "";
                 MenuUi.Label("Stops", bg.transform, mono, MenuTokens.SizeSmall, MenuTokens.SandDim, TextAnchor.MiddleLeft,
                              new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(352f, 0f), new Vector2(200f, RowH), stops);
-                string right = e.TotalMin.HasValue ? HlJson.F(e.TotalMin.Value, 0) + " min" : "";
+                string right = e.TotalMin.HasValue ? HlJson.F(e.TotalMin.Value, 0) + "\u00a0min" : "";
                 if (!string.IsNullOrEmpty(e.Note)) right = right.Length > 0 ? e.Note + " · " + right : e.Note;
                 MenuUi.Label("Minutes", bg.transform, mono, MenuTokens.SizeSmall, MenuTokens.Sand, TextAnchor.MiddleRight,
                              new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-14f, 0f), new Vector2(230f, RowH), right);
@@ -133,7 +136,11 @@ namespace NasaSpaceApp.Homeline.Ui
         public void Choose(int index)
         {
             if (index < 0 || index >= rows.Count) return;
-            if (index != chosen) generated = null;
+            if (index != chosen)
+            {
+                generated = null;
+                generateFailed = false;
+            }
             chosen = index;
             RefreshState();
         }
@@ -143,6 +150,7 @@ namespace NasaSpaceApp.Homeline.Ui
         {
             if (chosen < 0 || chosen >= app.Catalog.Plans.Count) return;
             generated = app.Generate(app.Catalog.Plans[chosen]);
+            generateFailed = generated == null;
             RefreshState();
             if (generated != null && startReplay != null && UnityEngine.EventSystems.EventSystem.current != null)
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(startReplay.gameObject);
@@ -181,7 +189,9 @@ namespace NasaSpaceApp.Homeline.Ui
             }
             if (!ready)
             {
-                table.text = e == null ? "" : "No waypoints yet for this plan.\nPress GENERATE WAYPOINTS FROM PLAN.";
+                table.text = e == null ? ""
+                    : generateFailed ? "This plan could not be read.\nCheck that the HomelineData folder next to the app is complete,\nthen try again or pick another plan."
+                    : "No waypoints yet for this plan.\nPress GENERATE WAYPOINTS FROM PLAN.";
                 result.text = e == null ? "" : e.OriginLabel;
                 return;
             }
@@ -212,6 +222,13 @@ namespace NasaSpaceApp.Homeline.Ui
                 if (i < main.Count - 1) sb.Append('\n');
             }
             return sb.ToString();
+        }
+
+        /// <summary>Long titles (live plans carry user text) are cut with an ellipsis instead of running into the next column.</summary>
+        static string Clip(string s)
+        {
+            if (string.IsNullOrEmpty(s) || s.Length <= MaxTitleChars) return s;
+            return s.Substring(0, MaxTitleChars - 1).TrimEnd() + "\u2026";
         }
 
         static string Pad(string s, int width)

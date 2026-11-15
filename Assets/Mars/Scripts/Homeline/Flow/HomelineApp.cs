@@ -89,6 +89,7 @@ namespace NasaSpaceApp.Homeline.Flow
 
             Driver = gameObject.AddComponent<EvaDriver>();
             gameObject.AddComponent<PlanPanel>();
+            gameObject.AddComponent<MapRouteOverlay>();
 
             if (Catalog.Plans.Count > 0)
             {

@@ -21,7 +21,7 @@ namespace NasaSpaceApp.Homeline.Ui
     /// </summary>
     public sealed class PlanPanel : MonoBehaviour
     {
-        const float Width = 440f, Height = 318f, Left = 28f, TopFromMiddle = 250f;
+        const float Width = 460f, Height = 326f, Left = 28f, TopFromMiddle = 250f;
         const float RefreshSeconds = 0.2f;
 
         Canvas canvas;
@@ -61,7 +61,7 @@ namespace NasaSpaceApp.Homeline.Ui
                                                 topLeft, topLeft, new Vector2(16f, -40f), new Vector2(Width - 32f, 210f));
             body.verticalOverflow = VerticalWrapMode.Overflow;
             body.lineSpacing = 1.12f;
-            footer = HudFactory.CreateWrappedText("Footer", r, mono, 12, new Color(0.78f, 0.72f, 0.63f, 1f), TextAnchor.LowerLeft,
+            footer = HudFactory.CreateWrappedText("Footer", r, mono, 13, new Color(0.78f, 0.72f, 0.63f, 1f), TextAnchor.LowerLeft,
                                                   topLeft, topLeft, new Vector2(16f, -(Height - 62f)), new Vector2(Width - 32f, 52f));
             footer.verticalOverflow = VerticalWrapMode.Overflow;
             canvas.enabled = false;
@@ -72,7 +72,10 @@ namespace NasaSpaceApp.Homeline.Ui
             if (canvas == null) return;
             HomelineApp app = HomelineApp.Instance;
             EvaDriver d = app != null ? app.Driver : null;
-            bool show = d != null && d.Active && !MartisMenu.IsOpen;
+            // Hidden under the menu and under the helmet's full-screen map (G), which it would otherwise cover.
+            HelmetHud hud = HelmetHud.Instance;
+            bool mapOpen = hud != null && hud.Context != null && hud.Context.MapScreenOpen;
+            bool show = d != null && d.Active && !MartisMenu.IsOpen && !mapOpen;
             if (canvas.enabled != show) canvas.enabled = show;
             if (!show || Time.unscaledTime < nextRefresh) return;
             nextRefresh = Time.unscaledTime + RefreshSeconds;

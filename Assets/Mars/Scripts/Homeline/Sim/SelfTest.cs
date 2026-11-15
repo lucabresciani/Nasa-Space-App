@@ -139,6 +139,22 @@ namespace NasaSpaceApp.Homeline.Sim
             }
             yield return Shot("eva_return");
 
+            // The helmet's full-screen map (G) with the planned route drawn on it.
+            Ui.MapRouteOverlay overlay = app.GetComponent<Ui.MapRouteOverlay>();
+            if (overlay != null && Ui.MapRouteOverlay.SetMapOpen(true))
+            {
+                HudContext hc = HelmetHud.Instance.Context;
+                waitUntil = Time.realtimeSinceStartup + 15f;
+                while ((hc.ElevationMap == null || !hc.ElevationMap.IsReady) && Time.realtimeSinceStartup < waitUntil) yield return null;
+                yield return new WaitForSecondsRealtime(1.0f); // map fade
+                yield return Shot("eva_map");
+                Check(overlay.RoutePointCount > 0 && overlay.MapSegmentsDrawn > 0,
+                      "planned route drawn on the helmet map (" + overlay.MapSegmentsDrawn + " segments, " + overlay.MapStationsShown + " stations in view)");
+                Ui.MapRouteOverlay.SetMapOpen(false);
+                yield return new WaitForSecondsRealtime(0.5f);
+            }
+            else Check(false, "helmet map opened for the route overlay");
+
             app.Driver.SetMode(EvaMode.FreeWalk);
             yield return new WaitForSecondsRealtime(2.5f);
             Check(app.Driver.Mode == EvaMode.FreeWalk, "switched to free walk");

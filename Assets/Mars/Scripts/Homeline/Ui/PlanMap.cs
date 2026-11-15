@@ -44,7 +44,7 @@ namespace NasaSpaceApp.Homeline.Ui
             size = boxSize - 2f * Pad;
             font = ctx.Assets != null ? ctx.Assets.Mono : null;
             Image box = MenuUi.Pill("PlanMap", parent, ctx, MenuTokens.ScrimPanel, MenuTokens.PanelRadius, topLeft, topLeft,
-                                    topLeftPosition, new Vector2(boxSize, boxSize + 30f));
+                                    topLeftPosition, new Vector2(boxSize, boxSize + 40f));
             root = box.rectTransform;
 
             var center = new Vector2(0.5f, 0.5f);
@@ -59,8 +59,8 @@ namespace NasaSpaceApp.Homeline.Ui
             relief.raycastTarget = false;
 
             lines = HudFactory.CreateLineMesh("Lines", root, topLeft, center, rt.anchoredPosition, new Vector2(size, size));
-            caption = MenuUi.Label("Caption", root, ctx.Assets != null ? ctx.Assets.Regular : null, MenuTokens.SizeFine, MenuTokens.SandDim,
-                                   TextAnchor.MiddleLeft, topLeft, topLeft, new Vector2(Pad, -(Pad + size + 6f)), new Vector2(size, 20f), "");
+            caption = MenuUi.Paragraph("Caption", root, ctx.Assets != null ? ctx.Assets.Regular : null, MenuTokens.SizeFine, MenuTokens.SandDim,
+                                       TextAnchor.UpperLeft, topLeft, topLeft, new Vector2(Pad, -(Pad + size + 6f)), new Vector2(size, 34f), "");
             root.gameObject.SetActive(false);
         }
 
@@ -145,7 +145,8 @@ namespace NasaSpaceApp.Homeline.Ui
             lines.Line(b0 + new Vector2(barM * scale, -4f), b0 + new Vector2(barM * scale, 4f), 2f, InkColor);
             lines.Commit();
 
-            caption.text = "N up · bar " + HlJson.F(barM, 0) + " m · square rover, diamond station, dot navigation point · terrain: this simulator";
+            caption.text = "North up · scale bar " + HlJson.F(barM, 0) + " m · terrain relief: this simulator\n" +
+                           "Square: rover · diamond: station · dot: navigation point";
         }
 
         Vector2 ToMap(MissionPlan plan, double localX, double localY, double cx, double cz, float scale)
@@ -162,6 +163,10 @@ namespace NasaSpaceApp.Homeline.Ui
                 var center = new Vector2(0.5f, 0.5f);
                 Text t = MenuUi.Label("Label" + labels.Count, lines.rectTransform, font, MenuTokens.SizeHint, MenuTokens.Sand,
                                       TextAnchor.MiddleLeft, center, new Vector2(0f, 0.5f), Vector2.zero, new Vector2(80f, 18f), "");
+                // Dark edge: a label often sits on the route line or on bright relief.
+                Outline edge = t.gameObject.AddComponent<Outline>();
+                edge.effectColor = new Color(0f, 0f, 0f, 0.85f);
+                edge.effectDistance = new Vector2(1.2f, -1.2f);
                 labels.Add(t);
             }
             Text label = labels[index];
@@ -170,7 +175,7 @@ namespace NasaSpaceApp.Homeline.Ui
             label.color = color;
             // Keep the text inside the map square: near the right edge it goes to the left of its mark.
             float h = size * 0.5f;
-            bool flip = mapPos.x > h - 64f;
+            bool flip = mapPos.x + 9f * text.Length + 4f > h; // about 9 units per character at this size
             label.alignment = flip ? TextAnchor.MiddleRight : TextAnchor.MiddleLeft;
             label.rectTransform.pivot = new Vector2(flip ? 1f : 0f, 0.5f);
             if (flip) mapPos.x -= 24f;

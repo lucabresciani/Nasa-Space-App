@@ -44,7 +44,9 @@ planner's track, derived by the simulator (a bend is kept when dropping it would
 | `Esc` | Menu |
 
 In the 3D world the amber ribbon is the planned route, the tall beacons are the rover (white) and the stations
-(cyan), the short amber posts are navigation points.
+(cyan), the short amber posts are navigation points. The same route is on the helmet's maps: on the full-screen
+map (`G`) as an amber line with the stations as labelled diamonds, the navigation points as beads and a ring around
+HOME (the rover); on the bottom-left dial as an amber line with a ring for each station in range.
 
 ## Where each number comes from
 
