@@ -528,8 +528,8 @@ namespace NasaSpaceApp.HUD
         {
             SuitTelemetry t = ctx.Telemetry;
 
-            // Partner haul: distance home (world origin) against the cart-haul range.
-            float dist = t != null ? t.DistanceHomeM : new Vector2(ctx.CameraPosition.x, ctx.CameraPosition.z).magnitude;
+            // Partner haul: distance home (HomeBase) against the cart-haul range.
+            float dist = t != null ? t.DistanceHomeM : HomeBase.OffsetFrom(ctx.CameraPosition).magnitude;
             int key = Finite(dist) ? Mathf.RoundToInt(Mathf.Max(0f, dist) / 100f) : -1;   // tenths of a km
             bool within = dist <= PartnerHaulRangeM;
             int state = key < 0 ? -1 : (within ? 1 : 0);

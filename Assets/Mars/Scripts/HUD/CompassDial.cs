@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using NasaSpaceApp.Mission;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -47,6 +48,9 @@ namespace NasaSpaceApp.HUD
         private readonly Vector2 center = new Vector2(R, R);
         private readonly HudMapDisc disc;
         private readonly HudLineMesh marks;
+        private readonly HudLineMesh route;                               // web mission route + waypoints (under the rim)
+        private readonly MissionRouteDrawer routeDrawer = new MissionRouteDrawer();
+        private int routeVersion = -1;
         private readonly Text north;
         private readonly Text status;
         private readonly Text homeDistance;
@@ -101,6 +105,9 @@ namespace NasaSpaceApp.HUD
             disc.color = new Color(1f, 1f, 1f, MapAlpha);
             disc.SetRadius(R - 0.5f);
             disc.enabled = false;
+
+            // Mission route (MissionLink.Current), clipped to the map window; the rim is drawn over it.
+            route = HudFactory.CreateLineMesh("Route", root, Vector2.zero, mid, center, meshSize);
 
             // Static frame: rim band, inner and outer hairlines.
             HudLineMesh frame = HudFactory.CreateLineMesh("Frame", root, Vector2.zero, mid, center, meshSize);
@@ -255,6 +262,13 @@ namespace NasaSpaceApp.HUD
             }
             dirty |= UpdatePips(cam, cosH, sinH);
 
+            bool routeChanged = MissionLink.Version != routeVersion;
+            if (routeChanged || turned || moved)
+            {
+                routeVersion = MissionLink.Version;
+                RedrawRoute(cam, cosH, sinH);
+            }
+
             if (dirty)
             {
                 RedrawMarks(cosH, sinH);
@@ -306,6 +320,24 @@ namespace NasaSpaceApp.HUD
                 }
             }
             return changed;
+        }
+
+        // Route and waypoint rings, heading-up like the map (same transform as ToScreen), clipped at the inner rim.
+        private void RedrawRoute(Vector3 cam, float cosH, float sinH)
+        {
+            route.Clear();
+            MissionPlan plan = MissionLink.Current;
+            if (plan != null)
+            {
+                const float inv = 1f / MetersPerUnit;
+                Vector2 origin = new Vector2(cam.x, cam.z);
+                Vector2 ax = new Vector2(cosH, sinH) * inv, ay = new Vector2(-sinH, cosH) * inv;
+                Vector2 clip = new Vector2(Inner - 1f, 0f);
+                routeDrawer.DrawRoute(route, plan, origin, ax, ay, MissionRouteDrawer.ClipShape.Circle, clip);
+                MissionRouteDrawer.DrawWaypoints(route, plan, origin, ax, ay, MissionRouteDrawer.ClipShape.Circle,
+                                                 new Vector2(Inner - MarkMargin, 0f), MissionRouteStyle.DialWaypointRadius);
+            }
+            route.Commit();
         }
 
         private void RedrawMarks(float cosH, float sinH)
@@ -434,7 +466,7 @@ namespace NasaSpaceApp.HUD
             return new Vector2(world.x * cosH - world.y * sinH, world.x * sinH + world.y * cosH) / MetersPerUnit;
         }
 
-        // Home = world origin (spawn/pad). Telemetry owns the numbers; the local formula is only a null fallback.
+        // Home = HomeBase (spawn, or the mission pad). Telemetry owns the numbers; the local formula is only a null fallback.
         private Vector2 HomeOffset(Vector3 cam)
         {
             if (ctx.Telemetry != null)
@@ -443,7 +475,7 @@ namespace NasaSpaceApp.HUD
                 float d = ctx.Telemetry.DistanceHomeM;
                 return new Vector2(Mathf.Sin(b) * d, Mathf.Cos(b) * d);
             }
-            return new Vector2(-cam.x, -cam.z);
+            return HomeBase.OffsetFrom(cam);
         }
 
         private float HomeBearing()
@@ -452,8 +484,8 @@ namespace NasaSpaceApp.HUD
             {
                 return ctx.Telemetry.BearingHomeDeg;
             }
-            Vector3 p = ctx.CameraPosition;
-            return Mathf.Repeat(Mathf.Atan2(-p.x, -p.z) * Mathf.Rad2Deg, 360f);
+            Vector2 o = HomeBase.OffsetFrom(ctx.CameraPosition);
+            return Mathf.Repeat(Mathf.Atan2(o.x, o.y) * Mathf.Rad2Deg, 360f);
         }
 
         private float HomeDistance()
@@ -462,8 +494,7 @@ namespace NasaSpaceApp.HUD
             {
                 return ctx.Telemetry.DistanceHomeM;
             }
-            Vector3 p = ctx.CameraPosition;
-            return Mathf.Sqrt(p.x * p.x + p.z * p.z);
+            return HomeBase.OffsetFrom(ctx.CameraPosition).magnitude;
         }
 
         private static void BuildTickTable()

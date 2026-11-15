@@ -238,6 +238,7 @@ namespace NasaSpaceApp.HUD
         private float obstructionDb;
         private bool homeGroundKnown;
         private float homeGroundY;
+        private int homeVersion = -1;          // HomeBase.Version the ground probe belongs to
         private float weatherVo2Raw;
         private float stressTarget;
 
@@ -396,7 +397,9 @@ namespace NasaSpaceApp.HUD
             DustDevilProximity = Mathf.Clamp01(Finite(input.DustDevilProximity, 0f));
             Darkness = Mathf.Clamp01(Finite(input.Darkness, 0f));
 
-            float x = input.CameraPosition.x, z = input.CameraPosition.z;
+            // HOME = HomeBase (world origin, or the loaded mission's pad).
+            Vector3 home = HomeBase.Position;
+            float x = input.CameraPosition.x - home.x, z = input.CameraPosition.z - home.z;
             DistanceHomeM = Mathf.Sqrt(x * x + z * z);
             BearingHomeDeg = Mathf.Repeat(Mathf.Atan2(-x, -z) * Mathf.Rad2Deg, 360f);
 
@@ -656,7 +659,8 @@ namespace NasaSpaceApp.HUD
                 CheckLineOfSight(helmet);
             }
 
-            Vector3 antenna = new Vector3(0f, (homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM) + HomeAntennaM, 0f);
+            Vector3 home = HomeBase.Position;
+            Vector3 antenna = new Vector3(home.x, (homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM) + HomeAntennaM, home.z);
             float d = Mathf.Max(1f, Vector3.Distance(helmet, antenna));
             LinkDistanceM = d;
             float logD = Mathf.Log10(d);
@@ -686,10 +690,16 @@ namespace NasaSpaceApp.HUD
         // a point 10 m higher. Allocation-free (RaycastNonAlloc into a cached buffer).
         private void CheckLineOfSight(Vector3 helmet)
         {
+            Vector3 home = HomeBase.Position;
+            if (homeVersion != HomeBase.Version)
+            {
+                homeVersion = HomeBase.Version;   // HOME moved (mission pad): measure its ground again
+                homeGroundKnown = false;
+            }
             if (!homeGroundKnown)
             {
                 float top = helmet.y + 3000f;
-                if (TerrainHit(new Vector3(0f, top, 0f), Vector3.down, 6000f, out float y))
+                if (TerrainHit(new Vector3(home.x, top, home.z), Vector3.down, 6000f, out float y))
                 {
                     homeGroundY = y;
                     homeGroundKnown = true;
@@ -697,7 +707,7 @@ namespace NasaSpaceApp.HUD
             }
 
             float baseY = homeGroundKnown ? homeGroundY : helmet.y - HelmetAntennaM;
-            Vector3 antenna = new Vector3(0f, baseY + HomeAntennaM, 0f);
+            Vector3 antenna = new Vector3(home.x, baseY + HomeAntennaM, home.z);
             if ((antenna - helmet).sqrMagnitude < 25f)
             {
                 obstructionDb = 0f;

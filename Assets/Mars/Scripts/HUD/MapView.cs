@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using NasaSpaceApp.Mission;
 using NasaSpaceApp.Science;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -222,6 +223,13 @@ namespace NasaSpaceApp.HUD
 
         private int legendVersion;
 
+        // Web mission (MissionLink.Current): route, numbered waypoints; HOME follows HomeBase.
+        private readonly MissionRouteDrawer routeDrawer = new MissionRouteDrawer();
+        private readonly List<Text> wpLabels = new List<Text>(16);
+        private readonly List<string> wpNumbers = new List<string>(16);
+        private Font wpFont;
+        private int missionVersion = -1, homeVersion = -1;
+
         /// <summary>Builds the view as a full-stretch child of <paramref name="parent"/> (the map box).</summary>
         public MapView(HudContext ctx, RectTransform parent)
         {
@@ -250,6 +258,7 @@ namespace NasaSpaceApp.HUD
                 lonLabels[i] = CreateLabel("Lon" + i, regular, HudTokens.SizeMicro, HudTokens.InkSecondary, TextAnchor.MiddleCenter, mid);
                 latLabels[i] = CreateLabel("Lat" + i, regular, HudTokens.SizeMicro, HudTokens.InkSecondary, TextAnchor.MiddleLeft, leftMid);
             }
+            wpFont = medium;
             homeLabel = CreateLabel("HomeLabel", medium, HudTokens.SizeMicro, HudTokens.InkPrimary, TextAnchor.MiddleLeft, leftMid);
             homeLabel.text = "HOME";
             scaleLabel = CreateLabel("ScaleLabel", regular, HudTokens.SizeMicro, HudTokens.InkSecondary, TextAnchor.MiddleCenter, mid);
@@ -399,6 +408,7 @@ namespace NasaSpaceApp.HUD
 
             HandlePointer(dt);
             TrackPlayer();
+            TrackMission();
             if (layers[(int)MapLayer.Weather])
             {
                 TrackWeather(dt);
@@ -561,6 +571,12 @@ namespace NasaSpaceApp.HUD
             legend.Clear();
             legend.Add(new MapLegendEntry("Home", HudTokens.InkPrimary, MapLegendShape.Star));
             legend.Add(new MapLegendEntry("You", HudTokens.InkPrimary, MapLegendShape.Arrow));
+            if (MissionLink.Current != null)
+            {
+                legend.Add(new MapLegendEntry("Planned route", MissionRouteStyle.Route, MapLegendShape.Line));
+                legend.Add(new MapLegendEntry("Way home", MissionRouteStyle.RouteHome, MapLegendShape.Line));
+                legend.Add(new MapLegendEntry("Waypoint", MissionRouteStyle.Route, MapLegendShape.Dot));
+            }
             for (int i = 0; i < scannedLegend.Count; i++)
             {
                 legend.Add(scannedLegend[i]);
@@ -799,6 +815,18 @@ namespace NasaSpaceApp.HUD
         }
 
         // ---- tracked state
+
+        // A new/cleared mission or a moved HOME redraws the marks and the legend.
+        private void TrackMission()
+        {
+            if (MissionLink.Version != missionVersion || HomeBase.Version != homeVersion)
+            {
+                missionVersion = MissionLink.Version;
+                homeVersion = HomeBase.Version;
+                marksDirty = true;
+                legendDirty = true;
+            }
+        }
 
         private void TrackPlayer()
         {
@@ -1143,8 +1171,8 @@ namespace NasaSpaceApp.HUD
             {
                 float hw = 0.5f * boxSize.x + 12f, hh = 0.5f * boxSize.y + 12f;   // cull with a margin
 
-                // HOME: 4-point star at the world origin, labelled.
-                Vector2 home = ToLocal(0f, 0f);
+                // HOME: 4-point star at HomeBase (scene spawn, or the mission pad), labelled.
+                Vector2 home = ToLocal(HomeBase.Position.x, HomeBase.Position.z);
                 bool homeIn = Mathf.Abs(home.x) <= hw && Mathf.Abs(home.y) <= hh;
                 if (homeIn)
                 {
@@ -1176,6 +1204,8 @@ namespace NasaSpaceApp.HUD
                     marksMesh.Ring(c, 2f, 4f, dotCol[i], 16);
                 }
 
+                DrawMission(hw, hh);
+
                 // Player: chevron pointing along the camera heading (clockwise from north).
                 Vector2 pos = ToLocal(lastPlayer.x, lastPlayer.z);
                 float th = (float.IsNaN(lastHeading) ? 0f : lastHeading) * Mathf.Deg2Rad;
@@ -1186,8 +1216,68 @@ namespace NasaSpaceApp.HUD
             else
             {
                 Hide(homeLabel);
+                HideWaypointLabels(0);
             }
             marksMesh.Commit();
+        }
+
+        // Planned route (outbound solid, way home dimmer) and numbered waypoint rings, culled to the box.
+        private void DrawMission(float hw, float hh)
+        {
+            MissionPlan plan = MissionLink.Current;
+            if (plan == null)
+            {
+                HideWaypointLabels(0);
+                return;
+            }
+            float inv = 1f / mpu;
+            Vector2 ax = new Vector2(inv, 0f), ay = new Vector2(0f, inv);
+            Vector2 extent = new Vector2(hw, hh);
+            routeDrawer.DrawRoute(marksMesh, plan, center, ax, ay, MissionRouteDrawer.ClipShape.Rect, extent);
+            MissionRouteDrawer.DrawWaypoints(marksMesh, plan, center, ax, ay, MissionRouteDrawer.ClipShape.Rect, extent,
+                                             MissionRouteStyle.WaypointRadius);
+            int shown = 0;
+            for (int i = 0; i < plan.Waypoints.Count; i++)
+            {
+                MissionWaypoint w = plan.Waypoints[i];
+                Vector2 c = ToLocal(w.World.x, w.World.z);
+                if (Mathf.Abs(c.x) > hw || Mathf.Abs(c.y) > hh)
+                {
+                    continue;
+                }
+                Place(WaypointLabel(shown), WaypointNumber(w.Index), c + new Vector2(MissionRouteStyle.WaypointRadius + 4f, 8f));
+                shown++;
+            }
+            HideWaypointLabels(shown);
+        }
+
+        private Text WaypointLabel(int i)
+        {
+            while (wpLabels.Count <= i)
+            {
+                Text t = CreateLabel("Waypoint" + wpLabels.Count, wpFont, HudTokens.SizeMicro, MissionRouteStyle.Route,
+                                     TextAnchor.MiddleLeft, new Vector2(0f, 0.5f));
+                t.rectTransform.sizeDelta = new Vector2(40f, 20f);
+                wpLabels.Add(t);
+            }
+            return wpLabels[i];
+        }
+
+        private string WaypointNumber(int index)
+        {
+            while (wpNumbers.Count <= index)
+            {
+                wpNumbers.Add(wpNumbers.Count.ToString(CultureInfo.InvariantCulture));
+            }
+            return wpNumbers[index];
+        }
+
+        private void HideWaypointLabels(int from)
+        {
+            for (int i = from; i < wpLabels.Count; i++)
+            {
+                Hide(wpLabels[i]);
+            }
         }
 
         private void DrawGlyph(Vector2[] shape, Vector2 pos, Vector2 right, Vector2 fwd)
