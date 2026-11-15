@@ -40,6 +40,22 @@
  */
 (function () {
   'use strict';
+
+  // ======================= SETTINGS: edit, save, start the game again (no rebuild) =======================
+  // This file sits next to MarvisWeb.exe (folder MarvisWeb of the game); its source is Tools/marvis-web/live.
+  //
+  // START_EVA_BUTTON   true  = this script shows its own "Start EVA in MARVIS" button.
+  //                    false = no such button: for when the planner site has a send button of its own.
+  //                    Either way, a button of the site whose label matches SEND_LABEL starts the EVA,
+  //                    and the site's "Download mission.json" stays a plain download.
+  const START_EVA_BUTTON = true;
+  // The site's export control that "Start EVA in MARVIS" presses, found by its visible label.
+  const EXPORT_LABEL = /download mission\.json|send to (the )?simulator/i;
+  // Buttons of the site that start the EVA when the user presses them (the file they produce is sent
+  // to the game, not saved), found by their visible label.
+  const SEND_LABEL = /send to (the )?(simulator|unity|marvis)/i;
+  // =======================================================================================================
+
   try {
     if (window.top !== window) return; // top document only
     const wv = (window.chrome && window.chrome.webview) || window.__MARVIS_TEST_WEBVIEW;
@@ -331,7 +347,8 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
         icon('play'),
         el('span', { text: 'Start EVA in MARVIS' }),
       ]);
-      dock = el('div', { class: 'dock', role: 'group', 'aria-label': 'MARVIS', hidden: '' }, [chip, menu, start]);
+      // START_EVA_BUTTON false: the button is simply not in the dock (see SETTINGS at the top of this file).
+      dock = el('div', { class: 'dock', role: 'group', 'aria-label': 'MARVIS', hidden: '' }, START_EVA_BUTTON ? [chip, menu, start] : [chip, menu]);
 
       panelClose = el('button', { type: 'button', class: 'x', 'aria-label': 'Close the EVA debrief', title: 'Close' }, [icon('close')]);
       panelBody = el('div');
@@ -673,8 +690,8 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
     // download, except while sending is armed: then the file is read here and a mission is posted to
     // the game. What arms: "Start EVA in MARVIS", and the user's click on a "Send to simulator" control.
     const ARM_MS = 15000;
-    const EXPORT = /download mission\.json|send to (the )?simulator/i; // what "Start EVA in MARVIS" clicks
-    const SEND = /send to (the )?simulator/i; // what arms when the user clicks it
+    const EXPORT = EXPORT_LABEL; // what "Start EVA in MARVIS" clicks (SETTINGS, top of the file)
+    const SEND = SEND_LABEL; // what arms when the user clicks it (SETTINGS, top of the file)
     const NO_MISSION = 'The planner did not produce a mission. Try again.';
     const urlCreate = URL.createObjectURL;
     const urlRevoke = URL.revokeObjectURL;

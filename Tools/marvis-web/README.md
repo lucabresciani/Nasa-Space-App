@@ -23,6 +23,11 @@ game shows the new version: nothing in Unity, and nothing here, has to be rebuil
   mission the site has built and sends it to the game: the EVA starts. A "Send to simulator" button
   of the site does the same. The site's **Download mission.json** stays a plain download (the file
   goes to the Downloads folder).
+- To take the **Start EVA in MARVIS** button out (for example when the site gets a send button of
+  its own): open `MarvisWeb\marvis-inject.js` next to `MARVIS.exe`, set `START_EVA_BUTTON = false`
+  in the SETTINGS block at the top, save and start the game again. No rebuild. The same block has
+  the labels by which the site's buttons are recognised (`EXPORT_LABEL`, `SEND_LABEL`). For the
+  next build make the same change in `Tools/marvis-web/live/marvis-inject.js`.
 - The **MARVIS menu button**, or **F10**, goes back to the game menu.
 - Fallback order: live site -> local copy -> built-in planning panel. The local copy is the web
   app built from `WebPlanner/` (below) and served by the game on `http://127.0.0.1:47815/`; it is
