@@ -7,22 +7,24 @@
  ],
  "orientation": "north up; columns linear in east longitude, rows linear in latitude",
  "bounds": {
-  "lat_south": -4.83691334,
-  "lat_north": -4.76781134247399,
-  "lon_west": 137.35005552,
-  "lon_east": 137.41915754583306
+  "lat_south": -4.85418884,
+  "lat_north": -4.750535843710985,
+  "lon_west": 137.33278002,
+  "lon_east": 137.43643305874957
  },
  "ground_m_per_px": [
-  0.996489408203125,
-  1.0
+  1.4947341123046876,
+  1.5
  ],
  "coverage": 1.0,
- "tiles_used": {
-  "17": 380,
-  "16": 256
- },
  "source": "https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Mars/MSL/MSL_Gale_HiRISE-LRGB_78quads_sharp_cog.tif",
- "tiles": "HOMELINE web app web/public/data/tiles/basemap (HiRISE basemap (WS1))",
+ "source_bounds_projected_m": [
+  8140000.0,
+  -289000.0,
+  8149000.0,
+  -270000.0
+ ],
+ "resampling": "area average (GDAL warp) from the mosaic's 1 m overview",
  "credit": "HiRISE: NASA/JPL/University of Arizona",
- "built_by": "Tools/ortho/build_play_ortho.py"
+ "built_by": "Tools/ortho/build_play_ortho_cog.py"
 }
