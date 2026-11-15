@@ -106,6 +106,15 @@ namespace NasaSpaceApp.Menu
             AddAction(movement, actions, "Player/Jump", "JUMP", new[] { "SPACE" }, "A");
             Add(groups, movement);
 
+            // Keys of a plan started from MISSION PLAN (Homeline/Sim/EvaDriver.cs); no other command uses them.
+            // The group order keeps the two columns of the Controls page inside its height.
+            Group mission = new Group { Title = "MISSION PLAN" };
+            mission.Rows.Add(new Binding { Action = "REPLAY / FREE WALK", Keys = new[] { "V" } });
+            mission.Rows.Add(new Binding { Action = "PAUSE REPLAY", Keys = new[] { "T" } });
+            mission.Rows.Add(new Binding { Action = "REPLAY SPEED", Keys = new[] { "[", "]" } });
+            mission.Rows.Add(new Binding { Action = "ROUTE GUIDANCE", Keys = new[] { "R" } });
+            Add(groups, mission);
+
             Group science = new Group { Title = "SCIENCE" };
             AddAction(science, actions, "Player/Interact", "SCAN ROCK (HOLD)", new[] { "E" }, "Y");
             science.Rows.Add(new Binding { Action = "CLOSE ROCK CARD", Keys = new[] { "X" }, Gamepad = "B" });
@@ -113,7 +122,6 @@ namespace NasaSpaceApp.Menu
             science.Rows.Add(new Binding { Action = "EVA MAP", Keys = new[] { "G" }, Gamepad = "SELECT" });
             science.Rows.Add(new Binding { Action = "HEAD LAMP", Keys = new[] { "L" } });
             science.Rows.Add(new Binding { Action = "LOAD NEWEST MISSION", Keys = new[] { "F5" } });
-            Add(groups, science);
 
             Group environment = new Group { Title = "ENVIRONMENT" };
             DayNightCycle day = UnityEngine.Object.FindAnyObjectByType<DayNightCycle>();
@@ -130,6 +138,7 @@ namespace NasaSpaceApp.Menu
                 AddKey(environment, "HISTORICAL WEATHER", null, ReadKey(weather, "historicalKey", Key.H));
             }
             Add(groups, environment);
+            Add(groups, science);
 
             Group sky = new Group { Title = "NIGHT SKY" };
             MarsNightSky night = UnityEngine.Object.FindAnyObjectByType<MarsNightSky>();

@@ -57,6 +57,38 @@ namespace NasaSpaceApp.Homeline.Sim
             float waitUntil = Time.realtimeSinceStartup + 40f;
             while ((MarvisMenu.Instance == null || !MarvisMenu.IsOpen) && Time.realtimeSinceStartup < waitUntil) yield return null;
             Check(MarvisMenu.Instance != null && MarvisMenu.IsOpen, "title screen is up");
+            // No key may be bound to two commands (the list of the menu's Controls page).
+            var seenKeys = new System.Collections.Generic.Dictionary<string, string>();
+            string clashes = "";
+            int keyRows = 0;
+            foreach (KeybindCatalog.Group kg in KeybindCatalog.Read())
+            {
+                foreach (KeybindCatalog.Binding kb in kg.Rows)
+                {
+                    if (kb.Keys == null || kb.Keys.Length == 0) continue;
+                    keyRows++;
+                    // "SHIFT" + key is one combination; otherwise every key of the row counts on its own (W A S D, [ ]).
+                    bool combo = kb.Keys.Length == 2 && kb.Keys[0] == "SHIFT";
+                    string[] tokens = combo ? new[] { kb.Keys[0] + "+" + kb.Keys[1] } : kb.Keys;
+                    foreach (string token in tokens)
+                    {
+                        string other;
+                        if (seenKeys.TryGetValue(token, out other)) clashes += token + " (" + other + " / " + kb.Action + ") ";
+                        else seenKeys[token] = kb.Action;
+                    }
+                }
+            }
+            Check(clashes.Length == 0 && keyRows >= 20, "no key is bound to two commands (" + keyRows + " commands, " + seenKeys.Count + " keys)" + (clashes.Length > 0 ? ": " + clashes : ""));
+            System.Reflection.MethodInfo showControls = typeof(MarvisMenu).GetMethod("ShowControls",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (showControls != null && MarvisMenu.Instance != null)
+            {
+                showControls.Invoke(MarvisMenu.Instance, null);
+                yield return new WaitForSecondsRealtime(0.8f);
+                yield return Shot("controls");
+                MarvisMenu.Instance.Back();
+                yield return new WaitForSecondsRealtime(0.4f);
+            }
             Check(MarvisMenu.StartInterceptor == null && MarvisMenu.PlanRequested != null,
                   "START SIMULATION goes straight to free exploration; MISSION PLAN opens the planning");
             Check(EvaDriver.MissionStress(90, 200) == 0f && Math.Abs(EvaDriver.MissionStress(0, 200) - 12f) < 0.01f && EvaDriver.MissionStress(-5, 0) >= 22f,
