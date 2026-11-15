@@ -1,5 +1,6 @@
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -11,16 +12,18 @@ namespace NasaSpaceApp.Homeline.Web
 {
     /// <summary>
     /// Starts and supervises MarvisWeb.exe, the helper that shows the web planner in a borderless WebView2 window owned
-    /// by the game window. One line per command on its stdin (show, hide, focus, bounds, quit) and one line per event
-    /// on its stdout (ready, loaded, loadfail, shown, hidden, fatal, exit); see README.md in this folder.
+    /// by the game window. One line per command on its stdin (show, hide, focus, bounds, nav, reload, post, eval, quit)
+    /// and one line per event on its stdout (ready, loaded, loadfail, shown, hidden, mission, saved, downloadfail,
+    /// message, blocked, warn, fatal, exit); see README.md in this folder.
     /// One instance per started process. Commands are sent from the main thread; the events are read on a background
-    /// thread into the flags below.
+    /// thread into the flags below, and those the main thread has to act on also into a queue (<see cref="TryTakeEvent"/>).
     /// </summary>
     internal sealed class ViewerProcess
     {
         const string PlayerWindowClass = "UnityWndClass";
         const int ExitNoRuntime = 3;
         const int MaxEditorWidth = 1280, MaxEditorHeight = 800;
+        const string PostFolderName = "marvis-post";
 
         Process process;
         int processId;
@@ -28,6 +31,8 @@ namespace NasaSpaceApp.Homeline.Web
         volatile bool ready, loaded, visible, exited;
         volatile string fatal;
         volatile int exitCode;
+        readonly Queue<KeyValuePair<string, string>> events = new Queue<KeyValuePair<string, string>>();   // name, detail
+        string postFolder;   // where the documents of Post are written; set by Start
 
         /// <summary>WebView2 is initialised.</summary>
         public bool Ready { get { return ready; } }
@@ -56,16 +61,48 @@ namespace NasaSpaceApp.Homeline.Web
         }
 
         /// <summary>
-        /// Starts the viewer hidden; it loads <paramref name="url"/> at once. <paramref name="bounds"/> is "x,y,w,h" in
-        /// screen pixels, or null to follow the owner window's client area.
+        /// Main thread: the next event the main thread has to act on, oldest first: loaded, loadfail, mission, saved,
+        /// downloadfail, message, blocked or warn, with the rest of its line. False when there is none.
         /// </summary>
-        public bool Start(string exe, IntPtr owner, string url, string userDataFolder, string background, string bounds, bool dev)
+        public bool TryTakeEvent(out string name, out string detail)
         {
+            lock (events)
+            {
+                if (events.Count == 0)
+                {
+                    name = detail = null;
+                    return false;
+                }
+                KeyValuePair<string, string> e = events.Dequeue();
+                name = e.Key;
+                detail = e.Value;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Main thread. Starts the viewer hidden; it loads <paramref name="url"/> at once. <paramref name="bounds"/> is
+        /// "x,y,w,h" in screen pixels, or null to follow the owner window's client area. <paramref name="injectFile"/>
+        /// is the page script run in every document before the page's own scripts, or null for none.
+        /// </summary>
+        public bool Start(string exe, IntPtr owner, string url, string userDataFolder, string background, string bounds, bool dev,
+                          string injectFile)
+        {
+            // Application paths are main-thread only: read once, here. Documents a dead viewer left behind go.
+            postFolder = Path.Combine(UnityEngine.Application.temporaryCachePath, PostFolderName);
+            try
+            {
+                if (Directory.Exists(postFolder)) Directory.Delete(postFolder, true);
+            }
+            catch (Exception)
+            {
+            }
             var info = new ProcessStartInfo
             {
                 FileName = exe,
                 Arguments = "--owner " + owner.ToInt64() + " --url " + Quote(url) + " --udf " + Quote(userDataFolder) +
-                            " --bg " + background + (bounds != null ? " --bounds " + bounds : "") + (dev ? " --dev" : ""),
+                            " --bg " + background + (bounds != null ? " --bounds " + bounds : "") + (dev ? " --dev" : "") +
+                            (injectFile != null ? " --inject " + Quote(injectFile) : ""),
                 WorkingDirectory = Path.GetDirectoryName(exe),
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -122,6 +159,42 @@ namespace NasaSpaceApp.Homeline.Web
         public bool Eval(string javascript)
         {
             return Send("eval " + javascript);
+        }
+
+        /// <summary>Loads another address; the viewer then also allows its origin.</summary>
+        public bool Navigate(string url)
+        {
+            return Send("nav " + url);
+        }
+
+        /// <summary>Loads the current page again.</summary>
+        public bool Reload()
+        {
+            return Send("reload");
+        }
+
+        /// <summary>
+        /// Main thread. Delivers one JSON document to the page (its 'message' event of window.chrome.webview). The
+        /// document goes through a file, which the viewer deletes: a command is one line and an EVA log is large.
+        /// </summary>
+        public bool Post(string json)
+        {
+            if (process == null || exited || postFolder == null || string.IsNullOrEmpty(json))
+            {
+                return false;
+            }
+            try
+            {
+                Directory.CreateDirectory(postFolder);
+                string path = Path.Combine(postFolder, "post-" + Guid.NewGuid().ToString("N") + ".json");
+                File.WriteAllText(path, json, new UTF8Encoding(false));
+                return Send("post " + path);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[WebPlanner] message to the page not sent: " + e.Message);
+                return false;
+            }
         }
 
         /// <summary>Asks the viewer to quit and kills it if it has not gone within a second.</summary>
@@ -200,9 +273,19 @@ namespace NasaSpaceApp.Homeline.Web
                         case "loaded":
                             if (!loaded) Debug.Log("[WebPlanner] page loaded " + Seconds() + " s after the viewer's start");
                             loaded = true;
+                            Enqueue(name, detail);
                             break;
                         case "loadfail":
                             Debug.LogWarning("[WebPlanner] viewer could not load the page: " + detail);
+                            Enqueue(name, detail);
+                            break;
+                        case "mission":
+                        case "saved":
+                        case "downloadfail":
+                        case "message":
+                        case "blocked":
+                        case "warn":
+                            Enqueue(name, detail);
                             break;
                         case "shown":
                             visible = true;
@@ -233,6 +316,15 @@ namespace NasaSpaceApp.Homeline.Web
             exitCode = code;
             visible = false;
             exited = true;
+        }
+
+        // Background thread: an event for the main thread.
+        void Enqueue(string name, string detail)
+        {
+            lock (events)
+            {
+                events.Enqueue(new KeyValuePair<string, string>(name, detail));
+            }
         }
 
         string Seconds()

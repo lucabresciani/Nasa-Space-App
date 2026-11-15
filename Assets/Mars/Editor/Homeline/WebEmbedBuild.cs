@@ -11,10 +11,14 @@ namespace NasaSpaceApp.Homeline.EditorTools
 {
     /// <summary>
     /// After every Windows player build, puts what the web planner needs next to the exe:
-    ///   {project}/HomelineData/web            ->  {output}/MarvisPlanner   (the built web app, served by the game)
-    ///   {project}/Tools/marvis-web/viewer/dist ->  {output}/MarvisWeb     (MarvisWeb.exe, the WebView2 window)
-    /// A missing source is a warning, not an error: the folder of an earlier build is removed and the exe keeps the
-    /// built-in MISSION PLAN panel. A copy that fails (a file in use in the output) fails the build.
+    ///   {project}/HomelineData/web             ->  {output}/MarvisPlanner   (the local copy of the planner: the offline fallback)
+    ///   {project}/Tools/marvis-web/viewer/dist ->  {output}/MarvisWeb       (MarvisWeb.exe, the WebView2 window)
+    ///   {project}/Tools/marvis-web/live/marvis-inject.js, planner-url.txt  ->  {output}/MarvisWeb   (the page script and
+    ///                                              the address of the planner site)
+    /// A missing source is a warning, not an error, and the folder of an earlier build is removed. Without the viewer
+    /// the exe keeps the built-in MISSION PLAN panel; without the local copy it has no fallback when the planner site
+    /// cannot be reached; without the page script it uses the local copy only. The viewer folder does not depend on
+    /// the local copy. A copy that fails (a file in use in the output) fails the build.
     /// The output's HomelineData folder is never touched (HomelineBuild deletes and rebuilds it after the build).
     /// </summary>
     public sealed class WebEmbedBuild : IPostprocessBuildWithReport
@@ -40,18 +44,46 @@ namespace NasaSpaceApp.Homeline.EditorTools
             {
                 Remove(webOut, "web app");
                 Debug.LogWarning("[WebPlanner build] no web app with the MARVIS bridge at " + web + " (index.html, assets/ and " +
-                                 WebPlanner.BridgeMarkerFile + "): the exe will keep the built-in MISSION PLAN panel.");
+                                 WebPlanner.BridgeMarkerFile + "): the exe will have no local copy of the planner, so no " +
+                                 "fallback when the planner site cannot be reached.");
             }
 
             string viewer = Path.Combine(projectRoot, WebPlanner.ViewerDevFolder);
             string viewerOut = Path.Combine(outDir, WebPlanner.ViewerFolderName);
             if (File.Exists(Path.Combine(viewer, WebPlanner.ViewerExeName)))
+            {
                 Copy(viewer, viewerOut, "viewer");
+                string live = Path.Combine(projectRoot, WebPlanner.LiveDevFolder);
+                CopyFile(live, viewerOut, WebPlanner.InjectFileName,
+                         "the exe will not use the planner site, only the local copy of the planner");
+                CopyFile(live, viewerOut, WebPlanner.PlannerUrlFileName,
+                         "the exe will use the built-in address " + WebPlanner.DefaultPlannerUrl);
+            }
             else
             {
                 Remove(viewerOut, "viewer");
                 Debug.LogWarning("[WebPlanner build] no " + WebPlanner.ViewerExeName + " at " + viewer +
                                  ": the exe will keep the built-in MISSION PLAN panel.");
+            }
+        }
+
+        // One file of the live planner into the viewer folder (just replaced by Copy). A missing source is a warning.
+        static void CopyFile(string fromDir, string toDir, string name, string otherwise)
+        {
+            string from = Path.Combine(fromDir, name);
+            if (!File.Exists(from))
+            {
+                Debug.LogWarning("[WebPlanner build] no " + name + " at " + fromDir + ": " + otherwise + ".");
+                return;
+            }
+            try
+            {
+                File.Copy(from, Path.Combine(toDir, name), true);
+                Debug.Log("[WebPlanner build] " + name + " copied to " + toDir);
+            }
+            catch (Exception e)
+            {
+                throw new BuildFailedException("[WebPlanner build] " + name + " NOT copied to " + toDir + ": " + e.Message);
             }
         }
 

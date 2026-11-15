@@ -3,7 +3,11 @@
 # focus hand-off between the game and the web viewer is the real one.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File Run-HandoffTest.ps1 [-Windowed] [-Exe <MARVIS.exe>]
-#              [-Mission <mission.json>] [-OutDir <dir>] [-LogFile <player log>]
+#              [-Mission <mission.json>] [-OutDir <dir>] [-LogFile <player log>] [-PlannerUrl <url>|local]
+#
+# -PlannerUrl is passed to the game as -plannerUrl: the address of the planner site for this run, in place of
+# planner-url.txt. "local" tests the fallback, the copy of the planner shipped with the game. result.txt has the
+# line "mode live" or "mode local": which of the two the test ran on.
 #
 # It takes the keyboard away from whatever is in front for about 20 seconds. It refuses to start while another
 # game runs: MARVIS.exe, or MARTIS.exe (the exe of the stale builds in Builds\MARTIS and Builds\MARTIS-prova). It
@@ -13,6 +17,7 @@ param(
     [string]$Mission = (Join-Path $PSScriptRoot '..\fixtures\mission_sample.json'),
     [string]$OutDir,
     [string]$LogFile,
+    [string]$PlannerUrl,        # the planner site for this run, or "local" for the copy shipped with the game
     [switch]$Windowed,          # a 1280 x 720 window instead of the delivery mode (borderless full screen)
     [int]$GuardSeconds = 240,
     [int]$TimeoutSeconds = 150
@@ -77,6 +82,7 @@ else {
     $gameArgs += @('-screen-fullscreen', '1', '-window-mode', 'borderless', '-screen-width', $px[0], '-screen-height', $px[1])
 }
 if ($LogFile) { $gameArgs += @('-logFile', "`"$LogFile`"", '-timestamps') }   # a time on every line of the player log
+if ($PlannerUrl) { $gameArgs += @('-plannerUrl', "`"$PlannerUrl`"") }
 $game = Start-Process -FilePath $Exe -ArgumentList $gameArgs -PassThru
 
 # Put the game window in front as soon as it exists, and once more a little later (the first frames can lose it).

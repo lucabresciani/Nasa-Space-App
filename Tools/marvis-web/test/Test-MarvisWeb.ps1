@@ -3,8 +3,10 @@
 
     powershell -NoProfile -ExecutionPolicy Bypass -File Test-MarvisWeb.ps1
 
-  It shows a small window near the bottom-right of the primary screen for about half a minute. Other test runs on
+  It shows a small window near the bottom-right of the primary screen for about a minute. Other test runs on
   the same desktop need to keep the focus, so it first waits (up to 4 minutes) until no MARVIS.exe is running.
+  The live-site protocol (--inject, post, reload, downloads, page messages, blocked navigations, F10) is tested
+  against a small page and inject script that the test writes to a temp folder and serves on Port + 1.
   Screenshots and the WebView2 user data folder go to .\out . The exit code is the number of failed checks.
 #>
 param(
@@ -33,6 +35,8 @@ public static class Mw
     delegate bool EnumProc(IntPtr h, IntPtr l);
     [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr ctx);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr l);
+    [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr parent, EnumProc cb, IntPtr l);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, System.Text.StringBuilder s, int max);
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
     [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint cmd);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
@@ -95,6 +99,24 @@ public static class Mw
         return f.Left + "," + f.Top + "," + (f.Right - f.Left) + "," + (f.Bottom - f.Top);
     }
     public static void PostClose(IntPtr h) { PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero); }
+
+    // Posts a key press (WM_SYSKEYDOWN + WM_SYSKEYUP, as F10 arrives) to every descendant window of the given
+    // class; returns how many windows got it. The web content's windows belong to the browser process.
+    public static int PostKey(IntPtr top, string className, int vk)
+    {
+        int n = 0;
+        EnumChildWindows(top, delegate(IntPtr h, IntPtr l)
+        {
+            System.Text.StringBuilder s = new System.Text.StringBuilder(256);
+            GetClassName(h, s, 256);
+            if (s.ToString() != className) return true;
+            PostMessage(h, 0x0104, new IntPtr(vk), new IntPtr(1));
+            PostMessage(h, 0x0105, new IntPtr(vk), new IntPtr(unchecked((int)0xC0000001)));
+            n++;
+            return true;
+        }, IntPtr.Zero);
+        return n;
+    }
     public static void Minimize(IntPtr h) { ShowWindow(h, 7); }   // SW_SHOWMINNOACTIVE
     public static void Restore(IntPtr h) { ShowWindow(h, 4); }    // SW_SHOWNOACTIVATE
 
@@ -313,8 +335,22 @@ function Start-Viewer([IntPtr]$owner, [string]$startUrl, [string]$extra = '') {
 }
 function Text($line) { if ($line) { $line.Substring($line.IndexOf(' ') + 1) } else { '' } }   # drops the "<ms> " prefix
 function Ms($line) { if ($line) { [int]$line.Substring(0, $line.IndexOf(' ')) } else { -1 } }
+# The first stdout line, from index $from on, that matches the pattern (without the "<ms> " prefix); '' on timeout.
+# Unlike WaitFor it does not depend on the order of the lines.
+function Wait-Line($proc, [string]$pattern, [int]$from = 0, [int]$timeoutMs = 10000) {
+    $end = [DateTime]::UtcNow.AddMilliseconds($timeoutMs)
+    do {
+        $all = @($proc.Lines())
+        for ($i = $from; $i -lt $all.Count; $i++) { $t = Text $all[$i]; if ($t -match $pattern) { return $t } }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $end)
+    return ''
+}
+function Count-Lines($proc) { @($proc.Lines()).Count }
+function Since($proc, [int]$from) { (@($proc.Lines()) | Select-Object -Skip $from | ForEach-Object { Text $_ }) -join ' | ' }
+function No-LoadFail($proc, [int]$from) { @(@($proc.Lines()) | Select-Object -Skip $from | Where-Object { (Text $_) -like 'loadfail*' }).Count -eq 0 }
 
-$server = $null; $owner = $null; $v = $null
+$server = $null; $pageServer = $null; $tmp = $null; $owner = $null; $v = $null
 try {
     # ---- no window needed ------------------------------------------------------------------------------------
     $v = New-Object MwProc($Exe, '')
@@ -424,9 +460,10 @@ try {
     $owner = New-Object MwOwner(900, 560)   # the runs below need an owner again
 
     # Run 3: the optional arguments, then end of input.
-    $v = Start-Viewer $owner.Handle $url "--bounds $fixed --bg #203040 --dev"
+    $v = Start-Viewer $owner.Handle $url "--bounds $fixed --bg #203040 --dev --inject `"$(Join-Path $out 'no-such-inject.js')`""
     $ready = $v.WaitFor('ready', 60000)
     Check '--bounds x,y,w,h --bg --dev: starts, with the fixed rectangle' ($ready -and [Mw]::RectOf([Mw]::FindViewer($v.P.Id, $owner.Handle)) -eq $fixed) "$ready"
+    Check '--inject with a missing file: prints warn inject-not-read and starts anyway' ($ready -and @($v.Lines() | Where-Object { (Text $_) -eq 'warn inject-not-read' }).Count -eq 1) (Since $v 0)
     $v.CloseInput()
     $exitLine = $v.WaitFor('exit', 5000)
     $code = $v.WaitExit(5000)
@@ -439,6 +476,116 @@ try {
     $exitLine = $v.WaitFor('exit', 5000)
     $code = $v.WaitExit(5000)
     Check 'window close (WM_CLOSE) with fixed bounds: prints exit, exit code 0, owner untouched' ($exitLine -and $code -eq 0 -and [Mw]::Exists($owner.Handle)) "exit $code"
+
+    # Run 3c: the live-site protocol, against a small page and inject script made here. The page reports its start
+    # (and whether the inject script had already run), echoes every message it gets, and can save a Blob the way
+    # the planner's own button does.
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) ('marvisweb-test-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Force $tmp | Out-Null
+    $utf8 = New-Object Text.UTF8Encoding($false)
+    [IO.File]::WriteAllText((Join-Path $tmp 'index.html'), @'
+<!doctype html><html><head><meta charset="utf-8"><title>MarvisWeb test page</title></head><body>test page
+<script>
+var send = function (o) { window.chrome.webview.postMessage(o); };
+send({ type: 'page-start', injected: window.__marvisInjected === true });
+window.chrome.webview.addEventListener('message', function (e) { send({ type: 'echo', got: e.data }); });
+function blobDownload(name, text) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+</script></body></html>
+'@, $utf8)
+    [IO.File]::WriteAllText((Join-Path $tmp 'inject.js'), 'window.__marvisInjected = true;', $utf8)
+    [IO.File]::WriteAllText((Join-Path $tmp 'marvisweb-test-plain.bin'), 'not a mission', $utf8)
+    $pagePort = $Port + 1
+    $pageUrl = "http://127.0.0.1:$pagePort/"
+    if (Test-Port $pagePort) { throw "port $pagePort is already in use" }
+    $pageServer = Start-Process python -ArgumentList '-m', 'http.server', $pagePort, '--bind', '127.0.0.1', '--directory', "`"$tmp`"" -WindowStyle Hidden -PassThru
+    for ($i = 0; $i -lt 50 -and -not (Test-Port $pagePort); $i++) { Start-Sleep -Milliseconds 200 }
+    if (-not (Test-Port $pagePort)) { throw 'the test page server did not start' }
+    $downloads = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
+
+    $v = Start-Viewer $owner.Handle $pageUrl "--inject `"$(Join-Path $tmp 'inject.js')`""
+    $start = Wait-Line $v '^message .*"type":"page-start"' 0 60000
+    $loadedPage = Wait-Line $v ('^loaded ' + [regex]::Escape($pageUrl) + '$') 0 60000
+    Check '--inject: the script ran before the page script' ($start -match '"injected":true') $start
+    Check 'page postMessage: prints message <json>' (($start -match '^message \{.*"type":"page-start".*\}$') -and [bool]$loadedPage) "$start | $loadedPage"
+
+    $missionText = '{"kind":"homeline_mission","name":"viewer test","waypoints":[1,2,3]}'
+    $from = Count-Lines $v
+    $v.Send("eval blobDownload('marvisweb-test-mission.json', '$missionText')")
+    $line = Wait-Line $v '^mission ' $from 15000
+    $path = if ($line) { $line.Substring(8) } else { '' }
+    $ok = $path -and (Test-Path -LiteralPath $path) -and ([IO.File]::ReadAllText($path) -ceq $missionText) -and ((Split-Path $path -Parent) -eq (Join-Path $udf 'marvis-downloads'))
+    Check 'blob download with "homeline_mission": prints mission <path>, the file is there with the same text' ([bool]$ok) (Since $v $from)
+    if ($path -and (Test-Path -LiteralPath $path)) { Remove-Item -LiteralPath $path }
+
+    $otherText = '{"kind":"something_else","n":7}'
+    $from = Count-Lines $v
+    $v.Send("eval blobDownload('marvisweb-test-notes.json', '$otherText')")
+    $line = Wait-Line $v '^saved ' $from 15000
+    $told = Wait-Line $v '^message .*"type":"saved"' $from 5000   # the keys of a message come back in alphabetical order
+    $path = if ($line) { $line.Substring(6) } else { '' }
+    $ok = $path -and (Test-Path -LiteralPath $path) -and ([IO.File]::ReadAllText($path) -ceq $otherText) -and ((Split-Path $path -Parent) -eq $downloads) -and ($told -match '"name":"marvisweb-test-notes\.json"')
+    Check 'another blob download: prints saved <path>, the file is in the Downloads folder, the page is told' ([bool]$ok) "downloads folder $downloads; $(Since $v $from)"
+    if ($path -and (Test-Path -LiteralPath $path)) { Remove-Item -LiteralPath $path }
+
+    $postFile = Join-Path $tmp 'post.json'
+    [IO.File]::WriteAllText($postFile, '{"type":"ping","n":42}', $utf8)
+    $from = Count-Lines $v
+    $v.Send("post $postFile")
+    $echo = Wait-Line $v '^message .*"type":"echo".*"n":42' $from 10000
+    Check 'post <file>: reaches the page, the file is deleted' ($echo -and -not (Test-Path $postFile)) (Since $v $from)
+    [IO.File]::WriteAllText($postFile, 'this is not json', $utf8)
+    $from = Count-Lines $v
+    $v.Send("post $postFile")
+    $v.Send("post $(Join-Path $tmp 'no-such-file.json')")
+    $v.Send("eval send({ type: 'after-bad-posts' })")
+    [void](Wait-Line $v '^message .*after-bad-posts' $from 10000)
+    $warns = @(@($v.Lines()) | Select-Object -Skip $from | Where-Object { (Text $_) -like 'warn post-failed *' }).Count
+    Check 'post <file> that is not JSON, or missing: prints warn post-failed <reason>' ($warns -eq 2 -and -not (Test-Path $postFile)) (Since $v $from)
+
+    $from = Count-Lines $v
+    $v.Send("eval location.href = '$url'")   # the other server: same host, another port = another origin
+    $blocked = Wait-Line $v ('^blocked ' + [regex]::Escape($url) + '$') $from 10000
+    $told = Wait-Line $v '^message .*"type":"blocked"' $from 5000
+    Start-Sleep -Milliseconds 2000   # longer than the viewer holds back the loadfail of an aborted navigation
+    $v.Send("eval send({ type: 'still-here', href: location.href })")
+    $still = Wait-Line $v ('^message .*still-here.*' + [regex]::Escape($pageUrl)) $from 10000
+    Check 'navigation to another origin: prints blocked <url>, no loadfail, the page stays and is told' ($blocked -and $told -and $still -and (No-LoadFail $v $from)) (Since $v $from)
+
+    $from = Count-Lines $v
+    $v.Send("eval location.href = '/marvisweb-test-plain.bin'")   # served as application/octet-stream: becomes a download
+    $line = Wait-Line $v '^saved ' $from 15000
+    Start-Sleep -Milliseconds 2000
+    $path = if ($line) { $line.Substring(6) } else { '' }
+    Check 'navigation that becomes a download: prints saved <path>, no loadfail' ($path -and (Test-Path -LiteralPath $path) -and (No-LoadFail $v $from)) (Since $v $from)
+    if ($path -and (Test-Path -LiteralPath $path)) { Remove-Item -LiteralPath $path }
+
+    $from = Count-Lines $v
+    $v.Send('reload')
+    $again = Wait-Line $v '^message .*"type":"page-start".*"injected":true' $from 15000
+    $reloaded = Wait-Line $v ('^loaded ' + [regex]::Escape($pageUrl) + '$') $from 15000
+    Check 'reload: the page loads again, the inject script runs again' ($again -and $reloaded) (Since $v $from)
+
+    # F10 is posted straight to the web content's window, so the test does not depend on which window has the focus.
+    $v.Send('show')
+    [void](Wait-Line $v '^shown$' $from 5000)
+    Start-Sleep -Milliseconds 800
+    $h = [Mw]::FindViewer($v.P.Id, $owner.Handle)
+    $from = Count-Lines $v
+    $closeLine = ''; $via = ''
+    foreach ($class in 'Chrome_WidgetWin_1', 'Chrome_WidgetWin_0', 'Chrome_RenderWidgetHostHWND') {
+        $n = [Mw]::PostKey($h, $class, 0x79)
+        $closeLine = Wait-Line $v '^message \{"type":"close"\}$' $from 2500
+        $via += "$class x$n; "
+        if ($closeLine) { break }
+    }
+    Check 'F10 in the page: prints message {"type":"close"}' ([bool]$closeLine) "posted to $via$(Since $v $from)"
+    $v.Send('quit')
+    [void]$v.WaitExit(5000)
 
     # Run 4: nothing listens on the start url; then the owner goes away.
     $deadUrl = "http://127.0.0.1:$($Port + 8)/"
@@ -461,6 +608,8 @@ finally {
     if ($v -and -not $v.P.HasExited) { $v.P.Kill() }
     if ($owner) { $owner.Close() }
     if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force }
+    if ($pageServer -and -not $pageServer.HasExited) { Stop-Process -Id $pageServer.Id -Force }
+    if ($tmp -and (Test-Path $tmp)) { Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue }
 }
 
 $failed = @($results | Where-Object { $_.Pass -eq $false }).Count

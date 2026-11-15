@@ -1,0 +1,4 @@
+# Address of the MARVIS route planner.
+# Lines starting with # are comments. The first other non-empty line is the address.
+# Write the single word "local" to use only the copy shipped with the game (no site).
+https://homeline.vxliu.com/
