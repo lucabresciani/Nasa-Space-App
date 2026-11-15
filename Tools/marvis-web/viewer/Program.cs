@@ -27,7 +27,8 @@
 //                                 The page also gets {"type":"blocked","url":"<url>"}.
 //           warn <text>           a problem that is not fatal: inject-not-read | post-failed <reason>
 //           "loadfail" means that the page could not be loaded. It is not printed for a navigation refused here
-//           (blocked) nor for one that turned into a download.
+//           (blocked) nor for one that turned into a download. A page that redirects to another origin is
+//           refused and counts as not loaded: "blocked <url>", then "loadfail redirected-to-other-origin".
 //   downloads never show the browser's own download UI; they are written to <udf>\marvis-downloads, a folder
 //           emptied at start.
 //   exit  : 0 normal (after "exit"), 1 unexpected error, 2 bad arguments, 3 WebView2 runtime not installed,
@@ -324,6 +325,8 @@ namespace MarvisWeb
             e.Cancel = true;
             quietNavs.Add(e.NavigationId);
             Blocked(e.Uri);
+            // A redirect (same id) of a navigation allowed above: the page that was asked for did not load.
+            if (openNavs.Contains(e.NavigationId)) Program.Emit("loadfail redirected-to-other-origin");
         }
 
         void OnNavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)

@@ -24,7 +24,8 @@ game shows the new version: nothing in Unity, and nothing here, has to be rebuil
 - The **MARVIS menu button**, or **F10**, goes back to the game menu.
 - Fallback order: live site -> local copy -> built-in planning panel. The local copy is the web
   app built from `WebPlanner/` (below) and served by the game on `http://127.0.0.1:47815/`; it is
-  used when the site cannot be reached, and the site is tried again later.
+  used when the site cannot be reached, and then for the rest of that run of the game; the next
+  start tries the site first again.
 
 ## What is here
 

@@ -50,6 +50,16 @@ namespace NasaSpaceApp.Homeline.Web
         /// <summary>The machine has no WebView2 runtime: starting the viewer again cannot help.</summary>
         public bool NoRuntime { get { return fatal == "no-runtime" || exited && exitCode == ExitNoRuntime; } }
 
+        /// <summary>
+        /// The page script answered from the planner's page: the document is there, even when the page's own load
+        /// event (the viewer's "loaded") has not come. A page can hold that event back while its window is hidden.
+        /// </summary>
+        public void MarkLoaded()
+        {
+            if (!loaded) Debug.Log("[WebPlanner] page ready (its script answered) " + Seconds() + " s after the viewer's start");
+            loaded = true;
+        }
+
         /// <summary>Why the viewer is not alive, for the log.</summary>
         public string Status
         {

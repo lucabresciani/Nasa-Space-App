@@ -25,9 +25,10 @@ Order: live site -> local copy -> built-in planning panel.
 3. **Local copy.** `WebServer` serves the built web app with the MARVIS bridge on
    `http://127.0.0.1:47815/` (47816..47819 if busy; loopback only, so no firewall prompt), with a
    JSON API under `/marvis/api/`. It is started whenever a valid web root is found. The viewer is
-   sent there when the site does not load (`Player.log`: "the planner site could not be reached").
-   While on the copy, the site is tried again each time the planner is hidden, at most once every
-   30 s. With no site configured the copy is the planner, as before.
+   sent there when the site does not load, at the start or at a later reload (`Player.log`: "the
+   planner site could not be reached"), and stays there for the rest of that run, so a route being
+   drawn in the copy is not dropped; the next start of the game tries the site first again. With no
+   site configured the copy is the planner, as before.
 4. **Built-in panel.** With no viewer, or with neither a site nor a local copy, MISSION PLAN keeps
    opening the built-in planning panel (see "Fallback").
 

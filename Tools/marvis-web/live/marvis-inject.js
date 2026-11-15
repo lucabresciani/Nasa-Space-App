@@ -619,6 +619,7 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
     window.addEventListener(
       'click',
       safe((e) => {
+        if (e.defaultPrevented) return; // the page handles this link itself (its own Blob download)
         const path = e.composedPath ? e.composedPath() : [e.target];
         let a = null;
         for (let i = 0; i < path.length && !a; i++) if (path[i] && path[i].nodeType === 1 && path[i].localName === 'a') a = path[i];
@@ -638,7 +639,7 @@ dd { min-width: 0; margin: 0; font-weight: 600; text-align: right; font-variant-
           .then((blob) => download(blob, name))
           .catch((err) => toast('Could not download ' + name + (/^HTTP \d+$/.test(err && err.message) ? ' (' + err.message + '). Try again later.' : '. Check the connection and try again.'), 'error'));
       }),
-      true,
+      false, // after the page's own handlers: a link the page downloads itself is not downloaded twice
     );
 
     // ---------------------------------------------------------------- 5. the game

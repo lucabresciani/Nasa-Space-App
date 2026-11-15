@@ -132,7 +132,7 @@ namespace NasaSpaceApp.Homeline
                     sb.Append('.');
                 }
             }
-            sb.Append("\nStation card: HOMELINE planner");
+            sb.Append("\nStation card: MARVIS planner");
             if (c.NavcamSol.HasValue) sb.Append("; skyline from Curiosity Navcam, sol ").Append(c.NavcamSol.Value.ToString(CultureInfo.InvariantCulture)).Append(" (NASA/JPL-Caltech)");
             sb.Append('.');
             return sb.ToString();

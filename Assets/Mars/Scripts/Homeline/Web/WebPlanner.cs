@@ -420,6 +420,13 @@ namespace NasaSpaceApp.Homeline.Web
             return null;
         }
 
+        // The address is a page of the local copy.
+        bool IsLocalUrl(string url)
+        {
+            return server != null && !string.IsNullOrEmpty(url) &&
+                   url.StartsWith("http://127.0.0.1:" + server.Port + "/", StringComparison.OrdinalIgnoreCase);
+        }
+
         // Scheme and host (and port) are those of the planner site.
         bool IsLiveUrl(string url)
         {
@@ -518,10 +525,19 @@ namespace NasaSpaceApp.Homeline.Web
         }
 
         // The planner site did not load (at the start, or at a later try from the local copy): the local copy takes over.
-        // Once the site has loaded in this viewer a failed load is left alone.
+        // The same when the site was shown and a later load of it fails (its reload for an update): the browser's error
+        // page must not stay up.
         void OnLoadFailed(string status)
         {
-            if (liveUrl == null || liveLoaded || !tryingLive) return;
+            if (liveUrl == null) return;
+            // Not for the statuses the viewer also prints while the page is still there.
+            if (liveLoaded && pageLive && !status.StartsWith("process-failed", StringComparison.Ordinal) &&
+                status != "OperationCanceled" && status != "ConnectionAborted")
+            {
+                liveLoaded = pageLive = false;
+                tryingLive = true;
+            }
+            if (liveLoaded || !tryingLive) return;
             tryingLive = false;
             lastLiveTry = Time.realtimeSinceStartup;
             if (localUrl != null)
@@ -580,6 +596,13 @@ namespace NasaSpaceApp.Homeline.Web
                     bool live = IsLiveUrl(helloUrl);
                     liveIsBridge = live && bridge;
                     Debug.Log("[WebPlanner] page script ready on " + helloUrl + (bridge ? " (the game's own copy)" : ""));
+                    // The script answering from the planner's page means the page is there. The viewer's "loaded"
+                    // (the page's load event) is not waited for: the site can hold it back while the window is hidden.
+                    if (live || IsLocalUrl(helloUrl))
+                    {
+                        viewer.MarkLoaded();
+                        OnPageLoaded(helloUrl);
+                    }
                     // A page of the site loaded after the EVA ended (an update of the site, the site reached again)
                     // gets the log too.
                     if (live && !bridge && evaLogMessage != null) viewer.Post(evaLogMessage);
@@ -662,7 +685,8 @@ namespace NasaSpaceApp.Homeline.Web
             plannerVisible = false;   // before the hide: the focus coming back must not be handed to the viewer again
             if (viewer != null && viewer.Alive) viewer.Hide();
             if (was) Publish();
-            RetryLiveSite();
+            // The planner site is not tried again here: a session that fell back stays on the local copy, so a route
+            // being drawn there is not dropped. The next start of the game tries the site first again.
         }
 
         // The game keeps running behind the page (runInBackground), so a controller would still move and press the

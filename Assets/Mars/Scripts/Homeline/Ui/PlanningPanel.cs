@@ -518,7 +518,7 @@ namespace NasaSpaceApp.Homeline.Ui
             foreach (PlanEntry e in app.Catalog.Plans) if (e.Origin != PlanOrigin.Live) precomputed++;
             caption.text = showSaved
                 ? MissionPlan.LabelSimulated + "\nYour saved routes, newest first" + (saved.Count > rows.Count ? " (the latest " + rows.Count + " of " + saved.Count + ")" : "") + "."
-                : MissionPlan.LabelSimulated + "\n" + precomputed + " plans precomputed by the HOMELINE planner engine · " + ScenarioText(app.Catalog.ScenarioId);
+                : MissionPlan.LabelSimulated + "\n" + precomputed + " plans precomputed by the planner engine ·" + ScenarioText(app.Catalog.ScenarioId);
             tab.SetLabel(showSaved ? "PLANNER PLANS" : "MY ROUTES (" + saved.Count + ")");
             WireNavigation();
         }
