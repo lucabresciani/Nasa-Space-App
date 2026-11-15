@@ -127,6 +127,7 @@ namespace NasaSpaceApp.Mission
             [JsonProperty("y_m")] public double YM;
             [JsonProperty("z_m")] public double? ZM;
             [JsonProperty("note")] public string Note;
+            [JsonProperty("name")] public string Name;   // optional (server exports): "W1".. for a free point, else the station id
             [JsonProperty("tags")] public List<string> Tags;
             [JsonProperty("stop_min")] public double StopMin;
             [JsonProperty("arrive_t_min")] public double? ArriveTMin;

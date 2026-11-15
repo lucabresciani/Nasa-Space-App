@@ -288,7 +288,15 @@ namespace NasaSpaceApp.HUD
 
         private static string Footer(MissionPlan p)
         {
-            return (p.Dummy ? "DUMMY DATA · " : string.Empty) + "Mission Planer plan · " + (p.Id ?? "?");
+            string kind;
+            switch (p.Source.Origin)
+            {
+                case "computed_live": kind = "Computed live plan"; break;
+                case "precomputed": kind = "Official plan"; break;
+                case "mission_planer": kind = "Mission Planer plan"; break;
+                default: kind = "Mission plan"; break;
+            }
+            return (p.Dummy ? "DUMMY DATA · " : string.Empty) + kind + " · " + (p.Id ?? "?");
         }
 
         private static Color StatusColor(MissionStatus s)

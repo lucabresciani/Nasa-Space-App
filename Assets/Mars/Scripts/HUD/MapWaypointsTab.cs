@@ -220,7 +220,8 @@ namespace NasaSpaceApp.HUD
                 row.State.color = sc;
                 bool closed = m.States[i] == WaypointState.Done || m.States[i] == WaypointState.Skipped;
                 row.Number.color = closed ? MissionRouteStyle.Done : MissionRouteStyle.Route;
-                row.Note.text = HudStrings.Truncate(string.IsNullOrEmpty(w.Note) ? "(no note)" : w.Note, noteChars);
+                string noNote = string.IsNullOrEmpty(w.Name) ? "(no note)" : w.Name;
+                row.Note.text = HudStrings.Truncate(string.IsNullOrEmpty(w.Note) ? noNote : w.Note, noteChars);
                 row.Note.color = string.IsNullOrEmpty(w.Note) ? HudTokens.InkTertiary : HudTokens.InkPrimary;
                 row.Time.text = Clock(w.ArriveMin);
             }
@@ -236,7 +237,7 @@ namespace NasaSpaceApp.HUD
             }
             MissionWaypoint s = plan.Waypoints[selected];
             string st = StateLabel(m, selected, out Color stc);
-            detailTitle.text = "Waypoint #" + s.Index.ToString(Inv) + " · " + st;
+            detailTitle.text = "Waypoint #" + s.Index.ToString(Inv) + (string.IsNullOrEmpty(s.Name) ? string.Empty : " (" + s.Name + ")") + " · " + st;
             detailTitle.color = stc == HudTokens.InkSecondary ? HudTokens.InkPrimary : stc;
             detailPlan.text = "Plan: arrive " + Clock(s.ArriveMin) + " · stop " + Minutes(s.StopMin) + " · leave " + Clock(s.LeaveMin);
             float arr = m.ArrivedAtMin[selected], done = m.DoneAtMin[selected];
