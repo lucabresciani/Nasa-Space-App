@@ -193,3 +193,28 @@ The planet's lighting, atmosphere glow, tilt and spin speed, the star field's ex
 Mosaic: NASA/JPL-Caltech/USGS. Topography: NASA/GSFC/MOLA Science Team; Smith D.E. et al., *Mars Global Surveyor Laser Altimeter Mission Experiment Gridded Data Record*, NASA PDS, MGS-M-MOLA-5-MEGDR-L3-V1.0, 2003. Star field: NASA/Goddard Space Flight Center Scientific Visualization Studio. Gaia DR2: ESA/Gaia/DPAC. (The SVS product is rendered from ESA catalogues, Hipparcos-2, Tycho-2 and Gaia DR2, and its credit line includes them.)
 
 Logo and menu typeface: Open Sauce Sans (SIL Open Font License 1.1, `Assets/Mars/UI/Resources/Title/Fonts/OFL.txt`).
+
+## Terrain (Mount Sharp, Gale crater)
+
+- Play area heights, ground textures and boulders: USGS Astrogeology Science Center, MSL Gale Merged DEM Mosaic 1 m v3 and MSL Gale Orthophoto Mosaic 25 cm v3, from MRO HiRISE images (NASA/JPL-Caltech/University of Arizona). The play area is 6.1 km x 6.1 km at 1.5 m per height post, resampled from the 1 m DEM by area averaging.
+- Backdrop heights: MRO CTX stereo DTM D03_028269_1752 / K04_055011_1752 (USGS Astrogeology; NASA/JPL-Caltech/MSSS) and the USGS Astrogeology MOLA-HRSC blended DEM v2, 200 m (MGS MOLA: NASA/GSFC, MOLA Science Team; Mars Express HRSC: ESA/DLR/FU Berlin).
+- EVA map satellite layer: USGS Astrogeology MSL Gale HiRISE LRGB mosaic, 78 quads (HiRISE: NASA/JPL-Caltech/University of Arizona), 1.5 m per pixel over the play terrain.
+- Start position and stations: Curiosity rover waypoints, NASA/JPL-Caltech MMGIS.
+- Elevations are metres relative to the MOLA areoid.
+
+Not NASA data: the HRSC part of the blended backdrop model (ESA/DLR/FU Berlin), used through the USGS product. What is derived and not measured (the outer blend of the play area, the ground cover outside the mapped area) is described in `Assets/Mars/Data/MountSharp/CREDITS.md`.
+
+## Weather (Gale crater)
+
+- Air temperature and pressure statistics: Curiosity REMS, NASA Planetary Data System, `mslrem_1001` MODRDR, as seasonal statistics built by the planner (github.com/LuxKaiwalker/home-line).
+- Dust optical depth at 880 nm from Mastcam solar imaging: NASA PDS Atmospheres Node, `msl_mmm_tau_bundle` (Lemmon et al., doi:10.17189/fjh0-2978).
+
+Details: `Assets/Mars/WeatherData/README.md`.
+
+## Start-point models
+
+NASA Space Exploration Vehicle (credit NASA/LaRC/Advanced Concepts Lab) and NASA Habitat Demonstration Unit, from NASA 3D Resources (science.nasa.gov/3d-resources), used under the NASA Images and Media Usage Guidelines. NASA is acknowledged as the source; no endorsement is implied.
+
+## Mission planner
+
+The route planner shown inside MARVIS is a separate project with its own source list: github.com/LuxKaiwalker/home-line. A copy is in `WebPlanner/`; see `WebPlanner/SPEC.md`.
